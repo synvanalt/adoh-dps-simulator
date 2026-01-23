@@ -6,7 +6,7 @@ def build_progress_elements():
     """Create all progress-related components."""
     return dbc.Modal(
         [
-            dbc.ModalHeader(dbc.ModalTitle("Calculating..."), close_button=False),
+            dbc.ModalHeader(dbc.ModalTitle("Running..."), close_button=False),
             dbc.ModalBody([
                 dbc.Label(
                     "Warming up...",
@@ -15,7 +15,7 @@ def build_progress_elements():
                 ),
                 dbc.Progress(id='progress-bar', value='0', style={'height': '20px'}, class_name='mb-3'),
             ]),
-            dbc.ModalFooter(dbc.Button("Cancel", id='cancel-calc-button', class_name='ms-auto')),
+            dbc.ModalFooter(dbc.Button("Cancel", id='cancel-sim-button', class_name='ms-auto')),
         ],
         id='progress-modal',
         is_open=False,

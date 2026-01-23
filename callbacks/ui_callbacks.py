@@ -256,7 +256,7 @@ def register_ui_callbacks(app, cfg):
             return dash.no_update, dash.no_update
 
 
-    # Callback: show Results as active tab when calculation done
+    # Callback: show Results as active tab when simulation done
     @app.callback(
         Output('tabs', 'active_tab'),
         [Input('intermediate-value', 'data')]

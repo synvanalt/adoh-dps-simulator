@@ -63,11 +63,11 @@ app.index_string = """
 # Update app layout to use modularized components
 app.layout = dbc.Container([
     dcc.Store(id='config-store', storage_type='session'),
-    dcc.Store(id='intermediate-value'),             # Store for calculation results
+    dcc.Store(id='intermediate-value'),             # Store for simulation results
     dcc.Store(id='immunities-store', data=cfg.TARGET_IMMUNITIES, storage_type='session'),  # keeps user edits
-    dcc.Store(id='is-calculating', data=False),     # Store for tracking calculation state
-    dcc.Store(id='calc-progress', data={'current': 0, 'total': 0, 'results': {}}),
-    dcc.Interval(id='calc-interval', interval=200, disabled=True),  # ticks while calculating
+    dcc.Store(id='is-simulating', data=False),     # Store for tracking simulation state
+    dcc.Store(id='sim-progress', data={'current': 0, 'total': 0, 'results': {}}),
+    dcc.Interval(id='sim-interval', interval=200, disabled=True),  # ticks while simulating
 
 
     # Navbar
@@ -76,7 +76,7 @@ app.layout = dbc.Container([
     # Add progress components
     build_progress_elements(),
 
-    # Dark overlay with spinner during calculation
+    # Dark overlay with spinner during simulation
     html.Div(
         id='loading-overlay',
         children=dbc.Spinner(color='light', size='lg', type='border'),
@@ -91,7 +91,7 @@ app.layout = dbc.Container([
         }
     ),
 
-    # Error modal to catch exceptions in risky calculation part
+    # Error modal to catch exceptions in risky simulation part
     dbc.Modal(
         [
             dbc.ModalHeader(dbc.ModalTitle("Oops, unexpected error..."), close_button=False),

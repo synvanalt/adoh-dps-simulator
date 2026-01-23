@@ -60,7 +60,7 @@ def register_core_callbacks(app, cfg):
     @with_error_modal(
         app,
         outputs=[
-            Output('is-calculating', 'data'),
+            Output('is-simulating', 'data'),
             Output('intermediate-value', 'data'),
             Output('config-store', 'data'),
             Output('progress-text', 'children'),
@@ -106,7 +106,7 @@ def register_core_callbacks(app, cfg):
             State({'type': 'immunity-input', 'name': ALL}, 'value')
         ],
         background=True,  # runs in a worker thread automatically
-        cancel=[Input('cancel-calc-button', 'n_clicks')],   # Cancel operation button
+        cancel=[Input('cancel-sim-button', 'n_clicks')],   # Cancel operation button
         progress=[
             Output('progress-text', 'children'),
             Output('progress-bar', 'value'),
@@ -120,10 +120,10 @@ def register_core_callbacks(app, cfg):
             (Output('loading-overlay', 'style'), spinner_style, {'display': 'none'}),
             (Output('progress-text', 'children'), "Warming up...", "Done!"),
             (Output('progress-bar', 'value'), 0, 100),
-        ],  # Disable buttons & clear progress modal when calc starts, re-enable buttons when finishes
+        ],  # Disable buttons & clear progress modal when sim starts, re-enable buttons when finishes
         prevent_initial_call=True
     )
-    def run_calculation(set_progress, _, __, current_cfg, ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
+    def run_simulation(set_progress, _, __, current_cfg, ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
                         str_mod, two_handed, weaponmaster, keen, improved_crit, overwhelm_crit, dev_crit, shape_weapon_override, shape_weapon,
                         add_dmg_state, add_dmg1, add_dmg2, add_dmg3,
                         weapons, target_ac, rounds, dmg_limit_flag, dmg_limit, dmg_vs_race,
@@ -136,7 +136,7 @@ def register_core_callbacks(app, cfg):
         # if ctx.triggered_id == 'simulate-button' or ctx.triggered_id == 'resimulate-button':
         # if spinner['display'] == 'flex':
         print("Starting simulation...")
-        # Start calculation
+        # Start simulation
         if current_cfg is None:
             # fallback
             current_cfg = asdict(cfg)
@@ -180,7 +180,7 @@ def register_core_callbacks(app, cfg):
             for idx, (key, val) in enumerate(cfg.ADDITIONAL_DAMAGE.items())
         }
 
-        # Calculate DPS for all selected weapons
+        # Simulate DPS for all selected weapons
         total = len(weapons)
         user_cfg = Config(**current_cfg)    # convert dict back to Config object
         results_dict = {}
@@ -188,15 +188,15 @@ def register_core_callbacks(app, cfg):
             # Send progress update to browser
             set_progress((f"Simulating {weapon}...  ({i}/{total})", str(i), str(total)))
 
-            # Run the heavy calculation:
-            calculator = DamageSimulator(weapon, user_cfg)
-            results_dict[weapon] = calculator.simulate_dps()
+            # Run the heavy simulation:
+            simulator = DamageSimulator(weapon, user_cfg)
+            results_dict[weapon] = simulator.simulate_dps()
 
 
         return False, results_dict, current_cfg, "Done!", dash.no_update, False
 
 
-    # Callback: update results based on stored calculation results
+    # Callback: update results based on stored simulation results
     @app.callback(
         [Output('comparative-table', 'children'),
          Output('detailed-results', 'children')],
