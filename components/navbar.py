@@ -5,7 +5,7 @@ def build_navbar():
     navbar = dbc.Navbar(
         dbc.Container(
             [
-                dbc.NavbarBrand("ADOH DPS Calculator", className="ms-2"),
+                dbc.NavbarBrand("ADOH DPS Simulator", className="ms-2"),
                 dbc.Nav(
                     [
                         # dbc.NavItem(dbc.NavLink("Home", href="#")),

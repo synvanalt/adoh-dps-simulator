@@ -10,7 +10,7 @@ def build_results_tab():
         dbc.Container([
             html.Div([
                 html.H4('Comparative Results', className='mt-4 mb-4'),
-                dbc.Button("Recalculate DPS", id='recalculate-button', color='primary'),
+                dbc.Button("Resimulate DPS", id='resimulate-button', color='primary'),
             ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between'}),
 
             # Main comparative table
