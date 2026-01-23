@@ -69,8 +69,8 @@ def register_core_callbacks(app, cfg):
         ],
         inputs=[
             # Input('loading-overlay', 'style'),
-            Input('calculate-button', 'n_clicks'),
-            Input('recalculate-button', 'n_clicks'),
+            Input('simulate-button', 'n_clicks'),
+            Input('resimulate-button', 'n_clicks'),
         ],
         states=[
             State('config-store', 'data'),
@@ -113,8 +113,8 @@ def register_core_callbacks(app, cfg):
             Output('progress-bar', 'max')
         ],  # streamed progress
         running=[
-            (Output('calculate-button', 'disabled'), True, False),
-            (Output('recalculate-button', 'disabled'), True, False),
+            (Output('simulate-button', 'disabled'), True, False),
+            (Output('resimulate-button', 'disabled'), True, False),
             (Output('reset-button', 'disabled'), True, False),
             (Output('progress-modal', 'is_open'), True, False),
             (Output('loading-overlay', 'style'), spinner_style, {'display': 'none'}),
@@ -133,7 +133,7 @@ def register_core_callbacks(app, cfg):
         # if spinner['display'] == 'none' or not weapons:
             return False, dash.no_update, current_cfg, dash.no_update, dash.no_update, False
 
-        # if ctx.triggered_id == 'calculate-button' or ctx.triggered_id == 'recalculate-button':
+        # if ctx.triggered_id == 'simulate-button' or ctx.triggered_id == 'resimulate-button':
         # if spinner['display'] == 'flex':
         print("Starting simulation...")
         # Start calculation

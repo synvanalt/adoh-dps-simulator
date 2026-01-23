@@ -44,7 +44,7 @@ app.index_string = """
     <head>
         {%metas%}
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>ADOH DPS Calculator</title>
+        <title>ADOH DPS Simulator</title>
         {%favicon%}
         {%css%}
     </head>

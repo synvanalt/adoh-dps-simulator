@@ -233,11 +233,11 @@ def build_simulation_settings(cfg):
 
         ], className='', style={'display': 'flex', 'alignItems': 'flex-start'}),
 
-        # Calculate Button
+        # Simulate Button
         dbc.Row([
             dbc.Col([
                 dbc.Button("Reset to Defaults", id='reset-button', color='secondary'),
-                dbc.Button("Calculate DPS", id='calculate-button', color='primary', className='ms-3'),
+                dbc.Button("Simulate DPS", id='simulate-button', color='primary', className='ms-3'),
             ], width={"size": 12, "offset": 0}, className='mt-3', style={'display': 'flex', 'justifyContent': 'flex-end'}),
         ]),
 
