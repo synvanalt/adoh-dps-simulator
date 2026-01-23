@@ -56,12 +56,12 @@ WEAPON_PROPERTIES = {
 }
 PURPLE_WEAPONS = {
     # MELEE TWO-HANDED WEAPONS:
-    'Halberd': {'enhancement': 7, 'sneak': [2, 6], 'bludgeoning': [2, 12], 'massive': [0, 0, 200], 'legendary': {'proc': 0.05, 'fire': [1, 50], 'pure': [1, 50]}}, # Ahrim's Sacrifice, hold on hit, 43
+    'Halberd': {'enhancement': 7, 'sneak': [2, 6], 'bludgeoning': [2, 12], 'massive': [0, 0, 200], 'legendary': {'proc': 0.1, 'fire': [1, 50], 'pure': [1, 50]}}, # Ahrim's Sacrifice, hold on hit, 43
     'Heavy Flail': {'enhancement': 7, 'slashing': [2, 12], 'negative': [2, 6], 'divine': [2, 6], 'magical': [2, 6], 'legendary': {'proc': 0.05, 'physical': [0, 0, 5]}}, # [0, 2.5, 'physical']], # None
     'Greataxe': {'enhancement': 7, 'bludgeoning': [2, 12], 'divine': [2, 8], 'fire': [2, 12], 'vs_race_undead': {'enhancement': 12, 'pure': [2, 12]}}, # immune level drain
-    'Greatsword_Desert': {'enhancement': 7, 'piercing': [2, 12], 'divine': [2, 8], 'fire': [2, 8], 'massive': [2, 12], 'pure': [1, 6]},  # Pure vs. Evil
+    'Greatsword_Desert': {'enhancement': 7, 'piercing': [2, 12], 'divine': [2, 8], 'fire': [2, 8], 'massive': [2, 12]},  # Pure vs. Evil
     'Greatsword_Legion': {'enhancement': 7, 'piercing': [2, 12], 'divine': [2, 8], 'cold': [2, 8], 'massive': [2, 12], 'legendary': {'proc': 0.05, 'effect': 'sunder'}},  # Sunder effect (-2 AC for 2 rounds)
-    'Greatsword_Tyr': {'enhancement': 7, 'bludgeoning': [2, 12], 'divine': [2, 12], 'fire': [2, 6], 'vs_race_evil': {'pure': [1, 6]}, 'legendary': {'proc': 0.05, 'divine': [3, 6]}},  # 5% Sunbeam Level 5 (3d6 Divine / 10d6 vs Undead)
+    'Greatsword_Tyr': {'enhancement': 7, 'bludgeoning': [2, 12], 'divine': [2, 12], 'fire': [2, 6], 'legendary': {'proc': 0.05, 'divine': [3, 6]}},  # 5% Sunbeam Level 5 (3d6 Divine / 10d6 vs Undead)
     'Scythe': {'enhancement': 10, 'bludgeoning': [2, 12], 'negative': [2, 6], 'pure': [0, 0, 10]},
     'Spear': {'enhancement': 7, 'bludgeoning': [2, 8], 'acid': [2, 6], 'cold': [2, 6], 'fire': [2, 6], 'electrical': [2, 6], 'legendary': {'proc': 0.05, 'acid': [4, 6], 'pure': [4, 6]}}, # Freedom
     'Trident_Fire': {'enhancement': 7, 'slashing': [2, 12], 'fire': [2, 12], 'magical': [1, 12], 'negative': [1, 12], 'legendary': {'proc': 0.05, 'fire': [10, 6]}},  # 5% Fireball lvl 10, Blind on-hit DC46 100% 1round, fire immune 20%, cold vuln 10%
@@ -73,14 +73,18 @@ PURPLE_WEAPONS = {
     'Two-Bladed Sword': {'enhancement': 7, 'bludgeoning': [2, 12], 'positive': [2, 6], 'negative': [2, 6], 'massive': [2, 6]}, # +3 AC, on hit doom
 
     # RANGED WEAPONS - THROWING:
-    'Darts': {'enhancement': 7, 'magical': [2, 6], 'pure': [2, 12], 'legendary': {'proc': 0.05, 'pure': [2, 12], 'effect': 'perfect_strike'}},  # [0, 0.65, 'pure']],  # none
+    'Darts': {'enhancement': 7, 'magical': [2, 6], 'pure': [2, 12], 'legendary': {'proc': 0.05, 'pure': [4, 6], 'effect': 'perfect_strike'}},  # [0, 0.65, 'pure']],  # none
     'Throwing Axes': {'enhancement': 7, 'sonic': [7, 6], 'massive': [1, 6]},  # On-hit Silence DC46/100%/1round
 
     # RANGED WEAPONS - AMMO-BASED:
-    'Heavy Crossbow': {'enhancement': 7, 'bludgeoning': [2, 12], 'acid': [2, 8], 'magical': [1, 12], 'fire': [2, 6], 'massive': [2, 8], 'legendary': {'proc': 'on_crit', 'fire': [6, 6]}}, # On-crit Firebrand lvl 6
-    'Light Crossbow': {'enhancement': 7, 'bludgeoning': [2, 12], 'acid': [2, 8], 'magical': [1, 12], 'cold': [1, 10], 'massive': [1, 10], 'legendary': {'proc': 'on_crit', 'cold': [6, 6]}}, # On-crit Coldbrand lvl 6
-    'Longbow': {'enhancement': 7, 'bludgeoning': [2, 12], 'negative': [2, 8], 'magical': [1, 12], 'fire': [2, 6], 'massive': [2, 6], 'legendary': {'proc': 'on_crit', 'fire': [4, 6], 'pure': [4, 6]}},    # Was "Arrows"
-    'Shortbow': {'enhancement': 7, 'bludgeoning': [2, 12], 'negative': [2, 8], 'magical': [1, 12], 'electrical': [1, 10], 'massive': [2, 8]}, # SoV extend by 5 rounds, SoV immune, Elec 10% immune
+    'Heavy Crossbow': {'enhancement': 7, 'bludgeoning': [2, 12], 'acid': [2, 10], 'magical': [2, 8], 'fire': [2, 6], 'massive': [2, 8], 'legendary': {'proc': 'on_crit', 'fire': [6, 6]}}, # On-crit Firebrand lvl 6
+    'Light Crossbow': {'enhancement': 7, 'bludgeoning': [2, 12], 'acid': [2, 10], 'magical': [2, 8], 'cold': [2, 6], 'massive': [1, 10], 'legendary': {'proc': 'on_crit', 'cold': [6, 6]}}, # On-crit Coldbrand lvl 6
+    'Longbow_FireDragon': {'enhancement': 7, 'bludgeoning': [2, 12], 'negative': [2, 10], 'magical': [2, 8], 'fire': [2, 6], 'massive': [2, 6], 'legendary': {'proc': 'on_crit', 'fire': [4, 6], 'pure': [4, 6]}},
+    'Longbow_FireCeles': {'enhancement': 7, 'bludgeoning': [7, 6], 'divine': [2, 10], 'fire': [2, 6], 'massive': [2, 6], 'legendary': {'proc': 'on_crit', 'fire': [4, 6], 'pure': [4, 6]}},
+    'Longbow_ElecDragon': {'enhancement': 7, 'bludgeoning': [2, 12], 'negative': [2, 10], 'magical': [2, 8], 'electrical': [2, 6], 'legendary': {'proc': 0.1, 'electrical': [20, 6]}},  # On-hit Chain Lightining lvl 20
+    'Longbow_ElecCeles': {'enhancement': 7, 'bludgeoning': [7, 6], 'divine': [2, 10], 'electrical': [2, 6], 'legendary': {'proc': 0.1, 'electrical': [20, 6]}},  # On-hit Chain Lightining lvl 20
+    'Shortbow_Dragon': {'enhancement': 7, 'bludgeoning': [2, 12], 'negative': [2, 10], 'magical': [2, 8], 'electrical': [2, 6], 'massive': [2, 8]}, # SoV extend by 5 rounds, SoV immune, Elec 10% immune
+    'Shortbow_Celes': {'enhancement': 7, 'bludgeoning': [7, 6], 'divine': [2, 10], 'magical': [2, 8], 'electrical': [2, 6], 'massive': [2, 8]},  # SoV extend by 5 rounds, SoV immune, Elec 10% immune
     'Sling': {'enhancement': 7, 'piercing': [2, 8], 'fire': [2, 8], 'pure': [2, 6], 'divine': [2, 6]},  # On-hit 5%: gain 20% movement speed for 30sec (can't stack)
 
     # MONK WEAPONS:
@@ -114,7 +118,8 @@ PURPLE_WEAPONS = {
     'Dagger_PK': {'enhancement': 7, 'bludgeoning': [2, 6], 'negative': [2, 6], 'massive': [0, 0, 80]}, # On-hit 5%: gain 90% concealment for 1 round
     'Handaxe_Adam': {'enhancement': 7, 'bludgeoning': [2, 8], 'divine': [2, 6], 'pure': [2, 4], 'sneak': [1, 6]}, # On-hit 5%: receive 5% phys immune 2 rounds (stacks)
     'Handaxe_Ichor': {'enhancement': 7, 'bludgeoning': [2, 6], 'negative': [2, 6], 'acid': [2, 8], 'legendary': {'proc': 0.05, 'acid': [4, 6], 'pure': [4, 6]}},  # 10% acid immune, on-hit poison
-    'Kukri_Inconseq': {'enhancement': 7, 'bludgeoning': [2, 6], 'divine': [2, 6], 'magical': [2, 6], 'vs_race_good_evil': {'piercing': [1, 4]}, 'legendary': {'proc': 'on_crit', 'effect': 'inconsequence'}},  # Legend Effect TBD
+    'Kukri_Crow': {'enhancement': 7, 'bludgeoning': [2, 12], 'divine': [2, 8], 'legendary': {'proc': 0.05, 'pure': [4, 6], 'effect': 'perfect_strike'}},  # Legend Effect TBD
+    'Kukri_Inconseq': {'enhancement': 7, 'bludgeoning': [2, 6], 'divine': [2, 6], 'magical': [2, 6], 'vs_race_good_evil': {'positive': [1, 4]}, 'legendary': {'proc': 'on_crit', 'effect': 'inconsequence'}},  # Legend Effect TBD
     'Light Hammer': {'enhancement': 7, 'slashing': [2, 10], 'cold': [2, 12], 'magical': [1, 6], 'legendary': {'proc': 'on_crit', 'cold': [4, 6], 'pure': [4, 6]}},
     'Mace': {'enhancement': 7, 'slashing': [2, 12], 'electrical': [2, 12], 'pure': [1, 6], 'legendary': {'proc': 0.05, 'electrical': [4, 6], 'pure': [4, 6]}}, # call Thunder, on-hit Stun 44DC 50%/1round
     'Shortsword_Adam': {'enhancement': 7, 'bludgeoning': [2, 6], 'divine': [2, 6], 'pure': [2, 6]},   # On-hit 5%: receive 5% phys immune 2 rounds (stacks)
