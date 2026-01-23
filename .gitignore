@@ -11,9 +11,6 @@ __pycache__/
 # Cache - Dash Diskcace
 cache/
 
-# Manual scripts
-scripts/
-
 # Other files
 commitlint_guidelines.txt
 tests/README.md
