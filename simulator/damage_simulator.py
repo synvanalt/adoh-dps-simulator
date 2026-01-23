@@ -177,11 +177,11 @@ class DamageSimulator:
                             current_str_flat_dmg = dmg_dict['physical'][str_idx][2]
                             dmg_dict['physical'][str_idx][2] = math.floor(current_str_flat_dmg / 2)
 
-                    dmg_sneak = dmg_dict.pop('sneak', [])                                                # Remove the 'sneak' dmg from crit multiplication
-                    dmg_sneak_max = max(dmg_sneak, key=lambda sublist: sublist[0], default=None)         # Find the highest 'Sneak' dmg, can't stack sneak
+                    dmg_sneak = dmg_dict.pop('sneak', [])                                                # Remove the 'Sneak Attack' dmg from crit multiplication
+                    dmg_sneak_max = max(dmg_sneak, key=lambda sublist: sublist[0], default=None)         # Find the highest 'sneak' dmg, can't stack Sneak Attacks
 
-                    dmg_death = dmg_dict.pop('death', [])                                           # Remove the 'sneak' dmg from crit multiplication
-                    dmg_death_max = max(dmg_death, key=lambda sublist: sublist[0], default=None)    # Find the highest 'Sneak' dmg, can't stack sneak
+                    dmg_death = dmg_dict.pop('death', [])                                           # Remove the 'Death Attack' dmg from crit multiplication
+                    dmg_death_max = max(dmg_death, key=lambda sublist: sublist[0], default=None)    # Find the highest 'death' dmg, can't stack Death Attacks
 
                     def get_max_dmg(dmg_list):
                         dice = dmg_list[0]
@@ -189,11 +189,11 @@ class DamageSimulator:
                         flat = dmg_list[2] if len(dmg_list) > 2 else 0
                         return dice * sides + flat
 
-                    dmg_massive = dmg_dict.pop('massive', [])                          # Remove the 'Massive' dmg from crit multiplication
-                    dmg_massive_max = max(dmg_massive, key=get_max_dmg, default=None)  # Find the highest 'Massive' dmg, can't stack massive
+                    dmg_massive = dmg_dict.pop('massive', [])                          # Remove the 'Massive Critical' dmg from crit multiplication
+                    dmg_massive_max = max(dmg_massive, key=get_max_dmg, default=None)  # Find the highest 'massive' dmg, can't stack Massive Criticals
 
                     dmg_flameweap = dmg_dict.pop('fire_fw', [])                            # Remove the 'Flame Weapon' dmg from crit multiplication
-                    dmg_flameweap_max = max(dmg_flameweap, key=get_max_dmg, default=None)  # Find the highest 'Flame on Hit' dmg, can't stack multiple on-hits
+                    dmg_flameweap_max = max(dmg_flameweap, key=get_max_dmg, default=None)  # Find the highest 'fire_fw' dmg, can't stack multiple on-hits
 
                     if legend_dmg_common:   # Checking if list is NOT empty, then adding the legend common damage to ordinary damage dictionary
                         dmg_type_name = legend_dmg_common.pop(2)
