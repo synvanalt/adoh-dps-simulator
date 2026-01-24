@@ -11,7 +11,7 @@ WEAPON_PROPERTIES = {
 
     # DOUBLE-SIDED WEAPONS:
     'Dire Mace':        {'dmg': [1, 8, 'bludgeoning'],  'threat': 20, 'multiplier': 2, 'size': 'S'},
-    'Double Axe':       {'dmg': [1, 8, 'bludgeoning'],  'threat': 20, 'multiplier': 3, 'size': 'S'},
+    'Double Axe':       {'dmg': [1, 8, 'slashing'],     'threat': 20, 'multiplier': 3, 'size': 'S'},
     'Two-Bladed Sword': {'dmg': [1, 8, 'slashing'],     'threat': 19, 'multiplier': 2, 'size': 'S'},
 
     # RANGED WEAPONS - THROWING:
