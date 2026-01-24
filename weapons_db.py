@@ -10,9 +10,9 @@ WEAPON_PROPERTIES = {
     'Trident':          {'dmg': [1, 8,  'piercing'],            'threat': 20, 'multiplier': 2, 'size': 'L'},
 
     # DOUBLE-SIDED WEAPONS:
-    'Dire Mace':        {'dmg': [1, 8, 'bludgeoning'],  'threat': 20, 'multiplier': 2, 'size': 'S'},
-    'Double Axe':       {'dmg': [1, 8, 'slashing'],     'threat': 20, 'multiplier': 3, 'size': 'S'},
-    'Two-Bladed Sword': {'dmg': [1, 8, 'slashing'],     'threat': 19, 'multiplier': 2, 'size': 'S'},
+    'Dire Mace':        {'dmg': [1, 8, 'bludgeoning'],  'threat': 20, 'multiplier': 2, 'size': 'L'},
+    'Double Axe':       {'dmg': [1, 8, 'slashing'],     'threat': 20, 'multiplier': 3, 'size': 'L'},
+    'Two-Bladed Sword': {'dmg': [1, 8, 'slashing'],     'threat': 19, 'multiplier': 2, 'size': 'L'},
 
     # RANGED WEAPONS - THROWING:
     'Darts':            {'dmg': [1, 4, 'piercing'],     'threat': 20, 'multiplier': 2, 'size': 'T'},

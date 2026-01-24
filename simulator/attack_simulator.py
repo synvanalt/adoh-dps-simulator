@@ -115,9 +115,13 @@ class AttackSimulator:
         :param toon_size: Size of the attacker, in addition to weapon size, it's used to determine the DW penalty
         :return: List after applying the DW penalty, e.g., [-2, -7, -12, -17, 2, -2, -7]
         """
+        double_sided_weapons = ['Dire Mace', 'Double Axe', 'Two-Bladed Sword']
+
         if ((toon_size == 'M' and self.weapon.size == 'M') or
                 (toon_size == 'S' and self.weapon.size == 'S')):
             dw_penalty = -4
+        elif toon_size == 'M' and self.weapon.name_base in double_sided_weapons:    # Special case for Double-Sided weapon
+            dw_penalty = -2
         elif ((toon_size == 'L' and self.weapon.size in ['M', 'S', 'T']) or
               (toon_size == 'M' and self.weapon.size in ['S', 'T']) or
               (toon_size == 'S' and self.weapon.size == 'T')):
