@@ -115,7 +115,7 @@ def build_simulation_settings(cfg):
                     ),
                 ], class_name=''),
 
-                # Damage limit (stop calculation on reach)
+                # Damage limit (stop simulation on reach)
                 dbc.Row([
                     dbc.Col(dbc.Switch(
                         id='damage-limit-switch',
@@ -142,7 +142,7 @@ def build_simulation_settings(cfg):
                     ),
                 ], class_name='switcher'),
 
-                # Damage limit (stop calculation on reach)
+                # Damage limit (stop simulation on reach)
                 dbc.Row([
                     dbc.Col(dbc.Switch(
                         id='dmg-vs-race-switch',

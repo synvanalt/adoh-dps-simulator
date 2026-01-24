@@ -477,7 +477,7 @@ class TestLegendEffectIntegration:
         """Test legend effect with various attack progressions."""
         cfg = Config()
 
-        for ab_prog in ["5APR Classic", "4APR Classic", "Monk APR"]:
+        for ab_prog in ["5APR Classic", "4APR Classic", "Monk 7APR"]:
             cfg.AB_PROG = ab_prog
             weapon = Weapon("Scimitar", cfg)
             attack_sim = AttackSimulator(weapon, cfg)

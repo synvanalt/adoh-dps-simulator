@@ -557,7 +557,7 @@ class TestDualWieldPenalty:
 
     def test_medium_character_medium_weapon_penalty(self):
         """Test DW penalty for Medium character with Medium weapon."""
-        cfg = Config(AB=50, TOON_SIZE='M', AB_PROG="4APR Dual-Wield")
+        cfg = Config(AB=50, TOON_SIZE='M', AB_PROG="4APR & Dual-Wield")
         weapon = Weapon("Longsword", cfg)  # Medium weapon
         simulator = AttackSimulator(weapon, cfg)
 
@@ -567,7 +567,7 @@ class TestDualWieldPenalty:
 
     def test_small_character_small_weapon_penalty(self):
         """Test DW penalty for Small character with Small weapon."""
-        cfg = Config(AB=50, TOON_SIZE='S', AB_PROG="4APR Dual-Wield")
+        cfg = Config(AB=50, TOON_SIZE='S', AB_PROG="4APR & Dual-Wield")
         weapon = Weapon("Shortsword_Adam", cfg)  # Small weapon, in PURPLE_WEAPONS
         simulator = AttackSimulator(weapon, cfg)
 
@@ -576,7 +576,7 @@ class TestDualWieldPenalty:
 
     def test_large_character_medium_weapon_penalty(self):
         """Test DW penalty for Large character with Medium weapon."""
-        cfg = Config(AB=50, TOON_SIZE='L', AB_PROG="4APR Dual-Wield")
+        cfg = Config(AB=50, TOON_SIZE='L', AB_PROG="4APR & Dual-Wield")
         weapon = Weapon("Longsword", cfg)  # Medium weapon
         simulator = AttackSimulator(weapon, cfg)
 
@@ -585,7 +585,7 @@ class TestDualWieldPenalty:
 
     def test_medium_character_small_weapon_penalty(self):
         """Test DW penalty for Medium character with Small weapon."""
-        cfg = Config(AB=50, TOON_SIZE='M', AB_PROG="4APR Dual-Wield")
+        cfg = Config(AB=50, TOON_SIZE='M', AB_PROG="4APR & Dual-Wield")
         weapon = Weapon("Shortsword_Cleaver", cfg)  # Small weapon, in PURPLE_WEAPONS
         simulator = AttackSimulator(weapon, cfg)
 
@@ -594,7 +594,7 @@ class TestDualWieldPenalty:
 
     def test_incompatible_size_combination(self):
         """Test DW penalty with incompatible size combination."""
-        cfg = Config(AB=50, TOON_SIZE='S', AB_PROG="4APR Dual-Wield")
+        cfg = Config(AB=50, TOON_SIZE='S', AB_PROG="4APR & Dual-Wield")
         weapon = Weapon("Halberd", cfg)  # Large weapon
         simulator = AttackSimulator(weapon, cfg)
 
@@ -617,7 +617,7 @@ class TestDualWieldPenalty:
         The hasted attack (index 3) gets reversed penalty (+4) instead of normal penalty (-4),
         making it higher AB than surrounding attacks.
         """
-        cfg = Config(AB=50, TOON_SIZE='M', AB_PROG="4APR Dual-Wield")
+        cfg = Config(AB=50, TOON_SIZE='M', AB_PROG="4APR & Dual-Wield")
         weapon = Weapon("Longsword", cfg)  # M+M = -4 DW penalty
         simulator = AttackSimulator(weapon, cfg)
 
@@ -668,7 +668,7 @@ class TestLegendProcRate:
     def test_on_crit_proc_rate(self):
         """Test that 'on_crit' proc rate is calculated based on crit chance."""
         cfg = Config()
-        weapon = Weapon("Longbow", cfg)
+        weapon = Weapon("Longbow_FireDragon", cfg)
         simulator = AttackSimulator(weapon, cfg)
 
         proc_rate = simulator.get_legend_proc_rate_theoretical()
@@ -686,7 +686,7 @@ class TestLegendProcRate:
     def test_proc_rate_between_0_and_1(self):
         """Test that proc rate is always between 0 and 1."""
         cfg = Config()
-        for weapon_name in ['Darts', 'Longbow', 'Scimitar']:
+        for weapon_name in ['Darts', 'Longbow_FireDragon', 'Scimitar']:
             weapon = Weapon(weapon_name, cfg)
             simulator = AttackSimulator(weapon, cfg)
             proc_rate = simulator.get_legend_proc_rate_theoretical()
@@ -823,7 +823,7 @@ class TestAttackSimulatorIntegration:
     def test_ranged_progression(self):
         """Test ranged weapon attack progression."""
         cfg = Config(AB=70, AB_PROG="5APR & Rapid Shot", COMBAT_TYPE='ranged')
-        weapon = Weapon("Longbow", cfg)
+        weapon = Weapon("Longbow_FireDragon", cfg)
         simulator = AttackSimulator(weapon, cfg)
 
         assert simulator.attacks_per_round == 6  # 5 APR + 1 from Rapid Shot
@@ -953,11 +953,11 @@ class TestDualWieldOffhandDamage:
 
     def test_dual_wield_progression_structure(self):
         """Test that dual-wield progression has correct structure with offhand markers."""
-        cfg = Config(AB_PROG="5APR Dual-Wield")
+        cfg = Config(AB_PROG="5APR & Dual-Wield")
         weapon = Weapon("Longsword", cfg)
         simulator = AttackSimulator(weapon, cfg)
 
-        # 5APR Dual-Wield progression should have dw_hasted marker
+        # 5APR & Dual-Wield progression should have dw_hasted marker
         # Format: [0, -5, -10, -15, "dw_hasted", 0, -5]
         # After processing, this becomes numerical values
         assert simulator.attacks_per_round == 7
@@ -966,18 +966,18 @@ class TestDualWieldOffhandDamage:
 
     def test_dual_wield_monk_progression_structure(self):
         """Test Monk dual-wield progression has correct structure."""
-        cfg = Config(AB_PROG="Monk Kama Dual-Wield", TOON_SIZE='M')
+        cfg = Config(AB_PROG="Monk 7APR & Dual-Wield", TOON_SIZE='M')
         weapon = Weapon("Kama", cfg)
         simulator = AttackSimulator(weapon, cfg)
 
-        # Monk Kama Dual-Wield has haste attack marker
+        # Monk 7APR & Dual-Wield has haste attack marker
         assert simulator.dual_wield is True
         assert simulator.attacks_per_round == 9
         assert all(isinstance(ab, int) for ab in simulator.attack_prog)
 
     def test_dual_wield_flag_set_correctly(self):
         """Test dual_wield flag is set in damage simulator context."""
-        cfg = Config(AB_PROG="4APR Dual-Wield")
+        cfg = Config(AB_PROG="4APR & Dual-Wield")
         weapon = Weapon("Longsword", cfg)
         simulator = AttackSimulator(weapon, cfg)
 
@@ -998,7 +998,7 @@ class TestDualWieldOffhandDamage:
         """Test that offhand attack indices are correctly identified as last 2 attacks."""
         cfg = Config(
             AB=68,
-            AB_PROG="5APR Dual-Wield",
+            AB_PROG="5APR & Dual-Wield",
             COMBAT_TYPE='melee',
             STR_MOD=20,
             TWO_HANDED=False
@@ -1006,7 +1006,7 @@ class TestDualWieldOffhandDamage:
         weapon = Weapon("Longsword", cfg)
         simulator = AttackSimulator(weapon, cfg)
 
-        # With 7 attacks (5APR Dual-Wield), offhand should be indices 5 and 6
+        # With 7 attacks (5APR & Dual-Wield), offhand should be indices 5 and 6
         total_attacks = simulator.attacks_per_round
         offhand_1_idx = total_attacks - 2
         offhand_2_idx = total_attacks - 1
@@ -1020,7 +1020,7 @@ class TestDualWieldOffhandDamage:
         cfg = Config(
             AB=50,
             TOON_SIZE='M',
-            AB_PROG="4APR Dual-Wield"
+            AB_PROG="4APR & Dual-Wield"
         )
         weapon = Weapon("Longsword", cfg)  # M+M = -4 DW penalty
         simulator = AttackSimulator(weapon, cfg)
@@ -1037,7 +1037,7 @@ class TestDualWieldOffhandDamage:
         """Test Monk dual-wield with Flurry progression."""
         cfg = Config(
             AB=60,
-            AB_PROG="Monk Kama Dual-Wield & Flurry",
+            AB_PROG="Monk 7APR & Dual-Wield & Flurry",
             TOON_SIZE='M'
         )
         weapon = Weapon("Kama", cfg)
@@ -1052,7 +1052,7 @@ class TestDualWieldOffhandDamage:
             COMBAT_TYPE='melee',
             STR_MOD=21,
             TWO_HANDED=False,
-            AB_PROG="5APR Dual-Wield"
+            AB_PROG="5APR & Dual-Wield"
         )
         weapon = Weapon("Longsword", cfg)
 
@@ -1066,7 +1066,7 @@ class TestDualWieldFlagDetection:
 
     def test_dual_wield_flag_detection(self):
         """Test that dual-wield is properly detected in attack simulator."""
-        cfg = Config(AB_PROG="5APR Dual-Wield")
+        cfg = Config(AB_PROG="5APR & Dual-Wield")
         weapon = Weapon("Longsword", cfg)
         simulator = AttackSimulator(weapon, cfg)
 
@@ -1088,7 +1088,7 @@ class TestDualWieldFlagDetection:
         """
         cfg = Config(
             AB=68,
-            AB_PROG="5APR Dual-Wield",
+            AB_PROG="5APR & Dual-Wield",
             COMBAT_TYPE='melee',
             STR_MOD=20,
             TWO_HANDED=False

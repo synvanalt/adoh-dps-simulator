@@ -334,7 +334,7 @@ class TestDualWieldMechanics:
 
     def test_dual_wield_detection(self):
         """Test that dual-wield is properly detected in simulator."""
-        cfg = Config(AB_PROG="5APR Dual-Wield")
+        cfg = Config(AB_PROG="5APR & Dual-Wield")
         simulator = DamageSimulator("Longsword", cfg)
 
         assert simulator.attack_sim.dual_wield is True
@@ -352,7 +352,7 @@ class TestDualWieldMechanics:
         This is tested through the attack indices setup in simulate_dps.
         """
         cfg = Config(
-            AB_PROG="5APR Dual-Wield",
+            AB_PROG="5APR & Dual-Wield",
             COMBAT_TYPE='melee',
             STR_MOD=20,
             TWO_HANDED=False,
@@ -557,7 +557,7 @@ class TestDamageSimulatorConfigurations:
             AB_PROG="5APR & Rapid Shot",
             ROUNDS=10
         )
-        simulator = DamageSimulator("Longbow", cfg)
+        simulator = DamageSimulator("Longbow_FireDragon", cfg)
 
         with patch('builtins.print'):
             result = simulator.simulate_dps()
@@ -567,7 +567,7 @@ class TestDamageSimulatorConfigurations:
     def test_dual_wield_configuration(self):
         """Test simulator with dual-wield configuration."""
         cfg = Config(
-            AB_PROG="5APR Dual-Wield",
+            AB_PROG="5APR & Dual-Wield",
             COMBAT_TYPE='melee',
             STR_MOD=21,
             ROUNDS=10

@@ -225,7 +225,7 @@ class TestEnhancementBonus:
         """Test that ammo-based ranged weapons get 0 enhancement bonus regardless of set bonus."""
         cfg = Config(ENHANCEMENT_SET_BONUS=3, DAMAGE_VS_RACE=False)
 
-        for weapon_name in ['Heavy Crossbow', 'Light Crossbow', 'Longbow', 'Shortbow', 'Sling']:
+        for weapon_name in ['Heavy Crossbow', 'Light Crossbow', 'Longbow_FireDragon', 'Shortbow_Celes', 'Sling']:
             weapon = Weapon(weapon_name, cfg)
             bonus = weapon.enhancement_bonus()
 
@@ -277,7 +277,7 @@ class TestStrengthBonus:
     def test_ranged_str_bonus_capped_by_mighty(self):
         """Test that ranged weapons cap strength bonus by Mighty property."""
         cfg = Config(COMBAT_TYPE='ranged', STR_MOD=21, MIGHTY=10)
-        weapon = Weapon("Longbow", cfg)
+        weapon = Weapon("Longbow_FireDragon", cfg)
 
         str_bonus = weapon.strength_bonus()
         assert str_bonus['physical'][2] == 10  # min(21, 10)
@@ -285,7 +285,7 @@ class TestStrengthBonus:
     def test_ranged_str_bonus_uses_lower_value(self):
         """Test that ranged strength bonus uses min(STR_MOD, MIGHTY)."""
         cfg = Config(COMBAT_TYPE='ranged', STR_MOD=5, MIGHTY=10)
-        weapon = Weapon("Longbow", cfg)
+        weapon = Weapon("Longbow_FireDragon", cfg)
 
         str_bonus = weapon.strength_bonus()
         assert str_bonus['physical'][2] == 5  # min(5, 10)
@@ -422,7 +422,7 @@ class TestWeaponWithDifferentConfigs:
             KEEN=False,
             IMPROVED_CRIT=False
         )
-        weapon = Weapon("Longbow", cfg)
+        weapon = Weapon("Longbow_FireDragon", cfg)
 
         str_bonus = weapon.strength_bonus()
         assert str_bonus['physical'][2] == 10  # Capped by Mighty

@@ -90,7 +90,7 @@ class Config:
         "Divine_Favor":     [False, {'magical':     [0, 0, 5]},     "Paladin/Cleric spell, Magical damage bonus."],
         "Divine_Might":     [False, {'divine':      [0, 0, 11]},    "Paladin/Blackguard feat, Divine damage bonus."],
         "Divine_Wrath":     [False, {'pure':        [0, 0, 13]},    "Divine Champion feat, Pure damage bonus."],
-        "Domain_STR_Evil":  [False, {'negative':    [0, 0, 15]},    "Cleric domain, Divine damage bonus (evil alignment)."],
+        "Domain_STR_Evil":  [False, {'negative':    [0, 0, 15]},    "Cleric domain, Negative damage bonus (evil alignment)."],
         "Domain_STR_Good":  [False, {'divine':      [0, 0, 15]},    "Cleric domain, Divine damage bonus (good/neutral alignment)."],
         "Enchant_Arrow":    [False, {'physical':    [0, 0, 15]},    "Arcane Archer feat, Physical damage bonus."],
         "Favored_Enemy":    [False, {'physical':    [0, 0, 9]},     "Ranger feat, Physical damage bonus vs favored enemies."],
