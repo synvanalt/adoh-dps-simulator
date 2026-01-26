@@ -64,6 +64,7 @@ def register_core_callbacks(app, cfg):
             Output('intermediate-value', 'data'),
             Output('config-store', 'data'),
             Output('progress-text', 'children'),
+            Output('builds-store', 'data'),  # Save current build state before simulation
             Output('global-error-body', 'children'),         # extra: error text
             Output('global-error-modal', 'is_open')          # extra: open modal
         ],
@@ -74,6 +75,8 @@ def register_core_callbacks(app, cfg):
         ],
         states=[
             State('config-store', 'data'),
+            State('builds-store', 'data'),
+            State('active-build-index', 'data'),
             State('ab-input', 'value'),
             State('ab-capped-input', 'value'),
             State('ab-prog-dropdown', 'value'),
@@ -123,7 +126,7 @@ def register_core_callbacks(app, cfg):
         ],  # Disable buttons & clear progress modal when sim starts, re-enable buttons when finishes
         prevent_initial_call=True
     )
-    def run_simulation(set_progress, _, __, current_cfg, ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
+    def run_simulation(set_progress, _, __, current_cfg, builds, active_build_idx, ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
                         str_mod, two_handed, weaponmaster, keen, improved_crit, overwhelm_crit, dev_crit, shape_weapon_override, shape_weapon,
                         add_dmg_state, add_dmg1, add_dmg2, add_dmg3,
                         weapons, target_ac, rounds, dmg_limit_flag, dmg_limit, dmg_vs_race,
@@ -131,7 +134,7 @@ def register_core_callbacks(app, cfg):
 
         if not ctx.triggered_id or not weapons:
         # if spinner['display'] == 'none' or not weapons:
-            return False, dash.no_update, current_cfg, dash.no_update, dash.no_update, False
+            return False, dash.no_update, current_cfg, dash.no_update, dash.no_update, dash.no_update, False
 
         # if ctx.triggered_id == 'simulate-button' or ctx.triggered_id == 'resimulate-button':
         # if spinner['display'] == 'flex':
@@ -142,58 +145,82 @@ def register_core_callbacks(app, cfg):
             current_cfg = asdict(cfg)
             print("current_cfg was None and is initialized")
 
-        # build config dict instead of mutating globals
-        current_cfg['AB'] = ab
-        current_cfg['AB_CAPPED'] = ab_capped
-        current_cfg['AB_PROG'] = ab_prog
-        current_cfg['TOON_SIZE'] = toon_size
-        current_cfg['COMBAT_TYPE'] = combat_type
-        current_cfg['MIGHTY'] = mighty
-        current_cfg['ENHANCEMENT_SET_BONUS'] = int(enhancement_set_bonus)
-        current_cfg['STR_MOD'] = str_mod
-        current_cfg['TWO_HANDED'] = two_handed
-        current_cfg['WEAPONMASTER'] = weaponmaster
-        current_cfg['KEEN'] = keen
-        current_cfg['IMPROVED_CRIT'] = improved_crit
-        current_cfg['OVERWHELM_CRIT'] = overwhelm_crit
-        current_cfg['DEV_CRIT'] = dev_crit
-        current_cfg['SHAPE_WEAPON_OVERRIDE'] = shape_weapon_override
-        current_cfg['SHAPE_WEAPON'] = shape_weapon
-        current_cfg['TARGET_AC'] = target_ac
-        current_cfg['ROUNDS'] = rounds
-        current_cfg['DAMAGE_LIMIT_FLAG'] = dmg_limit_flag
-        current_cfg['DAMAGE_LIMIT'] = dmg_limit
-        current_cfg['DAMAGE_VS_RACE'] = dmg_vs_race
-        current_cfg['CHANGE_THRESHOLD'] = relative_change / 100     # convert to fraction
-        current_cfg['STD_THRESHOLD'] = relative_std / 100           # convert to fraction
-        current_cfg['TARGET_IMMUNITIES_FLAG'] = immunity_flag
+        # Save current active build's UI state to builds-store before running simulation
+        if builds is None:
+            from components.build_manager import create_default_builds
+            builds = create_default_builds()
 
-        # Map immunity inputs back into a dictionary (normalize % -> fraction)
-        current_cfg['TARGET_IMMUNITIES'] = {
-            name: val / 100
-            for name, val in zip(cfg.TARGET_IMMUNITIES.keys(), immunity_values)
-        }
-
-        # Update additional damage sources
-        current_cfg['ADDITIONAL_DAMAGE'] = {
-            key: [add_dmg_state[idx], {next(iter(val[1].keys())): [add_dmg1[idx], add_dmg2[idx], add_dmg3[idx]]}]
+        # Save current UI state to active build
+        add_dmg_dict = {
+            key: [add_dmg_state[idx], {next(iter(val[1].keys())): [add_dmg1[idx], add_dmg2[idx], add_dmg3[idx]]}, val[2]]
             for idx, (key, val) in enumerate(cfg.ADDITIONAL_DAMAGE.items())
         }
+        builds[active_build_idx]['config'] = {
+            'AB': ab,
+            'AB_CAPPED': ab_capped,
+            'AB_PROG': ab_prog,
+            'TOON_SIZE': toon_size,
+            'COMBAT_TYPE': combat_type,
+            'MIGHTY': mighty,
+            'ENHANCEMENT_SET_BONUS': int(enhancement_set_bonus) if enhancement_set_bonus else 3,
+            'STR_MOD': str_mod,
+            'TWO_HANDED': two_handed,
+            'WEAPONMASTER': weaponmaster,
+            'KEEN': keen,
+            'IMPROVED_CRIT': improved_crit,
+            'OVERWHELM_CRIT': overwhelm_crit,
+            'DEV_CRIT': dev_crit,
+            'SHAPE_WEAPON_OVERRIDE': shape_weapon_override,
+            'SHAPE_WEAPON': shape_weapon,
+            'ADDITIONAL_DAMAGE': add_dmg_dict,
+        }
 
-        # Simulate DPS for all selected weapons
-        total = len(weapons)
-        user_cfg = Config(**current_cfg)    # convert dict back to Config object
+        # Build shared simulation settings (same for all builds)
+        shared_settings = {
+            'TARGET_AC': target_ac,
+            'ROUNDS': rounds,
+            'DAMAGE_LIMIT_FLAG': dmg_limit_flag,
+            'DAMAGE_LIMIT': dmg_limit,
+            'DAMAGE_VS_RACE': dmg_vs_race,
+            'CHANGE_THRESHOLD': relative_change / 100,
+            'STD_THRESHOLD': relative_std / 100,
+            'TARGET_IMMUNITIES_FLAG': immunity_flag,
+            'TARGET_IMMUNITIES': {
+                name: val / 100
+                for name, val in zip(cfg.TARGET_IMMUNITIES.keys(), immunity_values)
+            },
+        }
+
+        # Calculate total simulations (builds * weapons)
+        total_sims = len(builds) * len(weapons)
+        sim_count = 0
+
+        # Results dict: {build_name: {weapon: results}}
         results_dict = {}
-        for i, weapon in enumerate(weapons, start=1):
-            # Send progress update to browser
-            set_progress((f"Simulating {weapon}...  ({i}/{total})", str(i), str(total)))
 
-            # Run the heavy simulation:
-            simulator = DamageSimulator(weapon, user_cfg)
-            results_dict[weapon] = simulator.simulate_dps()
+        for build in builds:
+            build_name = build['name']
+            build_config = build['config']
 
+            # Merge build config with shared settings to create full config
+            full_cfg_dict = asdict(cfg)  # Start with defaults
+            full_cfg_dict.update(build_config)
+            full_cfg_dict.update(shared_settings)
 
-        return False, results_dict, current_cfg, "Done!", dash.no_update, False
+            user_cfg = Config(**full_cfg_dict)
+            results_dict[build_name] = {}
+
+            for weapon in weapons:
+                sim_count += 1
+                set_progress((f"{build_name} | {weapon}...  ({sim_count}/{total_sims})", str(sim_count), str(total_sims)))
+
+                simulator = DamageSimulator(weapon, user_cfg)
+                results_dict[build_name][weapon] = simulator.simulate_dps()
+
+        # Update current_cfg with last used settings (for compatibility)
+        current_cfg.update(shared_settings)
+
+        return False, results_dict, current_cfg, "Done!", builds, dash.no_update, False
 
 
     # Callback: update results based on stored simulation results
@@ -206,93 +233,56 @@ def register_core_callbacks(app, cfg):
         if not results_dict:
             return "Run simulation to see results...", ""
 
+        # Check if results are in new multi-build format {build_name: {weapon: results}}
+        # or legacy format {weapon: results}
+        first_value = next(iter(results_dict.values()))
+        is_multi_build = isinstance(first_value, dict) and 'summary' not in first_value
+
         detailed_results = []
-        for weapon, results in results_dict.items():
-            detailed_weapon_results = dbc.Card([
-                dbc.CardHeader(html.H5(weapon, className='mb-0')),
-                dbc.CardBody([
-                    # Attack Stats, Hit and Crit rates per attack
-                    dbc.Row([
-                        dbc.Col([
-                            html.H6('Summary', className='mb-3'),
-                            html.Pre(results["summary"], className='border rounded p-3 bg-dark-subtle', style={'overflow-x': 'auto'}),
-                        ], class_name='mb-4'),
-                    ]),
-                    dbc.Row([
-                        # Attack Statistics - full width on mobile, 4 cols on desktop
-                        dbc.Col([
-                            html.H6('Attack Statistics', className='mb-3'),
-                            html.Div([
-                                dbc.Table([
-                                    html.Thead([html.Tr([html.Th('Statistic'), html.Th('Actual'), html.Th('Theoretical')])]),
-                                    html.Tbody([
-                                        html.Tr([html.Td('Hit Rate'),
-                                                 html.Td(f'{results["hit_rate_actual"]:.1f}%'),
-                                                 html.Td(f'{results["hit_rate_theoretical"]:.1f}%')]),
-                                        html.Tr([html.Td('Crit Rate'),
-                                                 html.Td(f'{results["crit_rate_actual"]:.1f}%'),
-                                                 html.Td(f'{results["crit_rate_theoretical"]:.1f}%')]),
-                                        html.Tr([html.Td('Legend Proc Rate'),
-                                                 html.Td(f'{results["legend_proc_rate_actual"]:.1f}%'),
-                                                 html.Td(f'{results["legend_proc_rate_theoretical"]:.1f}%')]),
-                                    ])
-                                ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
-                            ], style={'overflow-x': 'auto'})
-                        ], xs=12, md=4, class_name='mb-4'),
+        comparative_rows = []
 
-                        # Hit Rate per Attack - full width on mobile, 4 cols on desktop
-                        dbc.Col([
-                            html.H6('Hit Rate per Attack', className='mb-3'),
-                            html.Div([
-                                dbc.Table([
-                                    html.Thead([html.Tr([html.Th('Attack #'), html.Th('Actual %'), html.Th('Theoretical %')])]),
-                                    html.Tbody([
-                                        html.Tr([
-                                            html.Td(f'Attack {i + 1}'),
-                                            html.Td(f'{results["hits_per_attack"][i]:.1f}%'),
-                                            html.Td(f'{results["hit_rate_per_attack_theoretical"][i]:.1f}%')
-                                        ]) for i in range(len(results["hits_per_attack"]))
-                                    ])
-                                ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
-                            ], style={'overflow-x': 'auto'})
-                        ], xs=12, md=4, class_name='mb-4'),
+        if is_multi_build:
+            # New multi-build format
+            for build_name, weapons_results in results_dict.items():
+                # Add build header for detailed results
+                detailed_results.append(html.H5(f"Build: {build_name}", className='mt-4 mb-3 border-bottom pb-2'))
 
-                        # Crit Rate per Attack - full width on mobile, 4 cols on desktop
-                        dbc.Col([
-                            html.H6('Crit Rate per Attack', className='mb-3'),
-                            html.Div([
-                                dbc.Table([
-                                    html.Thead([html.Tr([html.Th('Attack #'), html.Th('Actual %'), html.Th('Theoretical %')])]),
-                                    html.Tbody([
-                                        html.Tr([
-                                            html.Td(f'Attack {i + 1}'),
-                                            html.Td(f'{results["crits_per_attack"][i]:.1f}%'),
-                                            html.Td(f'{results["crit_rate_per_attack_theoretical"][i]:.1f}%')
-                                        ]) for i in range(len(results["crits_per_attack"]))
-                                    ])
-                                ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
-                            ], style={'overflow-x': 'auto'})
-                        ], xs=12, md=4, class_name='mb-4')
-                    ], class_name='gx-4', style={'alignItems': 'flex-start'})  # Add horizontal spacing between columns
-                ])
-            ], class_name='mb-4')
-            detailed_results.append(detailed_weapon_results)
+                for weapon, results in weapons_results.items():
+                    # Add to comparative table rows
+                    comparative_rows.append({
+                        'Build Name': build_name,
+                        'Weapon': weapon,
+                        'Avg DPS (50/50)': results["avg_dps_both"],
+                        'DPS (Crit Allowed)': results["dps_crits"],
+                        'DPS (Crit Immune)': results["dps_no_crits"],
+                        'Hit %': results["hit_rate_actual"],
+                        'Crit %': results["crit_rate_actual"],
+                        'Legend Proc %': results["legend_proc_rate_actual"],
+                    })
 
-        # Create comparative table - made responsive
-        comparative_df = pd.DataFrame({
-            weapon: {
-                'Weapon': weapon,
-                'Avg DPS (50/50)': results["avg_dps_both"],
-                'DPS (Crit Allowed)': results["dps_crits"],
-                'DPS (Crit Immune)': results["dps_no_crits"],
-                'Hit %': results["hit_rate_actual"],
-                'Crit %': results["crit_rate_actual"],
-                'Legend Proc %': results["legend_proc_rate_actual"],
-            }
-            for weapon, results in results_dict.items()
-        }).transpose()
+                    # Build detailed results card
+                    detailed_weapon_results = build_detailed_results_card(f"{build_name} | {weapon}", results)
+                    detailed_results.append(detailed_weapon_results)
+        else:
+            # Legacy single-build format (for backwards compatibility)
+            for weapon, results in results_dict.items():
+                comparative_rows.append({
+                    'Build Name': 'Build 1',
+                    'Weapon': weapon,
+                    'Avg DPS (50/50)': results["avg_dps_both"],
+                    'DPS (Crit Allowed)': results["dps_crits"],
+                    'DPS (Crit Immune)': results["dps_no_crits"],
+                    'Hit %': results["hit_rate_actual"],
+                    'Crit %': results["crit_rate_actual"],
+                    'Legend Proc %': results["legend_proc_rate_actual"],
+                })
 
-        comparative_df = comparative_df.reset_index(drop=True).sort_values('Avg DPS (50/50)', ascending=False)
+                detailed_weapon_results = build_detailed_results_card(weapon, results)
+                detailed_results.append(detailed_weapon_results)
+
+        # Create comparative DataFrame and sort by DPS
+        comparative_df = pd.DataFrame(comparative_rows)
+        comparative_df = comparative_df.sort_values('Avg DPS (50/50)', ascending=False).reset_index(drop=True)
 
         # Wrap table in a responsive div
         comparative_table = html.Div([
@@ -306,6 +296,77 @@ def register_core_callbacks(app, cfg):
         ], style={'overflow-x': 'auto'})
 
         return comparative_table, html.Div(detailed_results)
+
+
+    def build_detailed_results_card(title, results):
+        """Build a detailed results card for a single weapon/build combination."""
+        return dbc.Card([
+            dbc.CardHeader(html.H6(title, className='mb-0')),
+            dbc.CardBody([
+                # Attack Stats, Hit and Crit rates per attack
+                dbc.Row([
+                    dbc.Col([
+                        html.Pre(results["summary"], className='border rounded p-3 bg-dark-subtle', style={'overflow-x': 'auto'}),
+                    ], class_name='mb-4'),
+                ]),
+                dbc.Row([
+                    # Attack Statistics - full width on mobile, 4 cols on desktop
+                    dbc.Col([
+                        html.H6('Attack Statistics', className='mb-3'),
+                        html.Div([
+                            dbc.Table([
+                                html.Thead([html.Tr([html.Th('Statistic'), html.Th('Actual'), html.Th('Theoretical')])]),
+                                html.Tbody([
+                                    html.Tr([html.Td('Hit Rate'),
+                                             html.Td(f'{results["hit_rate_actual"]:.1f}%'),
+                                             html.Td(f'{results["hit_rate_theoretical"]:.1f}%')]),
+                                    html.Tr([html.Td('Crit Rate'),
+                                             html.Td(f'{results["crit_rate_actual"]:.1f}%'),
+                                             html.Td(f'{results["crit_rate_theoretical"]:.1f}%')]),
+                                    html.Tr([html.Td('Legend Proc Rate'),
+                                             html.Td(f'{results["legend_proc_rate_actual"]:.1f}%'),
+                                             html.Td(f'{results["legend_proc_rate_theoretical"]:.1f}%')]),
+                                ])
+                            ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
+                        ], style={'overflow-x': 'auto'})
+                    ], xs=12, md=4, class_name='mb-4'),
+
+                    # Hit Rate per Attack - full width on mobile, 4 cols on desktop
+                    dbc.Col([
+                        html.H6('Hit Rate per Attack', className='mb-3'),
+                        html.Div([
+                            dbc.Table([
+                                html.Thead([html.Tr([html.Th('Attack #'), html.Th('Actual %'), html.Th('Theoretical %')])]),
+                                html.Tbody([
+                                    html.Tr([
+                                        html.Td(f'Attack {i + 1}'),
+                                        html.Td(f'{results["hits_per_attack"][i]:.1f}%'),
+                                        html.Td(f'{results["hit_rate_per_attack_theoretical"][i]:.1f}%')
+                                    ]) for i in range(len(results["hits_per_attack"]))
+                                ])
+                            ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
+                        ], style={'overflow-x': 'auto'})
+                    ], xs=12, md=4, class_name='mb-4'),
+
+                    # Crit Rate per Attack - full width on mobile, 4 cols on desktop
+                    dbc.Col([
+                        html.H6('Crit Rate per Attack', className='mb-3'),
+                        html.Div([
+                            dbc.Table([
+                                html.Thead([html.Tr([html.Th('Attack #'), html.Th('Actual %'), html.Th('Theoretical %')])]),
+                                html.Tbody([
+                                    html.Tr([
+                                        html.Td(f'Attack {i + 1}'),
+                                        html.Td(f'{results["crits_per_attack"][i]:.1f}%'),
+                                        html.Td(f'{results["crit_rate_per_attack_theoretical"][i]:.1f}%')
+                                    ]) for i in range(len(results["crits_per_attack"]))
+                                ])
+                            ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
+                        ], style={'overflow-x': 'auto'})
+                    ], xs=12, md=4, class_name='mb-4')
+                ], class_name='gx-4', style={'alignItems': 'flex-start'})  # Add horizontal spacing between columns
+            ])
+        ], class_name='mb-4')
 
 
     # Callback: update config-store when inputs change

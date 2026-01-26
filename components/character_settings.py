@@ -9,7 +9,7 @@ def build_character_settings(cfg):
     tooltip_delay = 500  # milliseconds
 
     return dbc.Col([
-        html.H4('Character Settings', className='mb-4'),
+        html.H5('Character Settings', className='mb-3'),
 
         # Attack Bonus Settings
         dbc.Row([

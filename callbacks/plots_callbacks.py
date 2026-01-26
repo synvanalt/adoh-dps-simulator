@@ -6,17 +6,17 @@ import plotly.express as px
 
 # Fixed color palette for damage types (keys are normalized to lowercase base token)
 DAMAGE_TYPE_PALETTE = {
-    'physical': '#D45603',  # rich orange
-    'fire': '#D80406',  # deep red
-    'cold': '#88DDDD',  # icy blue
-    'acid': '#096F06',  # dark green
-    'electrical': '#0559DC',  # electric blue
-    'sonic': '#DC8401',  # amber
-    'negative': '#7A797A',  # dark gray
-    'positive': '#CFCED1',  # light gray
-    'pure': '#CC159C',  # magenta
-    'magical': '#B067DA',  # violet
-    'divine': '#E1DE02',  # golden yellow
+    'acid':         '#096F06',  # dark green
+    'cold':         '#88DDDD',  # icy blue
+    'divine':       '#FFD400',  # golden yellow
+    'electrical':   '#0559DC',  # electric blue
+    'fire':         '#D80406',  # deep red
+    'magical':      '#B067DA',  # violet
+    'negative':     '#7A797A',  # dark gray
+    'physical':     '#D45603',  # rich orange
+    'sonic':        '#DC8401',  # amber
+    'positive':     '#CFCED1',  # light gray
+    'pure':         '#CC159C',  # magenta
 }
 
 FALLBACK_COLORS = px.colors.qualitative.Plotly
@@ -39,67 +39,188 @@ def apply_dark_theme(fig):
         title=dict(font=dict(color='#f8f9fa'))
     )
     fig.update_xaxes(**axis_style)
-    fig.update_yaxes(**axis_style)
+    fig.update_yaxes(
+        ticklabelposition="outside left",
+        ticklabelstandoff=10,
+        automargin=True,
+        **axis_style
+    )
     return fig
 
 
 def register_plots_callbacks(app):
 
-    # Callback: weapon dropdown with available weapons from the simulation results
+    def is_multi_build_format(results_dict):
+        """Check if results are in multi-build format {build_name: {weapon: results}}."""
+        if not results_dict:
+            return False
+        first_value = next(iter(results_dict.values()))
+        return isinstance(first_value, dict) and 'summary' not in first_value
+
+    def flatten_results(results_dict):
+        """Flatten multi-build results to list of (build_name, weapon, results) tuples."""
+        if is_multi_build_format(results_dict):
+            flattened = []
+            for build_name, weapons_results in results_dict.items():
+                for weapon, results in weapons_results.items():
+                    flattened.append((build_name, weapon, results))
+            return flattened
+        else:
+            # Legacy format
+            return [('Build 1', weapon, results) for weapon, results in results_dict.items()]
+
+    # Callback: populate build dropdown for per-weapon plots
+    @app.callback(
+        Output('plots-build-dropdown', 'options'),
+        Output('plots-build-dropdown', 'value'),
+        Input('intermediate-value', 'data'),
+    )
+    def populate_build_dropdown(results_dict):
+        if not results_dict:
+            return [], None
+
+        if is_multi_build_format(results_dict):
+            builds = list(results_dict.keys())
+        else:
+            builds = ['Build 1']
+
+        options = [{'label': b, 'value': b} for b in builds]
+        return options, builds[0] if builds else None
+
+    # Callback: populate weapon dropdown based on selected build
     @app.callback(
         Output('plots-weapon-dropdown', 'options'),
         Output('plots-weapon-dropdown', 'value'),
         Input('intermediate-value', 'data'),
+        Input('plots-build-dropdown', 'value'),
     )
-    def populate_weapon_dropdown(results_dict):
+    def populate_weapon_dropdown(results_dict, selected_build):
         if not results_dict:
             return [], None
-        weapons = list(results_dict.keys())
-        options = [{'label': w, 'value': w} for w in weapons]
-        # default to first weapon
-        return options, weapons[0]
 
-    # Callback: DPS Comparison bar chart
+        if is_multi_build_format(results_dict):
+            if selected_build and selected_build in results_dict:
+                weapons = list(results_dict[selected_build].keys())
+            else:
+                # Fall back to first build
+                first_build = next(iter(results_dict.keys()))
+                weapons = list(results_dict[first_build].keys())
+        else:
+            weapons = list(results_dict.keys())
+
+        options = [{'label': w, 'value': w} for w in weapons]
+        return options, weapons[0] if weapons else None
+
+    # Callback: DPS Comparison bar chart - three horizontal subplots
     @app.callback(
         Output('plots-dps-comparison', 'figure'),
         Input('intermediate-value', 'data')
     )
     def update_dps_comparison_figure(results_dict):
-        fig = go.Figure()
+        from plotly.subplots import make_subplots
+
         if not results_dict:
+            fig = go.Figure()
             fig.update_layout(title='No simulation data')
             apply_dark_theme(fig)
             return fig
 
-        weapons = []
-        dps_crits = []
-        dps_no_crits = []
-        dps_avg = []
+        flattened = flatten_results(results_dict)
 
-        for weapon, results in results_dict.items():
-            weapons.append(weapon)
-            dps_crits.append(results['dps_crits'])
-            dps_no_crits.append(results['dps_no_crits'])
-            dps_avg.append(results['avg_dps_both'])
+        # Create list of (build_name, weapon, avg_dps, dps_crits, dps_no_crits) tuples
+        data_list = []
+        for build_name, weapon, results in flattened:
+            data_list.append({
+                'label': f'{build_name} | {weapon}',
+                'build': build_name,
+                'weapon': weapon,
+                'avg_dps': results['avg_dps_both'],
+                'dps_crits': results['dps_crits'],
+                'dps_no_crits': results['dps_no_crits'],
+            })
 
-        # Create grouped bar chart
-        fig.add_trace(go.Bar(name='Crits Allowed', x=weapons, y=dps_crits))
-        fig.add_trace(go.Bar(name='Crits Immune', x=weapons, y=dps_no_crits))
-        fig.add_trace(go.Bar(name='Average DPS', x=weapons, y=dps_avg))
+        # Sort by avg_dps descending (highest first)
+        data_list.sort(key=lambda x: x['avg_dps'], reverse=False)
 
-        # Update layout for better readability
-        fig.update_layout(
-            barmode='group',
-            xaxis_title='Weapons',
-            yaxis_title='DPS',
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1
-            )
+        # Extract sorted data
+        labels = [d['label'] for d in data_list]
+        avg_dps_values = [d['avg_dps'] for d in data_list]
+        dps_crits_values = [d['dps_crits'] for d in data_list]
+        dps_no_crits_values = [d['dps_no_crits'] for d in data_list]
+
+        # Assign consistent colors to each build+weapon combination
+        color_palette = px.colors.qualitative.Plotly + px.colors.qualitative.Set3
+        colors = [color_palette[i % len(color_palette)] for i in range(len(labels))]
+
+        # Create subplots: 3 rows, shared x-axis
+        fig = make_subplots(
+            rows=3, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.1,
+            subplot_titles=('Average DPS (50/50 Allowed/Immune)', 'Crit Allowed', 'Crit Immune'),
+            row_heights=[0.33, 0.33, 0.33]
         )
+
+        # Add horizontal bars for each subplot
+        # Row 1: Average DPS (50/50)
+        fig.add_trace(
+            go.Bar(
+                y=labels,
+                x=avg_dps_values,
+                orientation='h',
+                marker_color=colors,
+                showlegend=False,
+                hovertemplate='%{y}<br>DPS: %{x:.2f}<extra></extra>',
+                text = avg_dps_values,
+                texttemplate = '%{text:.2f}',
+                textposition = 'outside',
+                textfont = dict(color=colors),
+                cliponaxis = False,
+            ),
+            row=1, col=1
+        )
+
+        # Row 2: Crit Allowed
+        fig.add_trace(
+            go.Bar(
+                y=labels,
+                x=dps_crits_values,
+                orientation='h',
+                marker_color=colors,
+                showlegend=False,
+                hovertemplate='%{y}<br>DPS: %{x:.2f}<extra></extra>',
+                text=dps_crits_values,
+                texttemplate='%{text:.2f}',
+                textposition='outside',
+                textfont=dict(color=colors),
+            ),
+            row=2, col=1
+        )
+
+        # Row 3: Crit Immune
+        fig.add_trace(
+            go.Bar(
+                y=labels,
+                x=dps_no_crits_values,
+                orientation='h',
+                marker_color=colors,
+                showlegend=False,
+                hovertemplate='%{y}<br>DPS: %{x:.2f}<extra></extra>',
+                text=dps_no_crits_values,
+                texttemplate='%{text:.2f}',
+                textposition='outside',
+                textfont=dict(color=colors),
+            ),
+            row=3, col=1
+        )
+
+        # Update layout
+        fig.update_xaxes(title_text='DPS', row=3, col=1)
+        fig.update_layout(
+            height=max(600, len(labels) * 50),  # Dynamic height based on number of bars
+            showlegend=False,
+        )
+
         apply_dark_theme(fig)
         return fig
 
@@ -108,17 +229,29 @@ def register_plots_callbacks(app):
         Output('plots-weapon-dps-vs-damage', 'figure'),
         Output('plots-weapon-breakdown', 'figure'),
         Input('plots-weapon-dropdown', 'value'),
+        Input('plots-build-dropdown', 'value'),
         State('intermediate-value', 'data')
     )
-    def update_weapon_plots(selected_weapon, results_dict):
+    def update_weapon_plots(selected_weapon, selected_build, results_dict):
         empty_fig = go.Figure()
         empty_fig.update_layout(title='No simulation data')
         apply_dark_theme(empty_fig)
 
-        if not results_dict or not selected_weapon or selected_weapon not in results_dict:
+        if not results_dict or not selected_weapon:
             return empty_fig, empty_fig
 
-        results = results_dict[selected_weapon]
+        # Get results based on format
+        if is_multi_build_format(results_dict):
+            if not selected_build or selected_build not in results_dict:
+                return empty_fig, empty_fig
+            build_results = results_dict[selected_build]
+            if selected_weapon not in build_results:
+                return empty_fig, empty_fig
+            results = build_results[selected_weapon]
+        else:
+            if selected_weapon not in results_dict:
+                return empty_fig, empty_fig
+            results = results_dict[selected_weapon]
 
         # DPS vs Cumulative Damage: use cumulative damage (x) vs rolling avg DPS (y)
         dps_vals = results.get('dps_rolling_avg') or results.get('dps_per_round') or []

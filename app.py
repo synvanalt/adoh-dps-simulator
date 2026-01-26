@@ -7,6 +7,7 @@ import dash_bootstrap_components as dbc
 # Local imports
 from simulator.config import Config
 from components.navbar import build_navbar
+from components.build_manager import build_build_manager, create_default_builds
 from components.character_settings import build_character_settings
 from components.additional_damage import build_additional_damage_panel
 from components.simulation_settings import build_simulation_settings
@@ -18,6 +19,7 @@ import callbacks.ui_callbacks as cb_ui
 import callbacks.core_callbacks as cb_core
 import callbacks.plots_callbacks as cb_plots
 import callbacks.validation_callbacks as cb_validation
+import callbacks.build_callbacks as cb_build
 
 
 # Create a Config instance
@@ -27,12 +29,15 @@ cfg = Config()
 cache = diskcache.Cache('./cache')
 background_callback_manager = DiskcacheManager(cache)
 
+# CDN links
+dbc_css = 'https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css'
+fontawesome = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css'
+
 # Initialize the Dash app with Bootstrap theme
-dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 app = dash.Dash(
     __name__,
     background_callback_manager=background_callback_manager,
-    external_stylesheets=[dbc.themes.BOOTSTRAP, dbc_css]
+    external_stylesheets=[dbc.themes.BOOTSTRAP, dbc_css, fontawesome]
 )
 server = app.server   # for online deployment
 
@@ -68,6 +73,11 @@ app.layout = dbc.Container([
     dcc.Store(id='is-simulating', data=False),     # Store for tracking simulation state
     dcc.Store(id='sim-progress', data={'current': 0, 'total': 0, 'results': {}}),
     dcc.Interval(id='sim-interval', interval=200, disabled=True),  # ticks while simulating
+    # Multi-build support stores
+    dcc.Store(id='builds-store', data=create_default_builds(), storage_type='session'),
+    dcc.Store(id='active-build-index', data=0, storage_type='session'),
+    dcc.Store(id='build-loading', data=False),  # Track if build is currently loading
+    dcc.Store(id='config-buffer', data=None),  # Buffer for batch-loading build config
 
 
     # Navbar
@@ -91,6 +101,28 @@ app.layout = dbc.Container([
         }
     ),
 
+    # Overlay with spinner during build switching
+    html.Div(
+        id='build-loading-overlay',
+        children=[
+            dbc.Spinner(color='primary', size='lg', type='border'),
+            html.Div('Switching build...', className='text-light mt-3', style={'fontSize': '1.2rem'})
+        ],
+        style={
+            'display': 'none',
+            'position': 'fixed',
+            'top': 0,
+            'left': 0,
+            'width': '100%',
+            'height': '100%',
+            'backgroundColor': 'rgba(0, 0, 0, 0.7)',
+            'zIndex': 9998,
+            'flexDirection': 'column',
+            'justifyContent': 'center',
+            'alignItems': 'center',
+        }
+    ),
+
     # Error modal to catch exceptions in risky simulation part
     dbc.Modal(
         [
@@ -111,14 +143,15 @@ app.layout = dbc.Container([
                 dbc.Container([
                     # Configuration Parameters
                     dbc.Row([
+                        # Build Manager (multi-build support)
+                        build_build_manager(),
+
                         # Character settings
                         build_character_settings(cfg),
 
                         # Additional damage
                         build_additional_damage_panel(cfg),
-                    ], class_name='mb-4', style={'display': 'flex', 'alignItems': 'flex-start'}),
-
-                    html.Hr(),
+                    ], class_name='build-manager-container mb-4 p-3 border rounded', style={'display': 'flex', 'alignItems': 'flex-start'}),
 
                     # Simulation settings
                     dbc.Row([
@@ -153,6 +186,7 @@ cb_ui.register_ui_callbacks(app, cfg)
 cb_core.register_core_callbacks(app, cfg)
 cb_plots.register_plots_callbacks(app)
 cb_validation.register_validation_callbacks(app, cfg)
+cb_build.register_build_callbacks(app, cfg)
 
 if __name__ == '__main__':
     app.run(debug=True)

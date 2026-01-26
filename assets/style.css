@@ -2,6 +2,10 @@ body {
     overflow-y: scroll;
 }
 
+.border-dotted {
+    border-style: dotted !important;
+}
+
 .form-label, .form-check {
     margin-bottom: 0;
 }
@@ -88,3 +92,21 @@ body {
 }
 
 /* Keep existing desktop behavior unchanged */
+
+/* Build Manager Styles */
+.build-manager-container {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.build-tab-btn {
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.build-tab-btn.active {
+    font-weight: 600;
+}
+
+.build-name-input {
+    max-width: 250px;
+}
