@@ -108,12 +108,12 @@ def build_additional_damage_rows(additional_damage_dict):
 
 def build_additional_damage_panel(cfg):
     return dbc.Col([
-        html.H4('Additional Damage', className='mb-4 add-dmg-header'),
+        html.H5('Additional Damage', className='mb-3 add-dmg-header'),
 
         dbc.Row([
             dbc.Col(
                 build_additional_damage_rows(cfg.ADDITIONAL_DAMAGE),
                 xs=12, md=12,
             )
-        ], className='border rounded p-3 mb-4'),
+        ], className='border border-dotted rounded p-3 mb-4'),
     ], xs=12, md=6, class_name='col-right')

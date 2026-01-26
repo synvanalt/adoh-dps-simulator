@@ -7,7 +7,7 @@ Refactored for better UX:
 """
 
 import dash
-from dash import Input, Output, State, ALL, ctx
+from dash import Input, Output, State, ALL, ctx, clientside_callback, ClientsideFunction
 import dash_bootstrap_components as dbc
 import copy
 
@@ -32,13 +32,14 @@ def register_build_callbacks(app, cfg):
     @app.callback(
         Output('builds-store', 'data', allow_duplicate=True),
         Output('active-build-index', 'data', allow_duplicate=True),
+        Output('build-loading', 'data', allow_duplicate=True),
         Input('add-build-btn', 'n_clicks'),
         State('builds-store', 'data'),
         prevent_initial_call=True
     )
     def add_new_build(n_clicks, builds):
         if not n_clicks or len(builds) >= 8:
-            return dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update
 
         # Add new build with defaults (auto-save will have saved current build already)
         new_index = len(builds)
@@ -48,12 +49,13 @@ def register_build_callbacks(app, cfg):
         }
         builds.append(new_build)
 
-        return builds, new_index
+        return builds, new_index, True  # Set loading state
 
     # Callback: Duplicate current build (no longer needs to explicitly save current state)
     @app.callback(
         Output('builds-store', 'data', allow_duplicate=True),
         Output('active-build-index', 'data', allow_duplicate=True),
+        Output('build-loading', 'data', allow_duplicate=True),
         Input('duplicate-build-btn', 'n_clicks'),
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
@@ -61,7 +63,7 @@ def register_build_callbacks(app, cfg):
     )
     def duplicate_build(n_clicks, builds, active_idx):
         if not n_clicks or len(builds) >= 8:
-            return dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update
 
         # Duplicate the current build (auto-save will have saved current build already)
         new_index = len(builds)
@@ -72,7 +74,7 @@ def register_build_callbacks(app, cfg):
         }
         builds.append(new_build)
 
-        return builds, new_index
+        return builds, new_index, True  # Set loading state
 
     # Callback: Delete current build
     @app.callback(
@@ -95,26 +97,32 @@ def register_build_callbacks(app, cfg):
 
         return builds, new_active
 
-    # Callback: Switch between builds (fast - only updates active index)
+    # Callback: Switch between builds (fast - only updates active index and sets loading state)
     @app.callback(
         Output('active-build-index', 'data', allow_duplicate=True),
+        Output('build-loading', 'data', allow_duplicate=True),
         Input({'type': 'build-tab', 'index': ALL}, 'n_clicks'),
         State('active-build-index', 'data'),
+        State('build-loading', 'data'),
         prevent_initial_call=True
     )
-    def switch_build(n_clicks_list, active_idx):
+    def switch_build(n_clicks_list, active_idx, is_loading):
         if not ctx.triggered_id or not any(n_clicks_list):
-            return dash.no_update
+            return dash.no_update, dash.no_update
+
+        # Prevent switching while already loading
+        if is_loading:
+            return dash.no_update, dash.no_update
 
         # Get the clicked build index
         clicked_index = ctx.triggered_id['index']
 
         # If clicking the same build, no-op
         if clicked_index == active_idx:
-            return dash.no_update
+            return dash.no_update, dash.no_update
 
-        # Just switch the active index (auto-save will have saved current build already)
-        return clicked_index
+        # Switch the active index and set loading state
+        return clicked_index, True
 
     # Callback: Update build name
     @app.callback(
@@ -156,14 +164,19 @@ def register_build_callbacks(app, cfg):
         Input({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
+        State('build-loading', 'data'),  # Prevent save during load
         prevent_initial_call=True
     )
     def auto_save_build(ab, ab_capped, ab_prog, toon_size, combat_type, mighty,
                         enhancement, str_mod, two_handed, weaponmaster, keen,
                         improved_crit, overwhelm_crit, dev_crit, shape_override,
                         shape_weapon, add_dmg_states, add_dmg1, add_dmg2, add_dmg3,
-                        builds, active_idx):
+                        builds, active_idx, is_loading):
         """Automatically save current input values to builds-store whenever they change."""
+        # Don't save if build is currently loading (prevents race condition)
+        if is_loading:
+            return dash.no_update
+
         if not builds or active_idx is None or active_idx >= len(builds):
             return dash.no_update
 
@@ -177,8 +190,28 @@ def register_build_callbacks(app, cfg):
 
         return builds
 
-    # Callback: Update UI when build changes (load build config into inputs)
+    # Step 1: Load build config into buffer (Python, fast - just data transfer)
     @app.callback(
+        Output('config-buffer', 'data', allow_duplicate=True),
+        Input('active-build-index', 'data'),
+        State('builds-store', 'data'),
+        prevent_initial_call=True
+    )
+    def load_build_to_buffer(active_idx, builds):
+        """Load build config to buffer. Clientside callback will update inputs from buffer."""
+        if builds is None or active_idx is None or active_idx >= len(builds):
+            return dash.no_update
+
+        # Just return the build data - clientside will handle the rest
+        return builds[active_idx]
+
+    # Step 2: Update UI from buffer (Clientside, INSTANT - no server round-trip!)
+    from dash import clientside_callback, ClientsideFunction
+    clientside_callback(
+        ClientsideFunction(
+            namespace='build_switching',
+            function_name='load_from_buffer'
+        ),
         Output('ab-input', 'value', allow_duplicate=True),
         Output('ab-capped-input', 'value', allow_duplicate=True),
         Output('ab-prog-dropdown', 'value', allow_duplicate=True),
@@ -200,47 +233,10 @@ def register_build_callbacks(app, cfg):
         Output({'type': 'add-dmg-input2', 'name': ALL}, 'value', allow_duplicate=True),
         Output({'type': 'add-dmg-input3', 'name': ALL}, 'value', allow_duplicate=True),
         Output('build-name-input', 'value', allow_duplicate=True),
-        Input('active-build-index', 'data'),
-        State('builds-store', 'data'),
+        Output('build-loading', 'data', allow_duplicate=True),
+        Input('config-buffer', 'data'),
         prevent_initial_call=True
     )
-    def load_build_into_ui(active_idx, builds):
-        if builds is None or active_idx is None or active_idx >= len(builds):
-            return tuple([dash.no_update] * 21)
-
-        build_config = builds[active_idx]['config']
-        build_name = builds[active_idx]['name']
-
-        # Extract additional damage values
-        add_dmg = build_config.get('ADDITIONAL_DAMAGE', cfg.ADDITIONAL_DAMAGE)
-        add_dmg_switches = [val[0] for val in add_dmg.values()]
-        add_dmg_input1 = [next(iter(val[1].values()))[0] for val in add_dmg.values()]
-        add_dmg_input2 = [next(iter(val[1].values()))[1] for val in add_dmg.values()]
-        add_dmg_input3 = [next(iter(val[1].values()))[2] for val in add_dmg.values()]
-
-        return (
-            build_config.get('AB', cfg.AB),
-            build_config.get('AB_CAPPED', cfg.AB_CAPPED),
-            build_config.get('AB_PROG', cfg.AB_PROG),
-            build_config.get('TOON_SIZE', cfg.TOON_SIZE),
-            build_config.get('COMBAT_TYPE', cfg.COMBAT_TYPE),
-            build_config.get('MIGHTY', cfg.MIGHTY),
-            build_config.get('ENHANCEMENT_SET_BONUS', cfg.ENHANCEMENT_SET_BONUS),
-            build_config.get('STR_MOD', cfg.STR_MOD),
-            build_config.get('TWO_HANDED', cfg.TWO_HANDED),
-            build_config.get('WEAPONMASTER', cfg.WEAPONMASTER),
-            build_config.get('KEEN', cfg.KEEN),
-            build_config.get('IMPROVED_CRIT', cfg.IMPROVED_CRIT),
-            build_config.get('OVERWHELM_CRIT', cfg.OVERWHELM_CRIT),
-            build_config.get('DEV_CRIT', cfg.DEV_CRIT),
-            build_config.get('SHAPE_WEAPON_OVERRIDE', cfg.SHAPE_WEAPON_OVERRIDE),
-            build_config.get('SHAPE_WEAPON', cfg.SHAPE_WEAPON),
-            add_dmg_switches,
-            add_dmg_input1,
-            add_dmg_input2,
-            add_dmg_input3,
-            build_name,
-        )
 
     # Callback: Update build tabs UI based on builds-store
     @app.callback(
@@ -267,6 +263,30 @@ def register_build_callbacks(app, cfg):
         duplicate_disabled = len(builds) >= 8
 
         return tabs, delete_disabled, add_disabled, duplicate_disabled
+
+    # Callback: Control loading overlay visibility
+    @app.callback(
+        Output('build-loading-overlay', 'style'),
+        Input('build-loading', 'data'),
+    )
+    def toggle_build_loading_overlay(is_loading):
+        """Show/hide loading overlay during build switching."""
+        if is_loading:
+            return {
+                'display': 'flex',
+                'position': 'fixed',
+                'top': 0,
+                'left': 0,
+                'width': '100%',
+                'height': '100%',
+                'backgroundColor': 'rgba(0, 0, 0, 0.7)',
+                'zIndex': 9998,
+                'flexDirection': 'column',
+                'justifyContent': 'center',
+                'alignItems': 'center',
+            }
+        else:
+            return {'display': 'none'}
 
 
 def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, toon_size,

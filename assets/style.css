@@ -2,6 +2,10 @@ body {
     overflow-y: scroll;
 }
 
+.border-dotted {
+    border-style: dotted !important;
+}
+
 .form-label, .form-check {
     margin-bottom: 0;
 }
@@ -106,4 +110,3 @@ body {
 .build-name-input {
     max-width: 250px;
 }
-

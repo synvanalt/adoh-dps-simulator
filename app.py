@@ -73,6 +73,8 @@ app.layout = dbc.Container([
     # Multi-build support stores
     dcc.Store(id='builds-store', data=create_default_builds(), storage_type='session'),
     dcc.Store(id='active-build-index', data=0, storage_type='session'),
+    dcc.Store(id='build-loading', data=False),  # Track if build is currently loading
+    dcc.Store(id='config-buffer', data=None),  # Buffer for batch-loading build config
 
 
     # Navbar
@@ -96,6 +98,28 @@ app.layout = dbc.Container([
         }
     ),
 
+    # Overlay with spinner during build switching
+    html.Div(
+        id='build-loading-overlay',
+        children=[
+            dbc.Spinner(color='primary', size='lg', type='border'),
+            html.Div('Switching build...', className='text-light mt-3', style={'fontSize': '1.2rem'})
+        ],
+        style={
+            'display': 'none',
+            'position': 'fixed',
+            'top': 0,
+            'left': 0,
+            'width': '100%',
+            'height': '100%',
+            'backgroundColor': 'rgba(0, 0, 0, 0.7)',
+            'zIndex': 9998,
+            'flexDirection': 'column',
+            'justifyContent': 'center',
+            'alignItems': 'center',
+        }
+    ),
+
     # Error modal to catch exceptions in risky simulation part
     dbc.Modal(
         [
@@ -114,19 +138,17 @@ app.layout = dbc.Container([
             # Tab 1: Configuration
             dbc.Tab(label='Configuration', tab_id='configuration', children=[
                 dbc.Container([
-                    # Build Manager (multi-build support)
-                    build_build_manager(),
-
                     # Configuration Parameters
                     dbc.Row([
+                        # Build Manager (multi-build support)
+                        build_build_manager(),
+
                         # Character settings
                         build_character_settings(cfg),
 
                         # Additional damage
                         build_additional_damage_panel(cfg),
-                    ], class_name='mb-4', style={'display': 'flex', 'alignItems': 'flex-start'}),
-
-                    html.Hr(),
+                    ], class_name='build-manager-container mb-4 p-3 border rounded', style={'display': 'flex', 'alignItems': 'flex-start'}),
 
                     # Simulation settings
                     dbc.Row([

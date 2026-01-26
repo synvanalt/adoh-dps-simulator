@@ -123,4 +123,6 @@ def build_build_manager():
             ], xs=12, md=6),
         ], className='mb-3'),
 
-    ], className='build-manager-container mb-3 p-3 border rounded')
+        html.Hr()
+
+    ], className='p-3')
