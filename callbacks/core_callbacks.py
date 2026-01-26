@@ -245,7 +245,7 @@ def register_core_callbacks(app, cfg):
             # New multi-build format
             for build_name, weapons_results in results_dict.items():
                 # Add build header for detailed results
-                detailed_results.append(html.H4(f"Build: {build_name}", className='mt-4 mb-3 border-bottom pb-2'))
+                detailed_results.append(html.H5(f"Build: {build_name}", className='mt-4 mb-3 border-bottom pb-2'))
 
                 for weapon, results in weapons_results.items():
                     # Add to comparative table rows
@@ -301,12 +301,11 @@ def register_core_callbacks(app, cfg):
     def build_detailed_results_card(title, results):
         """Build a detailed results card for a single weapon/build combination."""
         return dbc.Card([
-            dbc.CardHeader(html.H5(title, className='mb-0')),
+            dbc.CardHeader(html.H6(title, className='mb-0')),
             dbc.CardBody([
                 # Attack Stats, Hit and Crit rates per attack
                 dbc.Row([
                     dbc.Col([
-                        html.H6('Summary', className='mb-3'),
                         html.Pre(results["summary"], className='border rounded p-3 bg-dark-subtle', style={'overflow-x': 'auto'}),
                     ], class_name='mb-4'),
                 ]),

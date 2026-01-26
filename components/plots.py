@@ -31,7 +31,7 @@ def build_plots_tab():
 
             html.Hr(),
 
-            html.H4('Per-Weapon Plots', className='mt-4 mb-3'),
+            html.H4('Selective Plots', className='mt-4 mb-3'),
             dbc.Row([
                 dbc.Col(dbc.Label(
                     'Select Build:',
@@ -40,12 +40,15 @@ def build_plots_tab():
                 dbc.Col([
                     dbc.Select(id='plots-build-dropdown',)
                 ], xs=12, md=3),
+            ]),
+
+            dbc.Row([
                 dbc.Col(dbc.Label(
                     'Select Weapon:',
                     html_for='plots-weapon-dropdown',
                 ), xs=12, md=2),
                 dbc.Col([
-                    dbc.Select(id='plots-weapon-dropdown',)
+                    dbc.Select(id='plots-weapon-dropdown', )
                 ], xs=12, md=3),
                 dbc.Col([], xs=12, md=2)
             ]),
