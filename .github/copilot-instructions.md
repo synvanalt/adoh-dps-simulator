@@ -3,13 +3,6 @@
 ## What This Is
 Web-based DPS calculator for ADOH (A Dawn of Heroes), a Neverwinter Nights server. Simulates attack rolls, weapon damage, crits, and character buffs using Python/Dash.
 
-## Critical Setup
-```powershell
-pip install -r requirements.txt  # ALWAYS run this first
-python app.py                     # Starts on localhost:8050
-pytest tests/ -v                  # Run after any simulator changes
-```
-
 ## Architecture at a Glance
 - **simulator/**: Core calculation engine (config.py, weapon.py, attack_simulator.py, damage_simulator.py)
 - **components/**: Modular Dash UI sections
@@ -78,7 +71,6 @@ Test: default state, enable/disable, expected behavior, integration with other f
 
 ## Pre-Commit Checklist
 - [ ] All tests pass: `pytest tests/ -v`
-- [ ] App starts: `python app.py`
 - [ ] No import errors
 - [ ] Feature flag defaults to False
 - [ ] UI component ID matches callback state ID

@@ -1,5 +1,6 @@
 # Third-party imports
-from dash import Input, Output, MATCH, ctx
+import dash
+from dash import Input, Output, State, MATCH, ctx
 
 
 def register_validation_callbacks(app, cfg):
@@ -53,9 +54,15 @@ def register_validation_callbacks(app, cfg):
          Input('damage-limit-input', 'value'),
          Input('relative-change-input', 'value'),
          Input('relative-std-input', 'value')],
+        [State('build-loading', 'data')],
         prevent_initial_call=True,
     )
     def validate_inputs(*args):
+        # Skip validation during build loading to prevent callback cascade
+        is_loading = args[-1]
+        if is_loading:
+            return [dash.no_update] * 9
+
         inputs_dict = ctx.inputs                        # Dictionary of all inputs
         widget_id = ctx.triggered_id                    # ID of the widget changed
         val = inputs_dict[f'{widget_id}.value']         # Get the value of input changed
@@ -81,9 +88,14 @@ def register_validation_callbacks(app, cfg):
          Input({'type': 'add-dmg-input1', 'name': MATCH}, 'value'),
          Input({'type': 'add-dmg-input2', 'name': MATCH}, 'value'),
          Input({'type': 'add-dmg-input3', 'name': MATCH}, 'value')],
+        [State('build-loading', 'data')],
         prevent_initial_call=True,
     )
-    def validate_additional_damage_inputs(widget_id, dice, sides, flat):
+    def validate_additional_damage_inputs(widget_id, dice, sides, flat, is_loading):
+        # Skip validation during build loading to prevent callback cascade
+        if is_loading:
+            return [dash.no_update] * 3
+
         inputs = [dice, sides, flat]
         validated = []
         add_dmg_name = widget_id['name']
