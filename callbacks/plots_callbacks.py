@@ -39,7 +39,12 @@ def apply_dark_theme(fig):
         title=dict(font=dict(color='#f8f9fa'))
     )
     fig.update_xaxes(**axis_style)
-    fig.update_yaxes(**axis_style)
+    fig.update_yaxes(
+        ticklabelposition="outside left",
+        ticklabelstandoff=10,
+        automargin=True,
+        **axis_style
+    )
     return fig
 
 
@@ -106,71 +111,116 @@ def register_plots_callbacks(app):
         options = [{'label': w, 'value': w} for w in weapons]
         return options, weapons[0] if weapons else None
 
-    # Callback: DPS Comparison bar chart - grouped by build
+    # Callback: DPS Comparison bar chart - three horizontal subplots
     @app.callback(
         Output('plots-dps-comparison', 'figure'),
         Input('intermediate-value', 'data')
     )
     def update_dps_comparison_figure(results_dict):
-        fig = go.Figure()
+        from plotly.subplots import make_subplots
+
         if not results_dict:
+            fig = go.Figure()
             fig.update_layout(title='No simulation data')
             apply_dark_theme(fig)
             return fig
 
         flattened = flatten_results(results_dict)
 
-        # Get unique builds and weapons
-        builds = list(dict.fromkeys([item[0] for item in flattened]))
-        weapons = list(dict.fromkeys([item[1] for item in flattened]))
+        # Create list of (build_name, weapon, avg_dps, dps_crits, dps_no_crits) tuples
+        data_list = []
+        for build_name, weapon, results in flattened:
+            data_list.append({
+                'label': f'{build_name} | {weapon}',
+                'build': build_name,
+                'weapon': weapon,
+                'avg_dps': results['avg_dps_both'],
+                'dps_crits': results['dps_crits'],
+                'dps_no_crits': results['dps_no_crits'],
+            })
 
-        # Create lookup for quick access
-        lookup = {(b, w): r for b, w, r in flattened}
+        # Sort by avg_dps descending (highest first)
+        data_list.sort(key=lambda x: x['avg_dps'], reverse=False)
 
-        # Color palette for builds
-        build_colors = px.colors.qualitative.Plotly
+        # Extract sorted data
+        labels = [d['label'] for d in data_list]
+        avg_dps_values = [d['avg_dps'] for d in data_list]
+        dps_crits_values = [d['dps_crits'] for d in data_list]
+        dps_no_crits_values = [d['dps_no_crits'] for d in data_list]
 
-        # For each build, add grouped bars for each DPS metric
-        for build_idx, build_name in enumerate(builds):
-            build_color_base = build_colors[build_idx % len(build_colors)]
+        # Assign consistent colors to each build+weapon combination
+        color_palette = px.colors.qualitative.Plotly + px.colors.qualitative.Set3
+        colors = [color_palette[i % len(color_palette)] for i in range(len(labels))]
 
-            build_dps_avg = []
-            build_dps_crits = []
-            build_dps_no_crits = []
-
-            for weapon in weapons:
-                results = lookup.get((build_name, weapon))
-                if results:
-                    build_dps_avg.append(results['avg_dps_both'])
-                    build_dps_crits.append(results['dps_crits'])
-                    build_dps_no_crits.append(results['dps_no_crits'])
-                else:
-                    build_dps_avg.append(0)
-                    build_dps_crits.append(0)
-                    build_dps_no_crits.append(0)
-
-            # Add trace for Average DPS
-            fig.add_trace(go.Bar(
-                name=f'{build_name} - Avg DPS',
-                x=weapons,
-                y=build_dps_avg,
-                marker_color=build_color_base,
-                legendgroup=build_name,
-            ))
-
-        # Update layout for better readability
-        fig.update_layout(
-            barmode='group',
-            xaxis_title='Weapons',
-            yaxis_title='Average DPS (50/50)',
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1
-            )
+        # Create subplots: 3 rows, shared x-axis
+        fig = make_subplots(
+            rows=3, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.1,
+            subplot_titles=('Average DPS (50/50 Allowed/Immune)', 'Crit Allowed', 'Crit Immune'),
+            row_heights=[0.33, 0.33, 0.33]
         )
+
+        # Add horizontal bars for each subplot
+        # Row 1: Average DPS (50/50)
+        fig.add_trace(
+            go.Bar(
+                y=labels,
+                x=avg_dps_values,
+                orientation='h',
+                marker_color=colors,
+                showlegend=False,
+                hovertemplate='%{y}<br>DPS: %{x:.2f}<extra></extra>',
+                text = avg_dps_values,
+                texttemplate = '%{text:.2f}',
+                textposition = 'outside',
+                textfont = dict(color=colors),
+                cliponaxis = False,
+            ),
+            row=1, col=1
+        )
+
+        # Row 2: Crit Allowed
+        fig.add_trace(
+            go.Bar(
+                y=labels,
+                x=dps_crits_values,
+                orientation='h',
+                marker_color=colors,
+                showlegend=False,
+                hovertemplate='%{y}<br>DPS: %{x:.2f}<extra></extra>',
+                text=dps_crits_values,
+                texttemplate='%{text:.2f}',
+                textposition='outside',
+                textfont=dict(color=colors),
+            ),
+            row=2, col=1
+        )
+
+        # Row 3: Crit Immune
+        fig.add_trace(
+            go.Bar(
+                y=labels,
+                x=dps_no_crits_values,
+                orientation='h',
+                marker_color=colors,
+                showlegend=False,
+                hovertemplate='%{y}<br>DPS: %{x:.2f}<extra></extra>',
+                text=dps_no_crits_values,
+                texttemplate='%{text:.2f}',
+                textposition='outside',
+                textfont=dict(color=colors),
+            ),
+            row=3, col=1
+        )
+
+        # Update layout
+        fig.update_xaxes(title_text='DPS', row=3, col=1)
+        fig.update_layout(
+            height=max(600, len(labels) * 50),  # Dynamic height based on number of bars
+            showlegend=False,
+        )
+
         apply_dark_theme(fig)
         return fig
 

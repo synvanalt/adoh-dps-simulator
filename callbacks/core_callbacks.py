@@ -212,7 +212,7 @@ def register_core_callbacks(app, cfg):
 
             for weapon in weapons:
                 sim_count += 1
-                set_progress((f"[{build_name}] {weapon}...  ({sim_count}/{total_sims})", str(sim_count), str(total_sims)))
+                set_progress((f"{build_name} | {weapon}...  ({sim_count}/{total_sims})", str(sim_count), str(total_sims)))
 
                 simulator = DamageSimulator(weapon, user_cfg)
                 results_dict[build_name][weapon] = simulator.simulate_dps()
@@ -261,7 +261,7 @@ def register_core_callbacks(app, cfg):
                     })
 
                     # Build detailed results card
-                    detailed_weapon_results = build_detailed_results_card(f"{build_name} - {weapon}", results)
+                    detailed_weapon_results = build_detailed_results_card(f"{build_name} | {weapon}", results)
                     detailed_results.append(detailed_weapon_results)
         else:
             # Legacy single-build format (for backwards compatibility)
