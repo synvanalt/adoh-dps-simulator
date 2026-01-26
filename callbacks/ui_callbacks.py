@@ -158,6 +158,8 @@ def register_ui_callbacks(app, cfg):
     # Callback: reset all settings to defaults
     @app.callback(
         [Output('config-store', 'data', allow_duplicate=True),
+        Output('builds-store', 'data', allow_duplicate=True),
+        Output('active-build-index', 'data', allow_duplicate=True),
         Output('ab-input', 'value', allow_duplicate=True),
         Output('ab-capped-input', 'value', allow_duplicate=True),
         Output('ab-prog-dropdown', 'value', allow_duplicate=True),
@@ -196,6 +198,7 @@ def register_ui_callbacks(app, cfg):
     )
     def reset_to_defaults(n_clicks, immunities_store):
         if n_clicks:
+            from components.build_manager import create_default_builds
             default_cfg = Config()
 
             reset_immunities_store = {
@@ -205,6 +208,8 @@ def register_ui_callbacks(app, cfg):
 
             return (
                 default_cfg.__dict__,
+                create_default_builds(),  # Reset builds to single default build
+                0,  # Reset active build index to 0
                 default_cfg.AB,
                 default_cfg.AB_CAPPED,
                 default_cfg.AB_PROG,

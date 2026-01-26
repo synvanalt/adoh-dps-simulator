@@ -34,13 +34,20 @@ def build_plots_tab():
             html.H4('Per-Weapon Plots', className='mt-4 mb-3'),
             dbc.Row([
                 dbc.Col(dbc.Label(
+                    'Select Build:',
+                    html_for='plots-build-dropdown',
+                ), xs=12, md=2),
+                dbc.Col([
+                    dbc.Select(id='plots-build-dropdown',)
+                ], xs=12, md=3),
+                dbc.Col(dbc.Label(
                     'Select Weapon:',
                     html_for='plots-weapon-dropdown',
                 ), xs=12, md=2),
                 dbc.Col([
                     dbc.Select(id='plots-weapon-dropdown',)
                 ], xs=12, md=3),
-                dbc.Col([], xs=12, md=8)
+                dbc.Col([], xs=12, md=2)
             ]),
 
             dbc.Row([

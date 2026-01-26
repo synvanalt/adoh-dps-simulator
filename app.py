@@ -7,6 +7,7 @@ import dash_bootstrap_components as dbc
 # Local imports
 from simulator.config import Config
 from components.navbar import build_navbar
+from components.build_manager import build_build_manager, create_default_builds
 from components.character_settings import build_character_settings
 from components.additional_damage import build_additional_damage_panel
 from components.simulation_settings import build_simulation_settings
@@ -18,6 +19,7 @@ import callbacks.ui_callbacks as cb_ui
 import callbacks.core_callbacks as cb_core
 import callbacks.plots_callbacks as cb_plots
 import callbacks.validation_callbacks as cb_validation
+import callbacks.build_callbacks as cb_build
 
 
 # Create a Config instance
@@ -68,6 +70,9 @@ app.layout = dbc.Container([
     dcc.Store(id='is-simulating', data=False),     # Store for tracking simulation state
     dcc.Store(id='sim-progress', data={'current': 0, 'total': 0, 'results': {}}),
     dcc.Interval(id='sim-interval', interval=200, disabled=True),  # ticks while simulating
+    # Multi-build support stores
+    dcc.Store(id='builds-store', data=create_default_builds(), storage_type='session'),
+    dcc.Store(id='active-build-index', data=0, storage_type='session'),
 
 
     # Navbar
@@ -109,6 +114,9 @@ app.layout = dbc.Container([
             # Tab 1: Configuration
             dbc.Tab(label='Configuration', tab_id='configuration', children=[
                 dbc.Container([
+                    # Build Manager (multi-build support)
+                    build_build_manager(),
+
                     # Configuration Parameters
                     dbc.Row([
                         # Character settings
@@ -153,6 +161,7 @@ cb_ui.register_ui_callbacks(app, cfg)
 cb_core.register_core_callbacks(app, cfg)
 cb_plots.register_plots_callbacks(app)
 cb_validation.register_validation_callbacks(app, cfg)
+cb_build.register_build_callbacks(app, cfg)
 
 if __name__ == '__main__':
     app.run(debug=True)

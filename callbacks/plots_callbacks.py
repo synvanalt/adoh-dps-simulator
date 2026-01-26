@@ -45,21 +45,68 @@ def apply_dark_theme(fig):
 
 def register_plots_callbacks(app):
 
-    # Callback: weapon dropdown with available weapons from the simulation results
+    def is_multi_build_format(results_dict):
+        """Check if results are in multi-build format {build_name: {weapon: results}}."""
+        if not results_dict:
+            return False
+        first_value = next(iter(results_dict.values()))
+        return isinstance(first_value, dict) and 'summary' not in first_value
+
+    def flatten_results(results_dict):
+        """Flatten multi-build results to list of (build_name, weapon, results) tuples."""
+        if is_multi_build_format(results_dict):
+            flattened = []
+            for build_name, weapons_results in results_dict.items():
+                for weapon, results in weapons_results.items():
+                    flattened.append((build_name, weapon, results))
+            return flattened
+        else:
+            # Legacy format
+            return [('Build 1', weapon, results) for weapon, results in results_dict.items()]
+
+    # Callback: populate build dropdown for per-weapon plots
+    @app.callback(
+        Output('plots-build-dropdown', 'options'),
+        Output('plots-build-dropdown', 'value'),
+        Input('intermediate-value', 'data'),
+    )
+    def populate_build_dropdown(results_dict):
+        if not results_dict:
+            return [], None
+
+        if is_multi_build_format(results_dict):
+            builds = list(results_dict.keys())
+        else:
+            builds = ['Build 1']
+
+        options = [{'label': b, 'value': b} for b in builds]
+        return options, builds[0] if builds else None
+
+    # Callback: populate weapon dropdown based on selected build
     @app.callback(
         Output('plots-weapon-dropdown', 'options'),
         Output('plots-weapon-dropdown', 'value'),
         Input('intermediate-value', 'data'),
+        Input('plots-build-dropdown', 'value'),
     )
-    def populate_weapon_dropdown(results_dict):
+    def populate_weapon_dropdown(results_dict, selected_build):
         if not results_dict:
             return [], None
-        weapons = list(results_dict.keys())
-        options = [{'label': w, 'value': w} for w in weapons]
-        # default to first weapon
-        return options, weapons[0]
 
-    # Callback: DPS Comparison bar chart
+        if is_multi_build_format(results_dict):
+            if selected_build and selected_build in results_dict:
+                weapons = list(results_dict[selected_build].keys())
+            else:
+                # Fall back to first build
+                first_build = next(iter(results_dict.keys()))
+                weapons = list(results_dict[first_build].keys())
+        else:
+            weapons = list(results_dict.keys())
+
+        options = [{'label': w, 'value': w} for w in weapons]
+        return options, weapons[0] if weapons else None
+
+    # Callback: DPS Comparison bar chart - grouped by build
     @app.callback(
         Output('plots-dps-comparison', 'figure'),
         Input('intermediate-value', 'data')
@@ -71,27 +118,51 @@ def register_plots_callbacks(app):
             apply_dark_theme(fig)
             return fig
 
-        weapons = []
-        dps_crits = []
-        dps_no_crits = []
-        dps_avg = []
+        flattened = flatten_results(results_dict)
 
-        for weapon, results in results_dict.items():
-            weapons.append(weapon)
-            dps_crits.append(results['dps_crits'])
-            dps_no_crits.append(results['dps_no_crits'])
-            dps_avg.append(results['avg_dps_both'])
+        # Get unique builds and weapons
+        builds = list(dict.fromkeys([item[0] for item in flattened]))
+        weapons = list(dict.fromkeys([item[1] for item in flattened]))
 
-        # Create grouped bar chart
-        fig.add_trace(go.Bar(name='Crits Allowed', x=weapons, y=dps_crits))
-        fig.add_trace(go.Bar(name='Crits Immune', x=weapons, y=dps_no_crits))
-        fig.add_trace(go.Bar(name='Average DPS', x=weapons, y=dps_avg))
+        # Create lookup for quick access
+        lookup = {(b, w): r for b, w, r in flattened}
+
+        # Color palette for builds
+        build_colors = px.colors.qualitative.Plotly
+
+        # For each build, add grouped bars for each DPS metric
+        for build_idx, build_name in enumerate(builds):
+            build_color_base = build_colors[build_idx % len(build_colors)]
+
+            build_dps_avg = []
+            build_dps_crits = []
+            build_dps_no_crits = []
+
+            for weapon in weapons:
+                results = lookup.get((build_name, weapon))
+                if results:
+                    build_dps_avg.append(results['avg_dps_both'])
+                    build_dps_crits.append(results['dps_crits'])
+                    build_dps_no_crits.append(results['dps_no_crits'])
+                else:
+                    build_dps_avg.append(0)
+                    build_dps_crits.append(0)
+                    build_dps_no_crits.append(0)
+
+            # Add trace for Average DPS
+            fig.add_trace(go.Bar(
+                name=f'{build_name} - Avg DPS',
+                x=weapons,
+                y=build_dps_avg,
+                marker_color=build_color_base,
+                legendgroup=build_name,
+            ))
 
         # Update layout for better readability
         fig.update_layout(
             barmode='group',
             xaxis_title='Weapons',
-            yaxis_title='DPS',
+            yaxis_title='Average DPS (50/50)',
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
@@ -108,17 +179,29 @@ def register_plots_callbacks(app):
         Output('plots-weapon-dps-vs-damage', 'figure'),
         Output('plots-weapon-breakdown', 'figure'),
         Input('plots-weapon-dropdown', 'value'),
+        Input('plots-build-dropdown', 'value'),
         State('intermediate-value', 'data')
     )
-    def update_weapon_plots(selected_weapon, results_dict):
+    def update_weapon_plots(selected_weapon, selected_build, results_dict):
         empty_fig = go.Figure()
         empty_fig.update_layout(title='No simulation data')
         apply_dark_theme(empty_fig)
 
-        if not results_dict or not selected_weapon or selected_weapon not in results_dict:
+        if not results_dict or not selected_weapon:
             return empty_fig, empty_fig
 
-        results = results_dict[selected_weapon]
+        # Get results based on format
+        if is_multi_build_format(results_dict):
+            if not selected_build or selected_build not in results_dict:
+                return empty_fig, empty_fig
+            build_results = results_dict[selected_build]
+            if selected_weapon not in build_results:
+                return empty_fig, empty_fig
+            results = build_results[selected_weapon]
+        else:
+            if selected_weapon not in results_dict:
+                return empty_fig, empty_fig
+            results = results_dict[selected_weapon]
 
         # DPS vs Cumulative Damage: use cumulative damage (x) vs rolling avg DPS (y)
         dps_vals = results.get('dps_rolling_avg') or results.get('dps_per_round') or []
