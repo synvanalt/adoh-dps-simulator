@@ -29,12 +29,15 @@ cfg = Config()
 cache = diskcache.Cache('./cache')
 background_callback_manager = DiskcacheManager(cache)
 
+# CDN links
+dbc_css = 'https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css'
+fontawesome = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css'
+
 # Initialize the Dash app with Bootstrap theme
-dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 app = dash.Dash(
     __name__,
     background_callback_manager=background_callback_manager,
-    external_stylesheets=[dbc.themes.BOOTSTRAP, dbc_css]
+    external_stylesheets=[dbc.themes.BOOTSTRAP, dbc_css, fontawesome]
 )
 server = app.server   # for online deployment
 

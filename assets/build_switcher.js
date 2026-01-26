@@ -105,5 +105,37 @@ window.dash_clientside.build_switching = {
             config.name,
             false  // Clear loading state
         ];
+    },
+
+    /**
+     * Immediately show loading spinner when build management buttons are clicked
+     * This runs BEFORE the Python callback, eliminating perceived delay
+     *
+     * @param {number} add_clicks - Add button clicks
+     * @param {number} dup_clicks - Duplicate button clicks
+     * @param {number} del_clicks - Delete button clicks
+     * @returns {Object} Style object for loading overlay
+     */
+    show_spinner_on_button_click: function(add_clicks, dup_clicks, del_clicks) {
+        // Check if any button was clicked (triggered this callback)
+        const triggered = window.dash_clientside.callback_context.triggered;
+        if (!triggered || triggered.length === 0) {
+            return window.dash_clientside.no_update;
+        }
+
+        // Show spinner immediately
+        return {
+            'display': 'flex',
+            'position': 'fixed',
+            'top': 0,
+            'left': 0,
+            'width': '100%',
+            'height': '100%',
+            'backgroundColor': 'rgba(0, 0, 0, 0.7)',
+            'zIndex': 9998,
+            'flexDirection': 'column',
+            'justifyContent': 'center',
+            'alignItems': 'center',
+        };
     }
 };

@@ -28,6 +28,20 @@ def register_build_callbacks(app, cfg):
             n_clicks=0,
         )
 
+    # Clientside callback: Immediately show spinner when build management buttons are clicked
+    # This runs BEFORE Python callbacks, eliminating the perceived delay
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='build_switching',
+            function_name='show_spinner_on_button_click'
+        ),
+        Output('build-loading-overlay', 'style', allow_duplicate=True),
+        Input('add-build-btn', 'n_clicks'),
+        Input('duplicate-build-btn', 'n_clicks'),
+        Input('delete-build-btn', 'n_clicks'),
+        prevent_initial_call=True
+    )
+
     # Callback: Add new build (no longer needs to save current state)
     @app.callback(
         Output('builds-store', 'data', allow_duplicate=True),
@@ -80,6 +94,7 @@ def register_build_callbacks(app, cfg):
     @app.callback(
         Output('builds-store', 'data', allow_duplicate=True),
         Output('active-build-index', 'data', allow_duplicate=True),
+        Output('build-loading', 'data', allow_duplicate=True),
         Input('delete-build-btn', 'n_clicks'),
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
@@ -87,7 +102,7 @@ def register_build_callbacks(app, cfg):
     )
     def delete_build(n_clicks, builds, active_idx):
         if not n_clicks or len(builds) <= 1:
-            return dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update
 
         # Remove the current build
         builds.pop(active_idx)
@@ -95,7 +110,7 @@ def register_build_callbacks(app, cfg):
         # Adjust active index
         new_active = min(active_idx, len(builds) - 1)
 
-        return builds, new_active
+        return builds, new_active, True
 
     # Callback: Switch between builds (fast - only updates active index and sets loading state)
     @app.callback(
@@ -206,8 +221,7 @@ def register_build_callbacks(app, cfg):
         return builds[active_idx]
 
     # Step 2: Update UI from buffer (Clientside, INSTANT - no server round-trip!)
-    from dash import clientside_callback, ClientsideFunction
-    clientside_callback(
+    app.clientside_callback(
         ClientsideFunction(
             namespace='build_switching',
             function_name='load_from_buffer'

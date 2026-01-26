@@ -80,7 +80,7 @@ def build_build_manager():
                     dbc.Button(
                         [html.I(className='fas fa-plus me-1'), "New"],
                         id='add-build-btn',
-                        color='success',
+                        # color='success',
                         outline=True,
                         size='sm',
                         title='Add new build with default settings',
@@ -88,7 +88,7 @@ def build_build_manager():
                     dbc.Button(
                         [html.I(className='fas fa-copy me-1'), "Duplicate"],
                         id='duplicate-build-btn',
-                        color='info',
+                        # color='info',
                         outline=True,
                         size='sm',
                         title='Duplicate current build',
@@ -96,7 +96,7 @@ def build_build_manager():
                     dbc.Button(
                         [html.I(className='fas fa-trash me-1'), "Delete"],
                         id='delete-build-btn',
-                        color='danger',
+                        # color='danger',
                         outline=True,
                         size='sm',
                         title='Delete current build',
