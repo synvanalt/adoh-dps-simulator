@@ -27,12 +27,13 @@ def register_ui_callbacks(app, cfg):
          Output('target-immunities', 'children')],
         [Input('simulate-button', 'n_clicks'),
          Input('resimulate-button', 'n_clicks'),
+         Input('sticky-simulate-button', 'n_clicks'),
          Input('weapon-dropdown', 'value'),
          Input('shape-weapon-switch', 'value'),
          Input('shape-weapon-dropdown', 'value'),
          Input({'type': 'immunity-input', 'name': ALL}, 'value')],
     )
-    def update_reference_info(_, __, selected_weapons, shape_weapon_override, shape_weapon, immunity_values):
+    def update_reference_info(_, __, ___, selected_weapons, shape_weapon_override, shape_weapon, immunity_values):
         if not selected_weapons:
             return "No weapon selected", str(cfg.TARGET_IMMUNITIES), "No weapon selected"
 
@@ -192,12 +193,13 @@ def register_ui_callbacks(app, cfg):
         Output({'type': 'immunity-input', 'name': ALL}, 'value', allow_duplicate=True),
         Output('immunities-store', 'data', allow_duplicate=True),
         Output('reset-toast', 'is_open', allow_duplicate=True)],
-        Input('reset-button', 'n_clicks'),
+        [Input('reset-button', 'n_clicks'),
+         Input('sticky-reset-button', 'n_clicks')],
         State('immunities-store', 'data'),
         prevent_initial_call=True
     )
-    def reset_to_defaults(n_clicks, immunities_store):
-        if n_clicks:
+    def reset_to_defaults(n_clicks, sticky_n_clicks, immunities_store):
+        if n_clicks or sticky_n_clicks:
             from components.build_manager import create_default_builds
             default_cfg = Config()
 
