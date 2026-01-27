@@ -13,7 +13,7 @@ def build_sticky_bottom_bar():
     """
     return html.Div(
         id='sticky-bottom-bar',
-        className='sticky-bottom-bar',
+        className='sticky-bottom-bar',  # Remove 'hide' class - JS will add it
         children=[
             dbc.Button(
                 "Reset to Defaults",
@@ -28,6 +28,6 @@ def build_sticky_bottom_bar():
                 size='md',
                 className='ms-2'
             ),
-        ],
-        style={'display': 'none'}  # Initially hidden, controlled by JS
+        ]
+        # Remove the style prop - CSS handles initial hidden state
     )
