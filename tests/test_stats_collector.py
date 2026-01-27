@@ -250,9 +250,8 @@ class TestCalcRatesPercentages:
         collector.crit_hits = 0
         collector.legend_procs = 0
 
-        # This should raise ZeroDivisionError
-        with pytest.raises(ZeroDivisionError):
-            collector.calc_rates_percentages()
+        # This should return early without raising an error
+        collector.calc_rates_percentages()
 
     def test_calculation_with_zero_hits_legend_proc(self):
         """Test calculation behavior when hits is zero for legend proc rate."""
@@ -262,9 +261,8 @@ class TestCalcRatesPercentages:
         collector.crit_hits = 10
         collector.legend_procs = 0
 
-        # This should raise ZeroDivisionError when calculating legend_proc_rate
-        with pytest.raises(ZeroDivisionError):
-            collector.calc_rates_percentages()
+        # This should return early without raising an error
+        collector.calc_rates_percentages()
 
     def test_calculation_preserves_list_length(self):
         """Test that calculation doesn't change per-attack list lengths."""
