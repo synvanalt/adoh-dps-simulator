@@ -72,6 +72,7 @@ def register_core_callbacks(app, cfg):
             # Input('loading-overlay', 'style'),
             Input('simulate-button', 'n_clicks'),
             Input('resimulate-button', 'n_clicks'),
+            Input('sticky-simulate-button', 'n_clicks'),
         ],
         states=[
             State('config-store', 'data'),
@@ -118,7 +119,9 @@ def register_core_callbacks(app, cfg):
         running=[
             (Output('simulate-button', 'disabled'), True, False),
             (Output('resimulate-button', 'disabled'), True, False),
+            (Output('sticky-simulate-button', 'disabled'), True, False),
             (Output('reset-button', 'disabled'), True, False),
+            (Output('sticky-reset-button', 'disabled'), True, False),
             (Output('progress-modal', 'is_open'), True, False),
             (Output('loading-overlay', 'style'), spinner_style, {'display': 'none'}),
             (Output('progress-text', 'children'), "Warming up...", "Done!"),
@@ -126,7 +129,7 @@ def register_core_callbacks(app, cfg):
         ],  # Disable buttons & clear progress modal when sim starts, re-enable buttons when finishes
         prevent_initial_call=True
     )
-    def run_simulation(set_progress, _, __, current_cfg, builds, active_build_idx, ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
+    def run_simulation(set_progress, _, __, ___, current_cfg, builds, active_build_idx, ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
                         str_mod, two_handed, weaponmaster, keen, improved_crit, overwhelm_crit, dev_crit, shape_weapon_override, shape_weapon,
                         add_dmg_state, add_dmg1, add_dmg2, add_dmg3,
                         weapons, target_ac, rounds, dmg_limit_flag, dmg_limit, dmg_vs_race,
