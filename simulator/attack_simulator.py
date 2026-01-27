@@ -140,6 +140,7 @@ class AttackSimulator:
             # All other combinations, practically rendering this config useless
             else:
                 self.illegal_dual_wield_config = True  # Cannot Dual-Wield with this toon size and weapon size combination
+                self.ab = 0  # Set AB to 0 to avoid further errors
                 return [0] * len(attack_prog_offsets)  # Return zeroed attack progression to avoid further errors
 
             # Apply the correct dual-wield AB offsets for additional attacks (Hasted, Flurry of Blows, Blinding Speed)

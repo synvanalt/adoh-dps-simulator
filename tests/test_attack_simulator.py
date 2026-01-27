@@ -598,8 +598,8 @@ class TestDualWieldPenalty:
         weapon = Weapon("Halberd", cfg)  # Large weapon
         simulator = AttackSimulator(weapon, cfg)
 
-        # S + L = -99 (cannot dual-wield)
-        assert simulator.ab == 50 + (-99)
+        # AB of 'S' character with 'L' weapon = 0 (cannot dual-wield)
+        assert simulator.ab == 0
 
     def test_hasted_attack_ignores_penalty(self):
         """Test that hasted attack in DW progression doesn't get penalty.
