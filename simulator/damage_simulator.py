@@ -137,6 +137,10 @@ class DamageSimulator:
             total_round_dmg = 0
             total_round_dmg_crit_imm = 0
 
+            if self.attack_sim.illegal_dual_wield_config:  # Cannot Dual-Wield with this toon size and weapon size combination
+                break
+
+
             for attack_idx, attack_ab in enumerate(self.attack_sim.attack_prog):
                 self.stats.attempts_made += 1
                 self.stats.attempts_made_per_attack[attack_idx] += 1
@@ -290,25 +294,38 @@ class DamageSimulator:
                 if self.convergence(round_num):
                     break
 
-        # DPS values (crit allowed)
-        dps_mean = statistics.mean(self.dps_per_round)
-        dps_stdev = statistics.stdev(self.dps_per_round) if round_num > 1 else 0
-        dps_error = self.z * (dps_stdev / math.sqrt(round_num))
+        # Illegal DW config, no results to show - set all to zeroes
+        if self.attack_sim.illegal_dual_wield_config:
 
-        # DPS values (crit immune)
-        dps_crit_imm_mean = statistics.mean(self.dps_crit_imm_per_round)
-        dps_crit_imm_stdev = statistics.stdev(self.dps_crit_imm_per_round) if round_num > 1 else 0
-        dps_crit_imm_error = self.z * (dps_crit_imm_stdev / math.sqrt(round_num))
-        # Averaging crit-allowed and crit-immune
-        dps_both = (dps_mean + dps_crit_imm_mean) / 2
+            dps_mean = dps_stdev = dps_error = 0
+            dps_crit_imm_mean = dps_crit_imm_stdev = dps_crit_imm_error = 0
+            dps_both = 0
+            dpr = dpr_crit_imm = dph = dph_crit_imm = 0
 
-        dpr = self.total_dmg / round_num
-        dpr_crit_imm = self.total_dmg_crit_imm / round_num
-        dph = self.total_dmg / self.stats.hits
-        dph_crit_imm = self.total_dmg_crit_imm / self.stats.hits
-        warning = f">>> WARNING: Duplicate weapon damage bonus detected! Using higher damage values where applicable. <<<\n\n" if self.weapon.weapon_damage_stack_warning else ""
+        else:
+            # DPS values (crit allowed)
+            dps_mean = statistics.mean(self.dps_per_round)
+            dps_stdev = statistics.stdev(self.dps_per_round) if round_num > 1 else 0
+            dps_error = self.z * (dps_stdev / math.sqrt(round_num))
+
+            # DPS values (crit immune)
+            dps_crit_imm_mean = statistics.mean(self.dps_crit_imm_per_round)
+            dps_crit_imm_stdev = statistics.stdev(self.dps_crit_imm_per_round) if round_num > 1 else 0
+            dps_crit_imm_error = self.z * (dps_crit_imm_stdev / math.sqrt(round_num))
+
+            # Averaging crit-allowed and crit-immune
+            dps_both = (dps_mean + dps_crit_imm_mean) / 2
+
+            # Damage per round and per hit
+            dpr = self.total_dmg / round_num
+            dpr_crit_imm = self.total_dmg_crit_imm / round_num
+            dph = self.total_dmg / self.stats.hits
+            dph_crit_imm = self.total_dmg_crit_imm / self.stats.hits
+
+        warning_dupe = f">>> WARNING: Duplicate weapon damage bonus detected! Using higher damage values where applicable. <<<\n\n" if self.weapon.weapon_damage_stack_warning else ""
+        error_illegal_dw = f">>> ERROR: Character size '{self.cfg.TOON_SIZE}' cannot dual-wield '{self.weapon.name_base}'. Simulation skipped. <<<\n\n" if self.attack_sim.illegal_dual_wield_config else ""
         summary = (
-            f"{warning}"
+            f"{warning_dupe}{error_illegal_dw}"
             f"AB: {self.attack_sim.attack_prog} | Weapon: {self.weapon.name_purple} | Crit: {self.weapon.crit_threat}-20/x{self.weapon.crit_multiplier} | "
             f"Target AC: {self.cfg.TARGET_AC} | Rounds averaged: {round_num}\n"
             f"DPS (Crit allowed | immune): {dps_mean:.2f} ± {dps_error:.2f} | {dps_crit_imm_mean:.2f} ± {dps_crit_imm_error:.2f}\n"

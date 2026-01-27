@@ -13,13 +13,10 @@ class AttackSimulator:
         self.ab_capped = self.cfg.AB_CAPPED
         self.ab = self.calculate_attack_bonus()
 
-        attack_prog_selected = self.cfg.AB_PROG
-        attack_prog_temp = deepcopy(self.cfg.AB_PROGRESSIONS[attack_prog_selected]) # List of integers, looks like [0, -5, -15, -20, 0]
-        self.dual_wield = True if 'Dual-Wield' in attack_prog_selected else False   # Boolean for Dual-Wield state
-        if self.dual_wield:     # Get Dual-Wield penalty and apply to attack_prog
-            attack_prog_temp = self.apply_dual_wield_penalty(attack_prog_temp, self.cfg.TOON_SIZE)
+        self.dual_wield = False                 # Flag for Dual-Wield attack progression
+        self.illegal_dual_wield_config = False  # Flag for illegal Dual-Wield configuration
 
-        self.attack_prog = [(self.ab + ab_offset) for ab_offset in attack_prog_temp]
+        self.attack_prog = self.get_attack_progression()
         self.attacks_per_round = len(self.attack_prog)
 
         (self.hit_chance_list, self.crit_chance_list, self.noncrit_chance_list) = self.calculate_hit_chances()
@@ -108,49 +105,71 @@ class AttackSimulator:
 
         return legend_proc_rate
 
-    def apply_dual_wield_penalty(self, attack_prog: list, toon_size: str):
+    def get_attack_progression(self):
         """
-        Determine the Dual-Wield penalty and apply it to list of attacks AB offsets
-        :param attack_prog: List of Dual-Wield attacks AB offsets, e.g., [0, -5, -10, -15, 'dw_hasted', 0, -5]
-        :param toon_size: Size of the attacker, in addition to weapon size, it's used to determine the DW penalty
-        :return: List after applying the DW penalty, e.g., [-2, -7, -12, -17, 2, -2, -7]
+        Determine the attack progression of the character (list of AB). Takes into account:
+        - attack_prog_offsets: List of attacks AB offsets, e.g., [0, -5, -10, -15, 'dw_hasted', 0, -5]
+        - toon_size: Size of the attacker, in addition to weapon size, it's used to determine Dual-Wield penalty
+        :return: List of ABs (after applying the DW penalty if applicable, e.g., [68, 63, 58, 53, 70, 68, 63])
         """
-        double_sided_weapons = ['Dire Mace', 'Double Axe', 'Two-Bladed Sword']
 
-        if ((toon_size == 'M' and self.weapon.size == 'M') or
-                (toon_size == 'S' and self.weapon.size == 'S')):
-            dw_penalty = -4
-        elif toon_size == 'M' and self.weapon.name_base in double_sided_weapons:    # Special case for Double-Sided weapon
-            dw_penalty = -2
-        elif ((toon_size == 'L' and self.weapon.size in ['M', 'S', 'T']) or
-              (toon_size == 'M' and self.weapon.size in ['S', 'T']) or
-              (toon_size == 'S' and self.weapon.size == 'T')):
-            dw_penalty = -2
-        else:  # All other combinations, practically rendering this config useless
-            dw_penalty = -99  # Cannot Dual-Wield with this toon size and weapon size combination
+        attack_prog_selected = self.cfg.AB_PROG
+        attack_prog_offsets = deepcopy(self.cfg.AB_PROGRESSIONS[attack_prog_selected]) # List of integers, looks like [0, -5, -15, -20, 0]
+        toon_size = self.cfg.TOON_SIZE
+        dw_penalty = 0  # Default no penalty
 
-        if "dw_hasted" in attack_prog:
-            hasted_attack_idx = attack_prog.index("dw_hasted")  # If DW, Haste attack doesn't suffer penalty
-            attack_prog[hasted_attack_idx] = -1 * dw_penalty
+        # Apply dual-wield penalty based on character size and weapon size
+        if 'Dual-Wield' in attack_prog_selected:
+            # Set Dual-Wield flag to True so other methods can use it
+            self.dual_wield = True
 
-            if ("dw_flurry" in attack_prog) and ("dw_bspeed" in attack_prog):
-                flurry_attack_idx = attack_prog.index("dw_flurry")  # If DW, Flurry should get -5 after Hasted attack
-                attack_prog[flurry_attack_idx] = -1 * dw_penalty - 5
-                bspeed_attack_idx = attack_prog.index("dw_bspeed")  # If DW, B.Speed should get -10 after Flurry attack
-                attack_prog[bspeed_attack_idx] = -1 * dw_penalty - 10
+            # List of Double-Sided weapons for special handling
+            double_sided_weapons = ['Dire Mace', 'Double Axe', 'Two-Bladed Sword']
 
-            elif "dw_flurry" in attack_prog:
-                flurry_attack_idx = attack_prog.index("dw_flurry")  # If DW, Flurry should get -5 after Hasted attack
-                attack_prog[flurry_attack_idx] = -1 * dw_penalty - 5
+            # Determine the dual-wield penalty
+            if ((toon_size == 'M' and self.weapon.size == 'M') or
+                    (toon_size == 'S' and self.weapon.size == 'S')):
+                dw_penalty = -4
+            elif toon_size == 'M' and self.weapon.name_base in double_sided_weapons:    # Special case for Double-Sided weapon
+                dw_penalty = -2
+            elif ((toon_size == 'L' and self.weapon.size in ['M', 'S', 'T']) or
+                  (toon_size == 'M' and self.weapon.size in ['S', 'T']) or
+                  (toon_size == 'S' and self.weapon.size == 'T')):
+                dw_penalty = -2
 
-            elif "dw_bspeed" in attack_prog:
-                bspeed_attack_idx = attack_prog.index("dw_bspeed")  # If DW, B.Speed should get -5 after Hasted attack
-                attack_prog[bspeed_attack_idx] = -1 * dw_penalty - 5
+            # All other combinations, practically rendering this config useless
+            else:
+                self.illegal_dual_wield_config = True  # Cannot Dual-Wield with this toon size and weapon size combination
+                return [0] * len(attack_prog_offsets)  # Return zeroed attack progression to avoid further errors
 
-        else:
-            raise ValueError("Dual-Wield attack progression is missing 'dw_hasted' marker.")
+            # Apply the correct dual-wield AB offsets for additional attacks (Hasted, Flurry of Blows, Blinding Speed)
+            if "dw_hasted" in attack_prog_offsets:
+                hasted_attack_idx = attack_prog_offsets.index("dw_hasted")  # If DW, Haste attack doesn't suffer penalty
+                attack_prog_offsets[hasted_attack_idx] = -1 * dw_penalty
 
+                if ("dw_flurry" in attack_prog_offsets) and ("dw_bspeed" in attack_prog_offsets):
+                    flurry_attack_idx = attack_prog_offsets.index("dw_flurry")  # If DW, Flurry should get -5 after Hasted attack
+                    attack_prog_offsets[flurry_attack_idx] = -1 * dw_penalty - 5
+                    bspeed_attack_idx = attack_prog_offsets.index("dw_bspeed")  # If DW, B.Speed should get -10 after Flurry attack
+                    attack_prog_offsets[bspeed_attack_idx] = -1 * dw_penalty - 10
+
+                elif "dw_flurry" in attack_prog_offsets:
+                    flurry_attack_idx = attack_prog_offsets.index("dw_flurry")  # If DW, Flurry should get -5 after Hasted attack
+                    attack_prog_offsets[flurry_attack_idx] = -1 * dw_penalty - 5
+
+                elif "dw_bspeed" in attack_prog_offsets:
+                    bspeed_attack_idx = attack_prog_offsets.index("dw_bspeed")  # If DW, B.Speed should get -5 after Hasted attack
+                    attack_prog_offsets[bspeed_attack_idx] = -1 * dw_penalty - 5
+
+            # No 'dw_hasted' marker found in attack progression offsets, but Dual-Wield option was selected (error)
+            else:
+                raise ValueError("Dual-Wield attack progression is missing 'dw_hasted' marker.")
+
+        # Apply the dual-wield penalty to the main Attack Bonus
         self.ab = self.ab + dw_penalty
+
+        # Build the final attack progression list
+        attack_prog = [(self.ab + ab_offset) for ab_offset in attack_prog_offsets]
         return attack_prog
 
     def attack_roll(self, attacker_ab: int, defender_ac_modifier: int = 0):

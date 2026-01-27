@@ -19,6 +19,9 @@ class StatsCollector:
         self.crits_per_attack = [0] * list_length
 
     def calc_rates_percentages(self):
+        if self.attempts_made == 0 or self.hits == 0:
+            return  # Avoid division by zero
+
         self.legend_proc_rate = round((self.legend_procs / self.hits) * 100, 2)
         self.crit_hit_rate = round((self.crit_hits / self.attempts_made) * 100, 2)
         self.hit_rate = round((self.hits / self.attempts_made) * 100, 2)
