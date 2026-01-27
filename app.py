@@ -15,6 +15,7 @@ from components.results_tab import build_results_tab
 from components.reference_tab import build_reference_info_tab
 from components.plots import build_plots_tab
 from components.progress_modal import build_progress_elements
+from components.sticky_bar import build_sticky_bottom_bar
 import callbacks.ui_callbacks as cb_ui
 import callbacks.core_callbacks as cb_core
 import callbacks.plots_callbacks as cb_plots
@@ -175,6 +176,9 @@ app.layout = dbc.Container([
         'margin': 'auto',
         'padding': '0px 0px 0px 0px'
     }),
+
+    # Sticky bottom bar (appears in Configuration tab when not scrolled to bottom)
+    build_sticky_bottom_bar(),
 ], fluid=True, style={
     'margin': 'auto',
     'padding': '0px 0px 0px 0px'

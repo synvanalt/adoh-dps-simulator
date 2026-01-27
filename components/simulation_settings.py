@@ -233,7 +233,7 @@ def build_simulation_settings(cfg):
 
         ], className='', style={'display': 'flex', 'alignItems': 'flex-start'}),
 
-        # Simulate Button
+        # Simulate & Reset Buttons
         dbc.Row([
             dbc.Col([
                 dbc.Button("Reset to Defaults", id='reset-button', color='secondary'),

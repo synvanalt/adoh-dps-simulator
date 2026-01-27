@@ -72,6 +72,7 @@ def register_core_callbacks(app, cfg):
             # Input('loading-overlay', 'style'),
             Input('simulate-button', 'n_clicks'),
             Input('resimulate-button', 'n_clicks'),
+            Input('sticky-simulate-button', 'n_clicks'),
         ],
         states=[
             State('config-store', 'data'),
@@ -118,7 +119,9 @@ def register_core_callbacks(app, cfg):
         running=[
             (Output('simulate-button', 'disabled'), True, False),
             (Output('resimulate-button', 'disabled'), True, False),
+            (Output('sticky-simulate-button', 'disabled'), True, False),
             (Output('reset-button', 'disabled'), True, False),
+            (Output('sticky-reset-button', 'disabled'), True, False),
             (Output('progress-modal', 'is_open'), True, False),
             (Output('loading-overlay', 'style'), spinner_style, {'display': 'none'}),
             (Output('progress-text', 'children'), "Warming up...", "Done!"),
@@ -126,7 +129,7 @@ def register_core_callbacks(app, cfg):
         ],  # Disable buttons & clear progress modal when sim starts, re-enable buttons when finishes
         prevent_initial_call=True
     )
-    def run_simulation(set_progress, _, __, current_cfg, builds, active_build_idx, ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
+    def run_simulation(set_progress, _, __, ___, current_cfg, builds, active_build_idx, ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
                         str_mod, two_handed, weaponmaster, keen, improved_crit, overwhelm_crit, dev_crit, shape_weapon_override, shape_weapon,
                         add_dmg_state, add_dmg1, add_dmg2, add_dmg3,
                         weapons, target_ac, rounds, dmg_limit_flag, dmg_limit, dmg_vs_race,
@@ -238,17 +241,13 @@ def register_core_callbacks(app, cfg):
         first_value = next(iter(results_dict.values()))
         is_multi_build = isinstance(first_value, dict) and 'summary' not in first_value
 
-        detailed_results = []
         comparative_rows = []
 
         if is_multi_build:
             # New multi-build format
             for build_name, weapons_results in results_dict.items():
-                # Add build header for detailed results
-                detailed_results.append(html.H5(f"Build: {build_name}", className='mt-4 mb-3 border-bottom pb-2'))
-
                 for weapon, results in weapons_results.items():
-                    # Add to comparative table rows
+                    # Add to comparative table rows with results reference
                     comparative_rows.append({
                         'Build Name': build_name,
                         'Weapon': weapon,
@@ -258,11 +257,8 @@ def register_core_callbacks(app, cfg):
                         'Hit %': results["hit_rate_actual"],
                         'Crit %': results["crit_rate_actual"],
                         'Legend Proc %': results["legend_proc_rate_actual"],
+                        '_results': results,  # Keep reference to full results for detailed cards
                     })
-
-                    # Build detailed results card
-                    detailed_weapon_results = build_detailed_results_card(f"{build_name} | {weapon}", results)
-                    detailed_results.append(detailed_weapon_results)
         else:
             # Legacy single-build format (for backwards compatibility)
             for weapon, results in results_dict.items():
@@ -275,14 +271,24 @@ def register_core_callbacks(app, cfg):
                     'Hit %': results["hit_rate_actual"],
                     'Crit %': results["crit_rate_actual"],
                     'Legend Proc %': results["legend_proc_rate_actual"],
+                    '_results': results,  # Keep reference to full results for detailed cards
                 })
 
-                detailed_weapon_results = build_detailed_results_card(weapon, results)
-                detailed_results.append(detailed_weapon_results)
+        # Sort by DPS descending
+        comparative_rows.sort(key=lambda x: x['Avg DPS (50/50)'], reverse=True)
 
-        # Create comparative DataFrame and sort by DPS
-        comparative_df = pd.DataFrame(comparative_rows)
-        comparative_df = comparative_df.sort_values('Avg DPS (50/50)', ascending=False).reset_index(drop=True)
+        # Build detailed results in sorted order
+        detailed_results = []
+        for row in comparative_rows:
+            build_name = row['Build Name']
+            weapon = row['Weapon']
+            results = row['_results']
+            title = f"{build_name} | {weapon}"
+            detailed_weapon_results = build_detailed_results_card(title, results)
+            detailed_results.append(detailed_weapon_results)
+
+        # Create comparative DataFrame (remove _results helper field before displaying)
+        comparative_df = pd.DataFrame([{k: v for k, v in row.items() if k != '_results'} for row in comparative_rows])
 
         # Wrap table in a responsive div
         comparative_table = html.Div([
