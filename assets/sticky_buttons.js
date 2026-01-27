@@ -8,39 +8,126 @@
 (function() {
     'use strict';
 
+    let debounceTimer;
+    let scrollTicking = false;
+    let currentState = null; // Track current state: null, 'showing', 'hiding', 'visible', 'hidden'
+    let wasAtBottom = false; // Track previous bottom state for hysteresis
+
     function updateStickyBarVisibility() {
         const stickyBar = document.getElementById('sticky-bottom-bar');
         if (!stickyBar) return;
 
-        // Check if we're on the configuration tab
-        const configTab = document.querySelector('[data-value="configuration"].active');
-        const isConfigTab = configTab !== null;
+        // Check if configuration tab is active
+        const activeTab = document.querySelector('.tab-pane.active');
+        const isConfigTab = activeTab && activeTab.id && activeTab.id.includes('configuration');
 
-        if (!isConfigTab) {
-            stickyBar.style.display = 'none';
-            return;
+        // Determine desired state
+        let shouldShow = false;
+
+        if (isConfigTab) {
+            // Check scroll position
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight;
+            const clientHeight = document.documentElement.clientHeight;
+
+            // Use hysteresis: different thresholds for hiding vs showing
+            // This prevents flickering when hovering near the threshold
+            const hideThreshold = 150;  // Hide when within 150px of bottom
+            const showThreshold = 200;  // Show when more than 200px from bottom
+
+            const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+
+            if (wasAtBottom) {
+                // Currently hidden - need to scroll further up to show
+                shouldShow = distanceFromBottom > showThreshold;
+            } else {
+                // Currently visible - hide only when very close to bottom
+                shouldShow = distanceFromBottom > hideThreshold;
+            }
+
+            wasAtBottom = !shouldShow;
+        } else {
+            wasAtBottom = false;
         }
 
-        // Check scroll position
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollHeight = document.documentElement.scrollHeight;
-        const clientHeight = document.documentElement.clientHeight;
+        // Handle state transitions
+        if (shouldShow) {
+            // Want to show the bar
+            if (currentState === 'visible' || currentState === 'showing') {
+                // Already visible or showing, do nothing
+                return;
+            }
 
-        // Show bar if NOT at bottom (with 150px threshold to account for button area)
-        const isAtBottom = (scrollTop + clientHeight) >= (scrollHeight - 150);
+            if (currentState === 'hiding') {
+                // Currently hiding, don't interrupt - wait for animation to finish
+                return;
+            }
 
-        if (isAtBottom) {
-            stickyBar.style.display = 'none';
-        } else {
+            // Show the bar
+            currentState = 'showing';
             stickyBar.style.display = 'flex';
+            stickyBar.classList.remove('hide');
+            // Trigger reflow to ensure animation plays
+            stickyBar.offsetHeight;
+            stickyBar.classList.add('show');
+
+            // Mark as visible after animation completes
+            setTimeout(() => {
+                if (currentState === 'showing') {
+                    currentState = 'visible';
+                }
+            }, 300);
+
+        } else {
+            // Want to hide the bar
+            if (currentState === 'hidden' || currentState === 'hiding') {
+                // Already hidden or hiding, do nothing
+                return;
+            }
+
+            if (currentState === 'showing') {
+                // Currently showing, don't interrupt - wait for animation to finish
+                return;
+            }
+
+            if (currentState === 'visible' && stickyBar.classList.contains('show')) {
+                // Hide the bar
+                currentState = 'hiding';
+                stickyBar.classList.remove('show');
+                stickyBar.classList.add('hide');
+
+                setTimeout(() => {
+                    if (currentState === 'hiding') {
+                        stickyBar.style.display = 'none';
+                        stickyBar.classList.remove('hide');
+                        currentState = 'hidden';
+                    }
+                }, 300);
+            }
         }
     }
 
-    // Update on scroll
-    window.addEventListener('scroll', updateStickyBarVisibility);
+    function debouncedUpdate() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(updateStickyBarVisibility, 50);
+    }
 
-    // Update on tab change (using MutationObserver)
-    const observer = new MutationObserver(updateStickyBarVisibility);
+    // Throttled scroll handler using requestAnimationFrame
+    function onScroll() {
+        if (!scrollTicking) {
+            window.requestAnimationFrame(() => {
+                updateStickyBarVisibility();
+                scrollTicking = false;
+            });
+            scrollTicking = true;
+        }
+    }
+
+    // Update on scroll with throttling
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Update on tab change with debouncing (using MutationObserver)
+    const observer = new MutationObserver(debouncedUpdate);
 
     // Wait for DOM to be ready
     function initObserver() {
@@ -49,10 +136,10 @@
             observer.observe(tabsContainer, {
                 attributes: true,
                 subtree: true,
-                attributeFilter: ['class', 'data-value']
+                attributeFilter: ['class']
             });
-            // Initial update
-            updateStickyBarVisibility();
+            // Initial update with a small delay to ensure DOM is fully ready
+            setTimeout(updateStickyBarVisibility, 100);
         } else {
             // Retry after a short delay
             setTimeout(initObserver, 100);
@@ -66,4 +153,3 @@
         initObserver();
     }
 })();
-

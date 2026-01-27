@@ -121,12 +121,21 @@ body {
     background-color: rgba(33, 37, 41, 0.98);
     border-top: 2px solid rgba(255, 255, 255, 0.1);
     padding: 1rem;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
-    gap: 1rem;
+    gap: 0rem;
     z-index: 1000;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.sticky-bottom-bar.show {
+    display: flex;
     animation: slideUp 0.3s ease-out;
+}
+
+.sticky-bottom-bar.hide {
+    display: flex;
+    animation: slideDown 0.3s ease-out;
 }
 
 @keyframes slideUp {
@@ -137,6 +146,17 @@ body {
     to {
         transform: translateY(0);
         opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
     }
 }
 
