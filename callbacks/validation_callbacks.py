@@ -114,9 +114,14 @@ def register_validation_callbacks(app, cfg):
     @app.callback(
         Output({'type': 'immunity-input', 'name': MATCH}, 'value', allow_duplicate=True),
         Input({'type': 'immunity-input', 'name': MATCH}, 'value'),
+        State('build-loading', 'data'),
         prevent_initial_call=True,
     )
-    def validate_immunity_input(val):
+    def validate_immunity_input(val, is_loading):
+        # Skip validation during build loading to prevent callback cascade
+        if is_loading:
+            return dash.no_update
+
         widget_id = ctx.triggered_id['name']            # ID 'name' of the widget changed (e.g., 'magical')
         limits = validations_immunities[widget_id]      # Get the limits of the value changed
         try:

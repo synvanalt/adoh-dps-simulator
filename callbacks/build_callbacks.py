@@ -1,13 +1,13 @@
 """Callbacks for multi-build management functionality.
 
-Refactored for better UX:
-- Auto-save: UI inputs automatically save to builds-store on change (debounced)
-- Fast switching: Switching builds only updates active-build-index, then loads new config
-- No explicit save-on-switch: eliminates double round-trip delay
+Save-on-Action approach:
+- Saves happen ONLY on major actions: switch build, CRUD, run simulation
+- No auto-save on every input change (eliminates race conditions)
+- Predictable timing: save current → then perform action
 """
 
 import dash
-from dash import Input, Output, State, ALL, ctx, clientside_callback, ClientsideFunction
+from dash import Input, Output, State, ALL, ctx, ClientsideFunction
 import dash_bootstrap_components as dbc
 import copy
 
@@ -28,34 +28,162 @@ def register_build_callbacks(app, cfg):
             n_clicks=0,
         )
 
-    # Clientside callback: Immediately show spinner when build management buttons are clicked
-    # This runs BEFORE Python callbacks, eliminating the perceived delay
+    # =========================================================================
+    # BUILD SWITCHING - Save current build, then load new build
+    # =========================================================================
+
+    # Clientside callback: Immediately show spinner when build tab is clicked
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='build_switching',
+            function_name='show_spinner_on_tab_click'
+        ),
+        Output('loading-overlay', 'style', allow_duplicate=True),
+        Input({'type': 'build-tab', 'index': ALL}, 'n_clicks'),
+        State('active-build-index', 'data'),
+        State('build-loading', 'data'),
+        prevent_initial_call=True
+    )
+
+    # Python callback: Save current build, switch to new build, and load config directly
+    # (Merged switch + load into one callback for faster switching - eliminates 1 round-trip)
+    @app.callback(
+        Output('builds-store', 'data', allow_duplicate=True),
+        Output('active-build-index', 'data', allow_duplicate=True),
+        Output('build-loading', 'data', allow_duplicate=True),
+        Output('config-buffer', 'data', allow_duplicate=True),
+        Input({'type': 'build-tab', 'index': ALL}, 'n_clicks'),
+        # Current UI state to save
+        State('ab-input', 'value'),
+        State('ab-capped-input', 'value'),
+        State('ab-prog-dropdown', 'value'),
+        State('toon-size-dropdown', 'value'),
+        State('combat-type-dropdown', 'value'),
+        State('mighty-input', 'value'),
+        State('enhancement-set-bonus-dropdown', 'value'),
+        State('str-mod-input', 'value'),
+        State({'type': 'melee-switch', 'name': 'two-handed'}, 'value'),
+        State({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value'),
+        State('keen-switch', 'value'),
+        State('improved-crit-switch', 'value'),
+        State('overwhelm-crit-switch', 'value'),
+        State('dev-crit-switch', 'value'),
+        State('shape-weapon-switch', 'value'),
+        State('shape-weapon-dropdown', 'value'),
+        State({'type': 'add-dmg-switch', 'name': ALL}, 'value'),
+        State({'type': 'add-dmg-input1', 'name': ALL}, 'value'),
+        State({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
+        State({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
+        State('weapon-dropdown', 'value'),
+        State('build-name-input', 'value'),
+        # Build state
+        State('builds-store', 'data'),
+        State('active-build-index', 'data'),
+        State('build-loading', 'data'),
+        prevent_initial_call=True
+    )
+    def switch_build(n_clicks_list, ab, ab_capped, ab_prog, toon_size, combat_type,
+                     mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
+                     improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+                     add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name,
+                     builds, active_idx, is_loading):
+        """Save current build state, then switch to the clicked build and load its config."""
+        no_update = dash.no_update
+        if not ctx.triggered_id or not any(n_clicks_list):
+            return no_update, no_update, no_update, no_update
+
+        # Prevent switching while already loading
+        if is_loading:
+            return no_update, no_update, no_update, no_update
+
+        # Get the clicked build index
+        clicked_index = ctx.triggered_id['index']
+
+        # If clicking the same build, no-op
+        if clicked_index == active_idx:
+            return no_update, no_update, no_update, no_update
+
+        # Save current build state before switching (including name for debounced input)
+        builds = save_current_build_state(
+            builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
+            mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
+            improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name, cfg
+        )
+
+        # Return new build config directly to buffer (skips load_build_to_buffer round-trip)
+        return builds, clicked_index, True, builds[clicked_index]
+
+    # =========================================================================
+    # CRUD OPERATIONS - Save current build first, then perform operation
+    # =========================================================================
+
+    # Clientside callback: Immediately show spinner when CRUD buttons are clicked
     app.clientside_callback(
         ClientsideFunction(
             namespace='build_switching',
             function_name='show_spinner_on_button_click'
         ),
-        Output('build-loading-overlay', 'style', allow_duplicate=True),
+        Output('loading-overlay', 'style', allow_duplicate=True),
         Input('add-build-btn', 'n_clicks'),
         Input('duplicate-build-btn', 'n_clicks'),
         Input('delete-build-btn', 'n_clicks'),
         prevent_initial_call=True
     )
 
-    # Callback: Add new build (no longer needs to save current state)
+    # Callback: Add new build (saves current build first, loads new build config directly)
     @app.callback(
         Output('builds-store', 'data', allow_duplicate=True),
         Output('active-build-index', 'data', allow_duplicate=True),
         Output('build-loading', 'data', allow_duplicate=True),
+        Output('config-buffer', 'data', allow_duplicate=True),
         Input('add-build-btn', 'n_clicks'),
+        # Current UI state to save
+        State('ab-input', 'value'),
+        State('ab-capped-input', 'value'),
+        State('ab-prog-dropdown', 'value'),
+        State('toon-size-dropdown', 'value'),
+        State('combat-type-dropdown', 'value'),
+        State('mighty-input', 'value'),
+        State('enhancement-set-bonus-dropdown', 'value'),
+        State('str-mod-input', 'value'),
+        State({'type': 'melee-switch', 'name': 'two-handed'}, 'value'),
+        State({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value'),
+        State('keen-switch', 'value'),
+        State('improved-crit-switch', 'value'),
+        State('overwhelm-crit-switch', 'value'),
+        State('dev-crit-switch', 'value'),
+        State('shape-weapon-switch', 'value'),
+        State('shape-weapon-dropdown', 'value'),
+        State({'type': 'add-dmg-switch', 'name': ALL}, 'value'),
+        State({'type': 'add-dmg-input1', 'name': ALL}, 'value'),
+        State({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
+        State({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
+        State('weapon-dropdown', 'value'),
+        State('build-name-input', 'value'),
+        # Build state
         State('builds-store', 'data'),
+        State('active-build-index', 'data'),
         prevent_initial_call=True
     )
-    def add_new_build(n_clicks, builds):
+    def add_new_build(n_clicks, ab, ab_capped, ab_prog, toon_size, combat_type,
+                      mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
+                      improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+                      add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name,
+                      builds, active_idx):
+        no_update = dash.no_update
         if not n_clicks or len(builds) >= 8:
-            return dash.no_update, dash.no_update, dash.no_update
+            return no_update, no_update, no_update, no_update
 
-        # Add new build with defaults (auto-save will have saved current build already)
+        # Save current build state first (including name for debounced input)
+        builds = save_current_build_state(
+            builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
+            mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
+            improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name, cfg
+        )
+
+        # Add new build with defaults
         new_index = len(builds)
         new_build = {
             'name': f'Build {new_index + 1}',
@@ -63,23 +191,62 @@ def register_build_callbacks(app, cfg):
         }
         builds.append(new_build)
 
-        return builds, new_index, True  # Set loading state
+        # Return new build config directly to buffer
+        return builds, new_index, True, new_build
 
-    # Callback: Duplicate current build (no longer needs to explicitly save current state)
+    # Callback: Duplicate current build (saves current build first, loads new build config directly)
     @app.callback(
         Output('builds-store', 'data', allow_duplicate=True),
         Output('active-build-index', 'data', allow_duplicate=True),
         Output('build-loading', 'data', allow_duplicate=True),
+        Output('config-buffer', 'data', allow_duplicate=True),
         Input('duplicate-build-btn', 'n_clicks'),
+        # Current UI state to save
+        State('ab-input', 'value'),
+        State('ab-capped-input', 'value'),
+        State('ab-prog-dropdown', 'value'),
+        State('toon-size-dropdown', 'value'),
+        State('combat-type-dropdown', 'value'),
+        State('mighty-input', 'value'),
+        State('enhancement-set-bonus-dropdown', 'value'),
+        State('str-mod-input', 'value'),
+        State({'type': 'melee-switch', 'name': 'two-handed'}, 'value'),
+        State({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value'),
+        State('keen-switch', 'value'),
+        State('improved-crit-switch', 'value'),
+        State('overwhelm-crit-switch', 'value'),
+        State('dev-crit-switch', 'value'),
+        State('shape-weapon-switch', 'value'),
+        State('shape-weapon-dropdown', 'value'),
+        State({'type': 'add-dmg-switch', 'name': ALL}, 'value'),
+        State({'type': 'add-dmg-input1', 'name': ALL}, 'value'),
+        State({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
+        State({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
+        State('weapon-dropdown', 'value'),
+        State('build-name-input', 'value'),
+        # Build state
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
         prevent_initial_call=True
     )
-    def duplicate_build(n_clicks, builds, active_idx):
+    def duplicate_build(n_clicks, ab, ab_capped, ab_prog, toon_size, combat_type,
+                        mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
+                        improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+                        add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name,
+                        builds, active_idx):
+        no_update = dash.no_update
         if not n_clicks or len(builds) >= 8:
-            return dash.no_update, dash.no_update, dash.no_update
+            return no_update, no_update, no_update, no_update
 
-        # Duplicate the current build (auto-save will have saved current build already)
+        # Save current build state first (so duplicate gets latest changes, including name)
+        builds = save_current_build_state(
+            builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
+            mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
+            improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name, cfg
+        )
+
+        # Duplicate the current build (now has latest state)
         new_index = len(builds)
         current_build = builds[active_idx]
         new_build = {
@@ -88,140 +255,62 @@ def register_build_callbacks(app, cfg):
         }
         builds.append(new_build)
 
-        return builds, new_index, True  # Set loading state
+        # Return duplicated build config directly to buffer
+        return builds, new_index, True, new_build
 
-    # Callback: Delete current build
+    # Callback: Delete current build (no need to save the one being deleted, loads remaining build config directly)
     @app.callback(
         Output('builds-store', 'data', allow_duplicate=True),
         Output('active-build-index', 'data', allow_duplicate=True),
         Output('build-loading', 'data', allow_duplicate=True),
+        Output('config-buffer', 'data', allow_duplicate=True),
         Input('delete-build-btn', 'n_clicks'),
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
         prevent_initial_call=True
     )
     def delete_build(n_clicks, builds, active_idx):
+        no_update = dash.no_update
         if not n_clicks or len(builds) <= 1:
-            return dash.no_update, dash.no_update, dash.no_update
+            return no_update, no_update, no_update, no_update
 
-        # Remove the current build
+        # Remove the current build (no need to save it first)
         builds.pop(active_idx)
 
         # Adjust active index
         new_active = min(active_idx, len(builds) - 1)
 
-        return builds, new_active, True
+        # Return the build at new active index directly to buffer
+        return builds, new_active, True, builds[new_active]
 
-    # Callback: Switch between builds (fast - only updates active index and sets loading state)
-    @app.callback(
-        Output('active-build-index', 'data', allow_duplicate=True),
-        Output('build-loading', 'data', allow_duplicate=True),
-        Input({'type': 'build-tab', 'index': ALL}, 'n_clicks'),
-        State('active-build-index', 'data'),
-        State('build-loading', 'data'),
-        prevent_initial_call=True
-    )
-    def switch_build(n_clicks_list, active_idx, is_loading):
-        if not ctx.triggered_id or not any(n_clicks_list):
-            return dash.no_update, dash.no_update
+    # =========================================================================
+    # BUILD NAME UPDATE - Minor, acceptable to update on change
+    # =========================================================================
 
-        # Prevent switching while already loading
-        if is_loading:
-            return dash.no_update, dash.no_update
-
-        # Get the clicked build index
-        clicked_index = ctx.triggered_id['index']
-
-        # If clicking the same build, no-op
-        if clicked_index == active_idx:
-            return dash.no_update, dash.no_update
-
-        # Switch the active index and set loading state
-        return clicked_index, True
-
-    # Callback: Update build name
     @app.callback(
         Output('builds-store', 'data', allow_duplicate=True),
         Input('build-name-input', 'value'),
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
+        State('build-loading', 'data'),
         prevent_initial_call=True
     )
-    def update_build_name(name, builds, active_idx):
-        if not name or not builds:
+    def update_build_name(name, builds, active_idx, is_loading):
+        # Don't update during loading (prevents overwriting with stale name)
+        if is_loading or not name or not builds:
             return dash.no_update
 
         builds[active_idx]['name'] = name
         return builds
 
-    # Callback: Auto-save - monitors all inputs and automatically saves to builds-store
-    @app.callback(
-        Output('builds-store', 'data', allow_duplicate=True),
-        Input('ab-input', 'value'),
-        Input('ab-capped-input', 'value'),
-        Input('ab-prog-dropdown', 'value'),
-        Input('toon-size-dropdown', 'value'),
-        Input('combat-type-dropdown', 'value'),
-        Input('mighty-input', 'value'),
-        Input('enhancement-set-bonus-dropdown', 'value'),
-        Input('str-mod-input', 'value'),
-        Input({'type': 'melee-switch', 'name': 'two-handed'}, 'value'),
-        Input({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value'),
-        Input('keen-switch', 'value'),
-        Input('improved-crit-switch', 'value'),
-        Input('overwhelm-crit-switch', 'value'),
-        Input('dev-crit-switch', 'value'),
-        Input('shape-weapon-switch', 'value'),
-        Input('shape-weapon-dropdown', 'value'),
-        Input({'type': 'add-dmg-switch', 'name': ALL}, 'value'),
-        Input({'type': 'add-dmg-input1', 'name': ALL}, 'value'),
-        Input({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
-        Input({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
-        Input('weapon-dropdown', 'value'),
-        State('builds-store', 'data'),
-        State('active-build-index', 'data'),
-        State('build-loading', 'data'),  # Prevent save during load
-        prevent_initial_call=True
-    )
-    def auto_save_build(ab, ab_capped, ab_prog, toon_size, combat_type, mighty,
-                        enhancement, str_mod, two_handed, weaponmaster, keen,
-                        improved_crit, overwhelm_crit, dev_crit, shape_override,
-                        shape_weapon, add_dmg_states, add_dmg1, add_dmg2, add_dmg3,
-                        weapons, builds, active_idx, is_loading):
-        """Automatically save current input values to builds-store whenever they change."""
-        # Don't save if build is currently loading (prevents race condition)
-        if is_loading:
-            return dash.no_update
+    # =========================================================================
+    # BUILD LOADING - Clientside update from config-buffer
+    # =========================================================================
 
-        if not builds or active_idx is None or active_idx >= len(builds):
-            return dash.no_update
+    # Note: load_build_to_buffer callback was removed - all operations (switch, add, duplicate, delete)
+    # now output config-buffer directly, eliminating one Python round-trip for faster switching.
 
-        # Save current state to builds-store
-        builds = save_current_build_state(
-            builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
-            mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
-            improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
-            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, cfg
-        )
-
-        return builds
-
-    # Step 1: Load build config into buffer (Python, fast - just data transfer)
-    @app.callback(
-        Output('config-buffer', 'data', allow_duplicate=True),
-        Input('active-build-index', 'data'),
-        State('builds-store', 'data'),
-        prevent_initial_call=True
-    )
-    def load_build_to_buffer(active_idx, builds):
-        """Load build config to buffer. Clientside callback will update inputs from buffer."""
-        if builds is None or active_idx is None or active_idx >= len(builds):
-            return dash.no_update
-
-        # Just return the build data - clientside will handle the rest
-        return builds[active_idx]
-
-    # Step 2: Update UI from buffer (Clientside, INSTANT - no server round-trip!)
+    # Clientside: Update UI from buffer (instant, no server round-trip)
     app.clientside_callback(
         ClientsideFunction(
             namespace='build_switching',
@@ -251,10 +340,15 @@ def register_build_callbacks(app, cfg):
         Output('build-name-input', 'value', allow_duplicate=True),
         Output('build-loading', 'data', allow_duplicate=True),
         Input('config-buffer', 'data'),
+        State('build-loading', 'data'),
         prevent_initial_call=True
     )
 
-    # Callback: Update build tabs UI based on builds-store
+    # =========================================================================
+    # UI UPDATES
+    # =========================================================================
+
+    # Update build tabs UI based on builds-store
     @app.callback(
         Output('build-tabs', 'children'),
         Output('delete-build-btn', 'disabled'),
@@ -280,39 +374,32 @@ def register_build_callbacks(app, cfg):
 
         return tabs, delete_disabled, add_disabled, duplicate_disabled
 
-    # Callback: Control loading overlay visibility
+    # Control loading overlay visibility
     @app.callback(
-        Output('build-loading-overlay', 'style'),
+        Output('loading-overlay', 'style', allow_duplicate=True),
         Input('build-loading', 'data'),
+        prevent_initial_call=True
     )
     def toggle_build_loading_overlay(is_loading):
-        """Show/hide loading overlay during build switching."""
-        if is_loading:
-            return {
-                'display': 'flex',
-                'position': 'fixed',
-                'top': 0,
-                'left': 0,
-                'width': '100%',
-                'height': '100%',
-                'backgroundColor': 'rgba(0, 0, 0, 0.7)',
-                'zIndex': 9998,
-                'flexDirection': 'column',
-                'justifyContent': 'center',
-                'alignItems': 'center',
-            }
-        else:
+        """Hide loading overlay when build operation completes."""
+        if not is_loading:
             return {'display': 'none'}
+        return dash.no_update
 
 
 def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, toon_size,
                               combat_type, mighty, enhancement, str_mod, two_handed,
                               weaponmaster, keen, improved_crit, overwhelm_crit,
                               dev_crit, shape_override, shape_weapon,
-                              add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, cfg):
+                              add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons,
+                              build_name, cfg):
     """Save the current UI values into the builds array at active_idx."""
     if not builds or active_idx is None or active_idx >= len(builds):
         return builds
+
+    # Save build name (important for debounced input - captures current DOM value)
+    if build_name:
+        builds[active_idx]['name'] = build_name
 
     # Rebuild ADDITIONAL_DAMAGE dict from individual inputs
     add_dmg_dict = {}

@@ -1,9 +1,20 @@
 # Third-party imports
-from dash import Input, Output, State, callback_context
+from dash import Input, Output, State, callback_context, ClientsideFunction
 import dash
 
 
 def register_weights_callbacks(app):
+
+    # Clientside callback: Immediately show spinner when weights apply button is clicked
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='build_switching',
+            function_name='show_spinner_on_weights_apply'
+        ),
+        Output('loading-overlay', 'style', allow_duplicate=True),
+        Input('weights-apply-btn', 'n_clicks'),
+        prevent_initial_call=True
+    )
 
     # Callback: Toggle modal and populate input from store
     @app.callback(

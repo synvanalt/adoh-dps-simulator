@@ -64,20 +64,21 @@ def register_core_callbacks(app, cfg):
             Output('intermediate-value', 'data'),
             Output('config-store', 'data'),
             Output('progress-text', 'children'),
-            Output('builds-store', 'data'),  # Save current build state before simulation
+            Output('builds-store', 'data'),  # Save current build before simulation
             Output('global-error-body', 'children'),         # extra: error text
             Output('global-error-modal', 'is_open')          # extra: open modal
         ],
         inputs=[
-            # Input('loading-overlay', 'style'),
             Input('simulate-button', 'n_clicks'),
             Input('resimulate-button', 'n_clicks'),
             Input('sticky-simulate-button', 'n_clicks'),
         ],
         states=[
+            # Core stores
             State('config-store', 'data'),
             State('builds-store', 'data'),
             State('active-build-index', 'data'),
+            # Current build UI state (for save-before-simulate)
             State('ab-input', 'value'),
             State('ab-capped-input', 'value'),
             State('ab-prog-dropdown', 'value'),
@@ -98,7 +99,8 @@ def register_core_callbacks(app, cfg):
             State({'type': 'add-dmg-input1', 'name': ALL}, 'value'),
             State({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
             State({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
-            State('weapon-dropdown', 'value'),  # Current build's weapons for saving
+            State('weapon-dropdown', 'value'),
+            # Shared simulation settings (not per-build)
             State('target-ac-input', 'value'),
             State('rounds-input', 'value'),
             State('damage-limit-switch', 'value'),
@@ -107,7 +109,7 @@ def register_core_callbacks(app, cfg):
             State('relative-change-input', 'value'),
             State('relative-std-input', 'value'),
             State('target-immunities-switch', 'value'),
-            State({'type': 'immunity-input', 'name': ALL}, 'value')
+            State({'type': 'immunity-input', 'name': ALL}, 'value'),
         ],
         background=True,  # runs in a worker thread automatically
         cancel=[Input('cancel-sim-button', 'n_clicks')],   # Cancel operation button
@@ -129,12 +131,14 @@ def register_core_callbacks(app, cfg):
         ],  # Disable buttons & clear progress modal when sim starts, re-enable buttons when finishes
         prevent_initial_call=True
     )
-    def run_simulation(set_progress, _, __, ___, current_cfg, builds, active_build_idx, ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
-                        str_mod, two_handed, weaponmaster, keen, improved_crit, overwhelm_crit, dev_crit, shape_weapon_override, shape_weapon,
-                        add_dmg_state, add_dmg1, add_dmg2, add_dmg3,
-                        weapons, target_ac, rounds, dmg_limit_flag, dmg_limit, dmg_vs_race,
-                        relative_change, relative_std, immunity_flag, immunity_values):
-
+    def run_simulation(set_progress, _, __, ___, current_cfg, builds, active_build_idx,
+                       ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
+                       str_mod, two_handed, weaponmaster, keen, improved_crit, overwhelm_crit,
+                       dev_crit, shape_weapon_override, shape_weapon,
+                       add_dmg_state, add_dmg1, add_dmg2, add_dmg3, weapons,
+                       target_ac, rounds, dmg_limit_flag, dmg_limit, dmg_vs_race,
+                       relative_change, relative_std, immunity_flag, immunity_values):
+        """Run simulation with save-on-action: saves current build first, then simulates all builds."""
         # Check if any build has weapons configured
         has_any_weapons = any(
             build.get('config', {}).get('WEAPONS', [])
@@ -143,21 +147,19 @@ def register_core_callbacks(app, cfg):
         if not ctx.triggered_id or not has_any_weapons:
             return False, dash.no_update, current_cfg, dash.no_update, dash.no_update, dash.no_update, False
 
-        # if ctx.triggered_id == 'simulate-button' or ctx.triggered_id == 'resimulate-button':
-        # if spinner['display'] == 'flex':
         print("Starting simulation...")
-        # Start simulation
+
+        # Initialize config store if needed
         if current_cfg is None:
-            # fallback
             current_cfg = asdict(cfg)
             print("current_cfg was None and is initialized")
 
-        # Save current active build's UI state to builds-store before running simulation
+        # Initialize builds if needed
         if builds is None:
             from components.build_manager import create_default_builds
             builds = create_default_builds()
 
-        # Save current UI state to active build
+        # Save current build state before simulation (save-on-action)
         add_dmg_dict = {
             key: [add_dmg_state[idx], {next(iter(val[1].keys())): [add_dmg1[idx], add_dmg2[idx], add_dmg3[idx]]}, val[2]]
             for idx, (key, val) in enumerate(cfg.ADDITIONAL_DAMAGE.items())
@@ -240,13 +242,15 @@ def register_core_callbacks(app, cfg):
     # Callback: update results based on stored simulation results
     @app.callback(
         [Output('comparative-table', 'children'),
-         Output('detailed-results', 'children')],
+         Output('detailed-results', 'children'),
+         Output('loading-overlay', 'style', allow_duplicate=True)],
         [Input('intermediate-value', 'data'),
-         Input('dps-weights-store', 'data')]
+         Input('dps-weights-store', 'data')],
+        prevent_initial_call=True
     )
     def update_results(results_dict, weights_data):
         if not results_dict:
-            return "Run simulation to see results...", ""
+            return "Run simulation to see results...", "", {'display': 'none'}
 
         # Get weights from store (default 50/50)
         crit_weight = weights_data.get('crit_allowed', 50) if weights_data else 50
@@ -325,7 +329,8 @@ def register_core_callbacks(app, cfg):
             )
         ], style={'overflow-x': 'auto'})
 
-        return comparative_table, html.Div(detailed_results)
+        # Hide loading overlay when results update completes
+        return comparative_table, html.Div(detailed_results), {'display': 'none'}
 
 
     def build_detailed_results_card(title, results):

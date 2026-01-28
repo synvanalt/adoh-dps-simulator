@@ -91,27 +91,11 @@ app.layout = dbc.Container([
     build_sim_error_modal(),
 
 
-    # Dark overlay with spinner during simulation
+    # Dark overlay with spinner (used during simulation, build switching, reset, etc.)
     html.Div(
         id='loading-overlay',
-        children=dbc.Spinner(color='light', size='lg', type='border'),
-        style={
-            'display': 'none',
-            'position': 'fixed',
-            'top': 0,
-            'left': 0,
-            'width': '100%',
-            'height': '100%',
-            'zIndex': 9999,
-        }
-    ),
-
-    # Overlay with spinner during build switching
-    html.Div(
-        id='build-loading-overlay',
         children=[
             dbc.Spinner(color='primary', size='lg', type='border'),
-            html.Div('Switching build...', className='text-light mt-3', style={'fontSize': '1.2rem'})
         ],
         style={
             'display': 'none',
@@ -121,7 +105,7 @@ app.layout = dbc.Container([
             'width': '100%',
             'height': '100%',
             'backgroundColor': 'rgba(0, 0, 0, 0.7)',
-            'zIndex': 9998,
+            'zIndex': 9999,
             'flexDirection': 'column',
             'justifyContent': 'center',
             'alignItems': 'center',
