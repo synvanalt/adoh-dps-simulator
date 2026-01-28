@@ -112,32 +112,43 @@ def register_build_callbacks(app, cfg):
 
         return builds, new_active, True
 
-    # Callback: Switch between builds (fast - only updates active index and sets loading state)
-    @app.callback(
+    # Clientside callback: Full clientside build switching (no Python round-trips!)
+    # This replaces the Python switch_build callback for instant tab switching
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='build_switching',
+            function_name='switch_build'
+        ),
         Output('active-build-index', 'data', allow_duplicate=True),
+        Output('ab-input', 'value', allow_duplicate=True),
+        Output('ab-capped-input', 'value', allow_duplicate=True),
+        Output('ab-prog-dropdown', 'value', allow_duplicate=True),
+        Output('toon-size-dropdown', 'value', allow_duplicate=True),
+        Output('combat-type-dropdown', 'value', allow_duplicate=True),
+        Output('mighty-input', 'value', allow_duplicate=True),
+        Output('enhancement-set-bonus-dropdown', 'value', allow_duplicate=True),
+        Output('str-mod-input', 'value', allow_duplicate=True),
+        Output({'type': 'melee-switch', 'name': 'two-handed'}, 'value', allow_duplicate=True),
+        Output({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value', allow_duplicate=True),
+        Output('keen-switch', 'value', allow_duplicate=True),
+        Output('improved-crit-switch', 'value', allow_duplicate=True),
+        Output('overwhelm-crit-switch', 'value', allow_duplicate=True),
+        Output('dev-crit-switch', 'value', allow_duplicate=True),
+        Output('shape-weapon-switch', 'value', allow_duplicate=True),
+        Output('shape-weapon-dropdown', 'value', allow_duplicate=True),
+        Output({'type': 'add-dmg-switch', 'name': ALL}, 'value', allow_duplicate=True),
+        Output({'type': 'add-dmg-input1', 'name': ALL}, 'value', allow_duplicate=True),
+        Output({'type': 'add-dmg-input2', 'name': ALL}, 'value', allow_duplicate=True),
+        Output({'type': 'add-dmg-input3', 'name': ALL}, 'value', allow_duplicate=True),
+        Output('weapon-dropdown', 'value', allow_duplicate=True),
+        Output('build-name-input', 'value', allow_duplicate=True),
         Output('build-loading', 'data', allow_duplicate=True),
         Input({'type': 'build-tab', 'index': ALL}, 'n_clicks'),
+        State('builds-store', 'data'),
         State('active-build-index', 'data'),
         State('build-loading', 'data'),
         prevent_initial_call=True
     )
-    def switch_build(n_clicks_list, active_idx, is_loading):
-        if not ctx.triggered_id or not any(n_clicks_list):
-            return dash.no_update, dash.no_update
-
-        # Prevent switching while already loading
-        if is_loading:
-            return dash.no_update, dash.no_update
-
-        # Get the clicked build index
-        clicked_index = ctx.triggered_id['index']
-
-        # If clicking the same build, no-op
-        if clicked_index == active_idx:
-            return dash.no_update, dash.no_update
-
-        # Switch the active index and set loading state
-        return clicked_index, True
 
     # Callback: Update build name
     @app.callback(
@@ -206,15 +217,28 @@ def register_build_callbacks(app, cfg):
 
         return builds
 
-    # Step 1: Load build config into buffer (Python, fast - just data transfer)
+    # Step 1: Load build config into buffer (for CRUD operations only)
+    # Tab switching is handled by the clientside switch_build callback, but CRUD
+    # operations (add/duplicate/delete) still need this Python → buffer → clientside flow.
     @app.callback(
         Output('config-buffer', 'data', allow_duplicate=True),
         Input('active-build-index', 'data'),
         State('builds-store', 'data'),
+        State('build-loading', 'data'),
         prevent_initial_call=True
     )
-    def load_build_to_buffer(active_idx, builds):
-        """Load build config to buffer. Clientside callback will update inputs from buffer."""
+    def load_build_to_buffer(active_idx, builds, is_loading):
+        """Load build config to buffer for CRUD operations.
+
+        Only runs when build-loading is True, indicating a CRUD operation.
+        Tab clicks are handled entirely by clientside switch_build which sets
+        build-loading=False, so this callback will no-op for tab switches.
+        """
+        # Only load for CRUD operations (when build-loading is True)
+        # Tab switches are handled by clientside switch_build
+        if not is_loading:
+            return dash.no_update
+
         if builds is None or active_idx is None or active_idx >= len(builds):
             return dash.no_update
 

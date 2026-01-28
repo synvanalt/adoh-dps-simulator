@@ -74,6 +74,7 @@ def register_plots_callbacks(app):
         Output('plots-build-dropdown', 'options'),
         Output('plots-build-dropdown', 'value'),
         Input('intermediate-value', 'data'),
+        prevent_initial_call=True
     )
     def populate_build_dropdown(results_dict):
         if not results_dict:
@@ -93,6 +94,7 @@ def register_plots_callbacks(app):
         Output('plots-weapon-dropdown', 'value'),
         Input('intermediate-value', 'data'),
         Input('plots-build-dropdown', 'value'),
+        prevent_initial_call=True
     )
     def populate_weapon_dropdown(results_dict, selected_build):
         if not results_dict:
@@ -115,7 +117,8 @@ def register_plots_callbacks(app):
     @app.callback(
         Output('plots-dps-comparison', 'figure'),
         Input('intermediate-value', 'data'),
-        Input('dps-weights-store', 'data')
+        Input('dps-weights-store', 'data'),
+        prevent_initial_call=True
     )
     def update_dps_comparison_figure(results_dict, weights_data):
         from plotly.subplots import make_subplots
@@ -241,7 +244,8 @@ def register_plots_callbacks(app):
         Output('plots-weapon-breakdown', 'figure'),
         Input('plots-weapon-dropdown', 'value'),
         Input('plots-build-dropdown', 'value'),
-        State('intermediate-value', 'data')
+        State('intermediate-value', 'data'),
+        prevent_initial_call=True
     )
     def update_weapon_plots(selected_weapon, selected_build, results_dict):
         empty_fig = go.Figure()
