@@ -132,7 +132,7 @@ class TestSaveCurrentBuildState:
             builds, 0, ab, 20, 'Classic', 'M', 'Melee',
             0, 3, str_mod, False, False, keen,
             False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], cfg
+            [], [], [], [], ['Spear'], 'Build 1', cfg
         )
 
         assert result[0]['config']['AB'] == ab
@@ -151,7 +151,7 @@ class TestSaveCurrentBuildState:
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, ['Spear'], cfg
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, ['Spear'], 'Build 1', cfg
         )
 
         add_dmg = result[0]['config']['ADDITIONAL_DAMAGE']
@@ -169,7 +169,7 @@ class TestSaveCurrentBuildState:
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], weapons, cfg
+            [], [], [], [], weapons, 'Build 1', cfg
         )
 
         assert result[0]['config']['WEAPONS'] == weapons
@@ -182,7 +182,7 @@ class TestSaveCurrentBuildState:
             builds, 99, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], cfg
+            [], [], [], [], ['Spear'], 'Build 1', cfg
         )
 
         # Should return builds unchanged
@@ -195,7 +195,7 @@ class TestSaveCurrentBuildState:
             None, 0, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], cfg
+            [], [], [], [], ['Spear'], 'Build 1', cfg
         )
 
         assert result is None
@@ -209,7 +209,7 @@ class TestSaveCurrentBuildState:
             builds, 0, 99, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], cfg
+            [], [], [], [], ['Spear'], 'Build 1', cfg
         )
 
         # Build 0 should be updated
@@ -461,7 +461,7 @@ class TestBuildDataIntegrity:
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [True] * 20, [2] * 20, [6] * 20, [5] * 20, ['Spear'], cfg
+            [True] * 20, [2] * 20, [6] * 20, [5] * 20, ['Spear'], 'Build 1', cfg
         )
 
         add_dmg = result[0]['config']['ADDITIONAL_DAMAGE']
@@ -493,7 +493,7 @@ class TestBuildEdgeCases:
             [], 0, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], cfg
+            [], [], [], [], ['Spear'], 'Build 1', cfg
         )
         assert result == []
 
@@ -504,7 +504,7 @@ class TestBuildEdgeCases:
             builds, -1, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], cfg
+            [], [], [], [], ['Spear'], 'Build 1', cfg
         )
         # Should return unchanged builds
         assert result[0]['config']['AB'] == builds[0]['config']['AB']
@@ -529,3 +529,34 @@ class TestBuildEdgeCases:
         unicode_name = "Build 火🔥"
         builds[0]['name'] = unicode_name
         assert builds[0]['name'] == unicode_name
+
+    def test_save_current_build_state_saves_build_name(self, cfg):
+        """Test that save_current_build_state saves the build name."""
+        builds = create_default_builds()
+        original_name = builds[0]['name']
+        new_name = "My Custom Build"
+
+        result = save_current_build_state(
+            builds, 0, 40, 20, 'Classic', 'M', 'Melee',
+            0, 3, 8, False, False, False,
+            False, False, False, False, 'Longsword',
+            [], [], [], [], ['Spear'], new_name, cfg
+        )
+
+        assert result[0]['name'] == new_name
+        assert result[0]['name'] != original_name
+
+    def test_save_current_build_state_preserves_name_when_none(self, cfg):
+        """Test that save_current_build_state preserves name when None is passed."""
+        builds = create_default_builds()
+        original_name = builds[0]['name']
+
+        result = save_current_build_state(
+            builds, 0, 40, 20, 'Classic', 'M', 'Melee',
+            0, 3, 8, False, False, False,
+            False, False, False, False, 'Longsword',
+            [], [], [], [], ['Spear'], None, cfg
+        )
+
+        # Name should be unchanged when None is passed
+        assert result[0]['name'] == original_name

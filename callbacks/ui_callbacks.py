@@ -33,6 +33,7 @@ def register_ui_callbacks(app, cfg):
 
 
     # Callback: update reference information
+    # Shows weapons from ALL builds (deduplicated) in the Reference Info tab
     @app.callback(
         [Output('weapon-properties', 'children'),
          Output('purple-weapons', 'children'),
@@ -43,14 +44,31 @@ def register_ui_callbacks(app, cfg):
          Input('weapon-dropdown', 'value'),
          Input('shape-weapon-switch', 'value'),
          Input('shape-weapon-dropdown', 'value'),
-         Input({'type': 'immunity-input', 'name': ALL}, 'value')],
+         Input({'type': 'immunity-input', 'name': ALL}, 'value'),
+         Input('builds-store', 'data')],
         State('build-loading', 'data'),
         prevent_initial_call=True
     )
-    def update_reference_info(_, __, ___, selected_weapons, shape_weapon_override, shape_weapon, immunity_values, is_loading):
+    def update_reference_info(_, __, ___, selected_weapons, shape_weapon_override, shape_weapon, immunity_values, builds, is_loading):
         # Skip during build loading to prevent callback cascade
         if is_loading:
             return dash.no_update, dash.no_update, dash.no_update
+
+        # Collect unique weapons from ALL builds (deduplicated, preserving order)
+        all_weapons = []
+        seen = set()
+        if builds:
+            for build in builds:
+                build_weapons = build.get('config', {}).get('WEAPONS', [])
+                if build_weapons:
+                    for w in build_weapons:
+                        if w not in seen:
+                            seen.add(w)
+                            all_weapons.append(w)
+
+        # Use combined weapons list instead of just current dropdown
+        selected_weapons = all_weapons if all_weapons else selected_weapons
+
         if not selected_weapons:
             return "No weapon selected", str(cfg.TARGET_IMMUNITIES), "No weapon selected"
 

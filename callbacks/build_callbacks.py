@@ -75,6 +75,7 @@ def register_build_callbacks(app, cfg):
         State({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
         State({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
         State('weapon-dropdown', 'value'),
+        State('build-name-input', 'value'),
         # Build state
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
@@ -84,7 +85,7 @@ def register_build_callbacks(app, cfg):
     def switch_build(n_clicks_list, ab, ab_capped, ab_prog, toon_size, combat_type,
                      mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
                      improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
-                     add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons,
+                     add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name,
                      builds, active_idx, is_loading):
         """Save current build state, then switch to the clicked build and load its config."""
         no_update = dash.no_update
@@ -102,12 +103,12 @@ def register_build_callbacks(app, cfg):
         if clicked_index == active_idx:
             return no_update, no_update, no_update, no_update
 
-        # Save current build state before switching
+        # Save current build state before switching (including name for debounced input)
         builds = save_current_build_state(
             builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
             mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
             improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
-            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, cfg
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name, cfg
         )
 
         # Return new build config directly to buffer (skips load_build_to_buffer round-trip)
@@ -159,6 +160,7 @@ def register_build_callbacks(app, cfg):
         State({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
         State({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
         State('weapon-dropdown', 'value'),
+        State('build-name-input', 'value'),
         # Build state
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
@@ -167,18 +169,18 @@ def register_build_callbacks(app, cfg):
     def add_new_build(n_clicks, ab, ab_capped, ab_prog, toon_size, combat_type,
                       mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
                       improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
-                      add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons,
+                      add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name,
                       builds, active_idx):
         no_update = dash.no_update
         if not n_clicks or len(builds) >= 8:
             return no_update, no_update, no_update, no_update
 
-        # Save current build state first
+        # Save current build state first (including name for debounced input)
         builds = save_current_build_state(
             builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
             mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
             improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
-            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, cfg
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name, cfg
         )
 
         # Add new build with defaults
@@ -221,6 +223,7 @@ def register_build_callbacks(app, cfg):
         State({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
         State({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
         State('weapon-dropdown', 'value'),
+        State('build-name-input', 'value'),
         # Build state
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
@@ -229,18 +232,18 @@ def register_build_callbacks(app, cfg):
     def duplicate_build(n_clicks, ab, ab_capped, ab_prog, toon_size, combat_type,
                         mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
                         improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
-                        add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons,
+                        add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name,
                         builds, active_idx):
         no_update = dash.no_update
         if not n_clicks or len(builds) >= 8:
             return no_update, no_update, no_update, no_update
 
-        # Save current build state first (so duplicate gets latest changes)
+        # Save current build state first (so duplicate gets latest changes, including name)
         builds = save_current_build_state(
             builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
             mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
             improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
-            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, cfg
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name, cfg
         )
 
         # Duplicate the current build (now has latest state)
@@ -388,10 +391,15 @@ def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, toon_si
                               combat_type, mighty, enhancement, str_mod, two_handed,
                               weaponmaster, keen, improved_crit, overwhelm_crit,
                               dev_crit, shape_override, shape_weapon,
-                              add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, cfg):
+                              add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons,
+                              build_name, cfg):
     """Save the current UI values into the builds array at active_idx."""
     if not builds or active_idx is None or active_idx >= len(builds):
         return builds
+
+    # Save build name (important for debounced input - captures current DOM value)
+    if build_name:
+        builds[active_idx]['name'] = build_name
 
     # Rebuild ADDITIONAL_DAMAGE dict from individual inputs
     add_dmg_dict = {}
