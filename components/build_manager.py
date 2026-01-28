@@ -30,6 +30,8 @@ def get_default_build_config():
         'SHAPE_WEAPON': default_cfg.SHAPE_WEAPON,
         # Additional Damage - store the full structure
         'ADDITIONAL_DAMAGE': default_cfg.ADDITIONAL_DAMAGE,
+        # Weapons per build
+        'WEAPONS': default_cfg.DEFAULT_WEAPONS,
     }
 
 
@@ -72,7 +74,7 @@ def build_build_manager():
                     ],
                     className='d-flex align-items-center flex-wrap',
                 ),
-            ], xs=12, md=8, className='mb-2 mb-md-0'),
+            ], xs=12, md=8, className='mb-1 mb-md-0'),
 
             # Build management buttons
             dbc.Col([

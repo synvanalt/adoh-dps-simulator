@@ -98,7 +98,7 @@ def register_core_callbacks(app, cfg):
             State({'type': 'add-dmg-input1', 'name': ALL}, 'value'),
             State({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
             State({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
-            State('weapon-dropdown', 'value'),
+            State('weapon-dropdown', 'value'),  # Current build's weapons for saving
             State('target-ac-input', 'value'),
             State('rounds-input', 'value'),
             State('damage-limit-switch', 'value'),
@@ -135,8 +135,12 @@ def register_core_callbacks(app, cfg):
                         weapons, target_ac, rounds, dmg_limit_flag, dmg_limit, dmg_vs_race,
                         relative_change, relative_std, immunity_flag, immunity_values):
 
-        if not ctx.triggered_id or not weapons:
-        # if spinner['display'] == 'none' or not weapons:
+        # Check if any build has weapons configured
+        has_any_weapons = any(
+            build.get('config', {}).get('WEAPONS', [])
+            for build in (builds or [])
+        )
+        if not ctx.triggered_id or not has_any_weapons:
             return False, dash.no_update, current_cfg, dash.no_update, dash.no_update, dash.no_update, False
 
         # if ctx.triggered_id == 'simulate-button' or ctx.triggered_id == 'resimulate-button':
@@ -176,6 +180,7 @@ def register_core_callbacks(app, cfg):
             'SHAPE_WEAPON_OVERRIDE': shape_weapon_override,
             'SHAPE_WEAPON': shape_weapon,
             'ADDITIONAL_DAMAGE': add_dmg_dict,
+            'WEAPONS': weapons if weapons else [],
         }
 
         # Build shared simulation settings (same for all builds)
@@ -194,8 +199,8 @@ def register_core_callbacks(app, cfg):
             },
         }
 
-        # Calculate total simulations (builds * weapons)
-        total_sims = len(builds) * len(weapons)
+        # Calculate total simulations (sum of weapons per build)
+        total_sims = sum(len(build['config'].get('WEAPONS', [])) for build in builds)
         sim_count = 0
 
         # Results dict: {build_name: {weapon: results}}
@@ -204,16 +209,22 @@ def register_core_callbacks(app, cfg):
         for build in builds:
             build_name = build['name']
             build_config = build['config']
+            build_weapons = build_config.get('WEAPONS', [])
+
+            if not build_weapons:
+                continue  # Skip builds with no weapons
 
             # Merge build config with shared settings to create full config
             full_cfg_dict = asdict(cfg)  # Start with defaults
             full_cfg_dict.update(build_config)
             full_cfg_dict.update(shared_settings)
+            # Remove WEAPONS key - it's build-specific, not a Config attribute
+            full_cfg_dict.pop('WEAPONS', None)
 
             user_cfg = Config(**full_cfg_dict)
             results_dict[build_name] = {}
 
-            for weapon in weapons:
+            for weapon in build_weapons:  # Per-build weapons
                 sim_count += 1
                 set_progress((f"{build_name} | {weapon}...  ({sim_count}/{total_sims})", str(sim_count), str(total_sims)))
 

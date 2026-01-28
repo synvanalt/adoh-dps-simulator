@@ -72,7 +72,7 @@ class TestGetDefaultBuildConfig:
             'MIGHTY', 'ENHANCEMENT_SET_BONUS', 'STR_MOD', 'TWO_HANDED',
             'WEAPONMASTER', 'KEEN', 'IMPROVED_CRIT', 'OVERWHELM_CRIT',
             'DEV_CRIT', 'SHAPE_WEAPON_OVERRIDE', 'SHAPE_WEAPON',
-            'ADDITIONAL_DAMAGE'
+            'ADDITIONAL_DAMAGE', 'WEAPONS'
         ]
         for key in required_keys:
             assert key in config
@@ -132,7 +132,7 @@ class TestSaveCurrentBuildState:
             builds, 0, ab, 20, 'Classic', 'M', 'Melee',
             0, 3, str_mod, False, False, keen,
             False, False, False, False, 'Longsword',
-            [], [], [], [], cfg
+            [], [], [], [], ['Spear'], cfg
         )
 
         assert result[0]['config']['AB'] == ab
@@ -151,7 +151,7 @@ class TestSaveCurrentBuildState:
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, cfg
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, ['Spear'], cfg
         )
 
         add_dmg = result[0]['config']['ADDITIONAL_DAMAGE']
@@ -159,6 +159,20 @@ class TestSaveCurrentBuildState:
         # Check first entry
         first_key = list(add_dmg.keys())[0]
         assert add_dmg[first_key][0] == True  # Switch state
+
+    def test_saves_weapons(self, cfg):
+        """Test that weapons are saved correctly."""
+        builds = create_default_builds()
+        weapons = ['Spear', 'Longsword', 'Greataxe']
+
+        result = save_current_build_state(
+            builds, 0, 40, 20, 'Classic', 'M', 'Melee',
+            0, 3, 8, False, False, False,
+            False, False, False, False, 'Longsword',
+            [], [], [], [], weapons, cfg
+        )
+
+        assert result[0]['config']['WEAPONS'] == weapons
 
     def test_handles_invalid_index(self, cfg):
         """Test that invalid index is handled."""
@@ -168,7 +182,7 @@ class TestSaveCurrentBuildState:
             builds, 99, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], cfg
+            [], [], [], [], ['Spear'], cfg
         )
 
         # Should return builds unchanged
@@ -181,7 +195,7 @@ class TestSaveCurrentBuildState:
             None, 0, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], cfg
+            [], [], [], [], ['Spear'], cfg
         )
 
         assert result is None
@@ -195,7 +209,7 @@ class TestSaveCurrentBuildState:
             builds, 0, 99, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], cfg
+            [], [], [], [], ['Spear'], cfg
         )
 
         # Build 0 should be updated
@@ -447,7 +461,7 @@ class TestBuildDataIntegrity:
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [True] * 20, [2] * 20, [6] * 20, [5] * 20, cfg
+            [True] * 20, [2] * 20, [6] * 20, [5] * 20, ['Spear'], cfg
         )
 
         add_dmg = result[0]['config']['ADDITIONAL_DAMAGE']
@@ -479,7 +493,7 @@ class TestBuildEdgeCases:
             [], 0, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], cfg
+            [], [], [], [], ['Spear'], cfg
         )
         assert result == []
 
@@ -490,7 +504,7 @@ class TestBuildEdgeCases:
             builds, -1, 40, 20, 'Classic', 'M', 'Melee',
             0, 3, 8, False, False, False,
             False, False, False, False, 'Longsword',
-            [], [], [], [], cfg
+            [], [], [], [], ['Spear'], cfg
         )
         # Should return unchanged builds
         assert result[0]['config']['AB'] == builds[0]['config']['AB']

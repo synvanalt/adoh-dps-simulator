@@ -177,6 +177,7 @@ def register_build_callbacks(app, cfg):
         Input({'type': 'add-dmg-input1', 'name': ALL}, 'value'),
         Input({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
         Input({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
+        Input('weapon-dropdown', 'value'),
         State('builds-store', 'data'),
         State('active-build-index', 'data'),
         State('build-loading', 'data'),  # Prevent save during load
@@ -186,7 +187,7 @@ def register_build_callbacks(app, cfg):
                         enhancement, str_mod, two_handed, weaponmaster, keen,
                         improved_crit, overwhelm_crit, dev_crit, shape_override,
                         shape_weapon, add_dmg_states, add_dmg1, add_dmg2, add_dmg3,
-                        builds, active_idx, is_loading):
+                        weapons, builds, active_idx, is_loading):
         """Automatically save current input values to builds-store whenever they change."""
         # Don't save if build is currently loading (prevents race condition)
         if is_loading:
@@ -200,7 +201,7 @@ def register_build_callbacks(app, cfg):
             builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
             mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
             improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
-            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, cfg
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, cfg
         )
 
         return builds
@@ -246,6 +247,7 @@ def register_build_callbacks(app, cfg):
         Output({'type': 'add-dmg-input1', 'name': ALL}, 'value', allow_duplicate=True),
         Output({'type': 'add-dmg-input2', 'name': ALL}, 'value', allow_duplicate=True),
         Output({'type': 'add-dmg-input3', 'name': ALL}, 'value', allow_duplicate=True),
+        Output('weapon-dropdown', 'value', allow_duplicate=True),
         Output('build-name-input', 'value', allow_duplicate=True),
         Output('build-loading', 'data', allow_duplicate=True),
         Input('config-buffer', 'data'),
@@ -307,7 +309,7 @@ def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, toon_si
                               combat_type, mighty, enhancement, str_mod, two_handed,
                               weaponmaster, keen, improved_crit, overwhelm_crit,
                               dev_crit, shape_override, shape_weapon,
-                              add_dmg_states, add_dmg1, add_dmg2, add_dmg3, cfg):
+                              add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, cfg):
     """Save the current UI values into the builds array at active_idx."""
     if not builds or active_idx is None or active_idx >= len(builds):
         return builds
@@ -344,6 +346,7 @@ def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, toon_si
         'SHAPE_WEAPON_OVERRIDE': shape_override,
         'SHAPE_WEAPON': shape_weapon,
         'ADDITIONAL_DAMAGE': add_dmg_dict,
+        'WEAPONS': weapons if weapons else [],
     }
 
     return builds

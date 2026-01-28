@@ -1,6 +1,5 @@
-from dash import dcc, html
+from dash import html
 import dash_bootstrap_components as dbc
-from weapons_db import WEAPON_PROPERTIES, PURPLE_WEAPONS
 from typing import Literal
 
 
@@ -38,32 +37,10 @@ def build_immunity_inputs(immunities_dict):
 
 
 def build_simulation_settings(cfg):
-    # Create a list of valid weapons that exist in both dictionaries
-    valid_weapons = sorted([k for k in PURPLE_WEAPONS.keys()
-                     if k.split('_')[0] in WEAPON_PROPERTIES])
-
     simulation_settings = dbc.Col([
         dbc.Row([
-            dbc.Col(html.H4('Simulation Settings', className='mt-4 mb-4'), xs=12, md=12),
+            dbc.Col(html.H4('Simulation Settings', className='mt-4 mb-3'), xs=12, md=12),
         ]),
-
-        # Weapon Selection
-        dbc.Row([
-            dbc.Col(dbc.Label(
-                'Select Weapons:',
-                html_for='weapon-dropdown',
-            ), xs=12, md=2),
-            dbc.Col(dcc.Dropdown(
-                id='weapon-dropdown',
-                options=[{'label': k, 'value': k} for k in valid_weapons],
-                value=cfg.DEFAULT_WEAPONS,
-                multi=True,
-                closeOnSelect=False,
-                persistence=True,
-                persistence_type='session',
-                className='dbc',
-            ), xs=12, md=10),
-        ], className=''),
 
         # Simulation Settings - Cont.
         dbc.Row([
@@ -90,7 +67,7 @@ def build_simulation_settings(cfg):
                         placement='right',  # top, bottom, left, right
                         delay={'show': tooltip_delay},
                     ),
-                ], class_name='mt-4'),
+                ], class_name=''),
 
                 # Number of rounds
                 dbc.Row([
@@ -221,7 +198,7 @@ def build_simulation_settings(cfg):
                         persistence=True,
                         persistence_type=persist_type,
                     ), xs=12, md=12)
-                ], class_name='switcher mb-2 mt-4'),
+                ], class_name='switcher mb-2'),
 
                 dbc.Row([
                     dbc.Col(
