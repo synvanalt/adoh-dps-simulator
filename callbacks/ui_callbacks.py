@@ -49,14 +49,26 @@ def register_ui_callbacks(app, cfg):
         State('build-loading', 'data'),
         prevent_initial_call=True
     )
-    def update_reference_info(_, __, ___, selected_weapons, shape_weapon_override, shape_weapon, immunity_values, builds, is_loading):
+    def update_reference_info(_, __, ___, current_dropdown_weapons, shape_weapon_override, shape_weapon, immunity_values, builds, is_loading):
         # Skip during build loading to prevent callback cascade
         if is_loading:
             return dash.no_update, dash.no_update, dash.no_update
 
-        # Collect unique weapons from ALL builds (deduplicated, preserving order)
+        # Collect unique weapons from ALL builds + current dropdown (deduplicated, preserving order)
+        # This ensures we show:
+        # 1. Current dropdown selection (may have unsaved changes)
+        # 2. Weapons from other saved builds in builds-store
         all_weapons = []
         seen = set()
+
+        # First, add current dropdown selection (active build's current state)
+        if current_dropdown_weapons:
+            for w in current_dropdown_weapons:
+                if w not in seen:
+                    seen.add(w)
+                    all_weapons.append(w)
+
+        # Then, add weapons from all saved builds (other builds)
         if builds:
             for build in builds:
                 build_weapons = build.get('config', {}).get('WEAPONS', [])
@@ -66,8 +78,7 @@ def register_ui_callbacks(app, cfg):
                             seen.add(w)
                             all_weapons.append(w)
 
-        # Use combined weapons list instead of just current dropdown
-        selected_weapons = all_weapons if all_weapons else selected_weapons
+        selected_weapons = all_weapons
 
         if not selected_weapons:
             return "No weapon selected", str(cfg.TARGET_IMMUNITIES), "No weapon selected"
