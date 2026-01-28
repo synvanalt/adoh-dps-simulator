@@ -1,5 +1,30 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
+
+
+def _empty_dark_figure(message="Run simulation to see results"):
+    """Create an empty figure with dark theme for initial display."""
+    fig = go.Figure()
+    fig.update_layout(
+        template='plotly_dark',
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#f8f9fa'),
+        margin=dict(l=40, r=20, t=40, b=40),
+        annotations=[{
+            'text': message,
+            'xref': 'paper',
+            'yref': 'paper',
+            'x': 0.5,
+            'y': 0.5,
+            'showarrow': False,
+            'font': {'size': 16, 'color': '#6c757d'}
+        }],
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+    )
+    return fig
 
 
 def build_plots_tab():
@@ -20,6 +45,7 @@ def build_plots_tab():
             html.P('Compare DPS metrics across weapons with crits allowed, crits immune, and average of both.'),
             dcc.Graph(
                 id='plots-dps-comparison',
+                figure=_empty_dark_figure(),
                 config={
                     'displayModeBar': 'hover',
                     'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d'],
@@ -58,6 +84,7 @@ def build_plots_tab():
                     html.H6('Mean DPS over Damage Inflicted'),
                     dcc.Graph(
                         id='plots-weapon-dps-vs-damage',
+                        figure=_empty_dark_figure(),
                         config={
                             'displayModeBar': 'hover',
                             'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d'],
@@ -72,6 +99,7 @@ def build_plots_tab():
                     html.H6('Damage Breakdown'),
                     dcc.Graph(
                         id='plots-weapon-breakdown',
+                        figure=_empty_dark_figure(),
                         config={
                             'displayModeBar': False,
                             'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d'],

@@ -169,13 +169,15 @@ window.dash_clientside.build_switching = {
      * Used for CRUD operations (add/duplicate/delete) that still need Python.
      *
      * @param {Object} config - Build configuration object
+     * @param {boolean} is_loading - Whether a build operation is in progress
      * @returns {Array} Array of values for all 22 inputs
      */
-    load_from_buffer: function(config) {
-        if (!config || !config.config) {
-            // Return no_update for all outputs
-            // Note: Outputs 16-19 are ALL patterns, so they need arrays of no_update values
-            const no_upd = window.dash_clientside.no_update;
+    load_from_buffer: function(config, is_loading) {
+        const no_upd = window.dash_clientside.no_update;
+
+        // Only process if we're in a loading state (CRUD operation)
+        // This prevents overwriting user inputs when config-buffer changes unexpectedly
+        if (!is_loading || !config || !config.config) {
             return [
                 no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd,
                 no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd,
@@ -285,6 +287,59 @@ window.dash_clientside.build_switching = {
         }
 
         // Show spinner immediately
+        return {
+            'display': 'flex',
+            'position': 'fixed',
+            'top': 0,
+            'left': 0,
+            'width': '100%',
+            'height': '100%',
+            'backgroundColor': 'rgba(0, 0, 0, 0.7)',
+            'zIndex': 9998,
+            'flexDirection': 'column',
+            'justifyContent': 'center',
+            'alignItems': 'center',
+        };
+    },
+
+    /**
+     * Immediately show loading spinner when build tab is clicked
+     * This runs BEFORE the Python callback, eliminating perceived delay
+     *
+     * @param {Array} n_clicks_list - Array of n_clicks from all build tabs
+     * @param {number} active_idx - Current active build index
+     * @param {boolean} is_loading - Whether a build operation is in progress
+     * @returns {Object} Style object for loading overlay
+     */
+    show_spinner_on_tab_click: function(n_clicks_list, active_idx, is_loading) {
+        const no_upd = window.dash_clientside.no_update;
+
+        // Check if triggered and not already loading
+        const triggered = window.dash_clientside.callback_context.triggered;
+        if (!triggered || triggered.length === 0 || is_loading) {
+            return no_upd;
+        }
+
+        // Check if any tab was actually clicked
+        if (!n_clicks_list || !n_clicks_list.some(n => n > 0)) {
+            return no_upd;
+        }
+
+        // Parse triggered ID to get clicked index
+        const triggered_id = triggered[0].prop_id;
+        const match = triggered_id.match(/"index":(\d+)/);
+        if (!match) {
+            return no_upd;
+        }
+
+        const clicked_index = parseInt(match[1]);
+
+        // If clicking the same build, no spinner needed
+        if (clicked_index === active_idx) {
+            return no_upd;
+        }
+
+        // Show spinner immediately for build switch
         return {
             'display': 'flex',
             'position': 'fixed',

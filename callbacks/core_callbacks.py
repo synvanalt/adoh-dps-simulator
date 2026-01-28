@@ -64,6 +64,7 @@ def register_core_callbacks(app, cfg):
             Output('intermediate-value', 'data'),
             Output('config-store', 'data'),
             Output('progress-text', 'children'),
+            Output('builds-store', 'data'),  # Save current build before simulation
             Output('global-error-body', 'children'),         # extra: error text
             Output('global-error-modal', 'is_open')          # extra: open modal
         ],
@@ -73,10 +74,33 @@ def register_core_callbacks(app, cfg):
             Input('sticky-simulate-button', 'n_clicks'),
         ],
         states=[
-            # Core stores - builds-store already contains all per-build settings via auto-save
+            # Core stores
             State('config-store', 'data'),
             State('builds-store', 'data'),
-            # Shared simulation settings (not per-build, same for all builds)
+            State('active-build-index', 'data'),
+            # Current build UI state (for save-before-simulate)
+            State('ab-input', 'value'),
+            State('ab-capped-input', 'value'),
+            State('ab-prog-dropdown', 'value'),
+            State('toon-size-dropdown', 'value'),
+            State('combat-type-dropdown', 'value'),
+            State('mighty-input', 'value'),
+            State('enhancement-set-bonus-dropdown', 'value'),
+            State('str-mod-input', 'value'),
+            State({'type': 'melee-switch', 'name': 'two-handed'}, 'value'),
+            State({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value'),
+            State('keen-switch', 'value'),
+            State('improved-crit-switch', 'value'),
+            State('overwhelm-crit-switch', 'value'),
+            State('dev-crit-switch', 'value'),
+            State('shape-weapon-switch', 'value'),
+            State('shape-weapon-dropdown', 'value'),
+            State({'type': 'add-dmg-switch', 'name': ALL}, 'value'),
+            State({'type': 'add-dmg-input1', 'name': ALL}, 'value'),
+            State({'type': 'add-dmg-input2', 'name': ALL}, 'value'),
+            State({'type': 'add-dmg-input3', 'name': ALL}, 'value'),
+            State('weapon-dropdown', 'value'),
+            # Shared simulation settings (not per-build)
             State('target-ac-input', 'value'),
             State('rounds-input', 'value'),
             State('damage-limit-switch', 'value'),
@@ -107,21 +131,21 @@ def register_core_callbacks(app, cfg):
         ],  # Disable buttons & clear progress modal when sim starts, re-enable buttons when finishes
         prevent_initial_call=True
     )
-    def run_simulation(set_progress, _, __, ___, current_cfg, builds,
+    def run_simulation(set_progress, _, __, ___, current_cfg, builds, active_build_idx,
+                       ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
+                       str_mod, two_handed, weaponmaster, keen, improved_crit, overwhelm_crit,
+                       dev_crit, shape_weapon_override, shape_weapon,
+                       add_dmg_state, add_dmg1, add_dmg2, add_dmg3, weapons,
                        target_ac, rounds, dmg_limit_flag, dmg_limit, dmg_vs_race,
                        relative_change, relative_std, immunity_flag, immunity_values):
-        """Run simulation using builds-store (auto-saved by auto_save_build callback).
-
-        Per-build settings (AB, STR_MOD, etc.) are read from builds-store.
-        Shared simulation settings (TARGET_AC, ROUNDS, etc.) are read from UI State.
-        """
+        """Run simulation with save-on-action: saves current build first, then simulates all builds."""
         # Check if any build has weapons configured
         has_any_weapons = any(
             build.get('config', {}).get('WEAPONS', [])
             for build in (builds or [])
         )
         if not ctx.triggered_id or not has_any_weapons:
-            return False, dash.no_update, current_cfg, dash.no_update, dash.no_update, False
+            return False, dash.no_update, current_cfg, dash.no_update, dash.no_update, dash.no_update, False
 
         print("Starting simulation...")
 
@@ -134,6 +158,32 @@ def register_core_callbacks(app, cfg):
         if builds is None:
             from components.build_manager import create_default_builds
             builds = create_default_builds()
+
+        # Save current build state before simulation (save-on-action)
+        add_dmg_dict = {
+            key: [add_dmg_state[idx], {next(iter(val[1].keys())): [add_dmg1[idx], add_dmg2[idx], add_dmg3[idx]]}, val[2]]
+            for idx, (key, val) in enumerate(cfg.ADDITIONAL_DAMAGE.items())
+        }
+        builds[active_build_idx]['config'] = {
+            'AB': ab,
+            'AB_CAPPED': ab_capped,
+            'AB_PROG': ab_prog,
+            'TOON_SIZE': toon_size,
+            'COMBAT_TYPE': combat_type,
+            'MIGHTY': mighty,
+            'ENHANCEMENT_SET_BONUS': int(enhancement_set_bonus) if enhancement_set_bonus else 3,
+            'STR_MOD': str_mod,
+            'TWO_HANDED': two_handed,
+            'WEAPONMASTER': weaponmaster,
+            'KEEN': keen,
+            'IMPROVED_CRIT': improved_crit,
+            'OVERWHELM_CRIT': overwhelm_crit,
+            'DEV_CRIT': dev_crit,
+            'SHAPE_WEAPON_OVERRIDE': shape_weapon_override,
+            'SHAPE_WEAPON': shape_weapon,
+            'ADDITIONAL_DAMAGE': add_dmg_dict,
+            'WEAPONS': weapons if weapons else [],
+        }
 
         # Build shared simulation settings (same for all builds)
         shared_settings = {
@@ -160,7 +210,7 @@ def register_core_callbacks(app, cfg):
 
         for build in builds:
             build_name = build['name']
-            build_config = build['config']  # Already contains all per-build settings via auto-save
+            build_config = build['config']
             build_weapons = build_config.get('WEAPONS', [])
 
             if not build_weapons:
@@ -186,7 +236,7 @@ def register_core_callbacks(app, cfg):
         # Update current_cfg with last used settings (for compatibility)
         current_cfg.update(shared_settings)
 
-        return False, results_dict, current_cfg, "Done!", dash.no_update, False
+        return False, results_dict, current_cfg, "Done!", builds, dash.no_update, False
 
 
     # Callback: update results based on stored simulation results
