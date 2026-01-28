@@ -218,6 +218,8 @@ def register_core_callbacks(app, cfg):
             full_cfg_dict = asdict(cfg)  # Start with defaults
             full_cfg_dict.update(build_config)
             full_cfg_dict.update(shared_settings)
+            # Remove WEAPONS key - it's build-specific, not a Config attribute
+            full_cfg_dict.pop('WEAPONS', None)
 
             user_cfg = Config(**full_cfg_dict)
             results_dict[build_name] = {}
