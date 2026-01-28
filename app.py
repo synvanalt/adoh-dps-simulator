@@ -14,7 +14,7 @@ from components.simulation_settings import build_simulation_settings
 from components.results_tab import build_results_tab
 from components.reference_tab import build_reference_info_tab
 from components.plots import build_plots_tab
-from components.progress_modal import build_progress_elements
+from components.modals import build_progress_modal, build_weights_modal, build_sim_error_modal
 from components.sticky_bar import build_sticky_bottom_bar
 import callbacks.ui_callbacks as cb_ui
 import callbacks.core_callbacks as cb_core
@@ -85,8 +85,11 @@ app.layout = dbc.Container([
     # Navbar
     html.Div(build_navbar()),
 
-    # Add progress components
-    build_progress_elements(),
+    # Add modals
+    build_progress_modal(),
+    build_weights_modal(),
+    build_sim_error_modal(),
+
 
     # Dark overlay with spinner during simulation
     html.Div(
@@ -124,40 +127,6 @@ app.layout = dbc.Container([
             'alignItems': 'center',
         }
     ),
-
-    # Error modal to catch exceptions in risky simulation part
-    dbc.Modal(
-        [
-            dbc.ModalHeader(dbc.ModalTitle("Oops, unexpected error..."), close_button=False),
-            dbc.ModalBody(id='global-error-body'),
-            dbc.ModalFooter(dbc.Button("Close", id='close-global-error', class_name='ms-auto')),
-        ],
-        id='global-error-modal',
-        is_open=False,
-        backdrop='static',
-        style={"zIndex": 99999},
-    ),
-
-    # DPS Weights Settings Modal
-    dbc.Modal([
-        dbc.ModalHeader(dbc.ModalTitle("DPS Weights Settings")),
-        dbc.ModalBody([
-            dbc.Row([
-                dbc.Col([
-                    dbc.Label("Crit Allowed Weight (%)", className='mb-2'),
-                    dbc.Input(id='weights-crit-allowed-input', type='number', min=0, max=100, value=50),
-                ], width=6),
-                dbc.Col([
-                    dbc.Label("Crit Immune Weight (%)", className='mb-2'),
-                    dbc.Input(id='weights-crit-immune-display', type='number', value=50, disabled=True),
-                ], width=6),
-            ]),
-        ]),
-        dbc.ModalFooter([
-            dbc.Button("Cancel", id='weights-cancel-btn', color='secondary', className='me-2'),
-            dbc.Button("Apply", id='weights-apply-btn', color='primary'),
-        ]),
-    ], id='weights-modal', is_open=False),
 
     dbc.Container([
         dbc.Tabs(id='tabs', active_tab='configuration', children=[
