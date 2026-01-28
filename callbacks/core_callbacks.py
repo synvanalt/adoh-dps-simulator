@@ -230,11 +230,20 @@ def register_core_callbacks(app, cfg):
     @app.callback(
         [Output('comparative-table', 'children'),
          Output('detailed-results', 'children')],
-        [Input('intermediate-value', 'data')]
+        [Input('intermediate-value', 'data'),
+         Input('dps-weights-store', 'data')]
     )
-    def update_results(results_dict):
+    def update_results(results_dict, weights_data):
         if not results_dict:
             return "Run simulation to see results...", ""
+
+        # Get weights from store (default 50/50)
+        crit_weight = weights_data.get('crit_allowed', 50) if weights_data else 50
+        immune_weight = 100 - crit_weight
+        weight_fraction = crit_weight / 100
+
+        # Dynamic column label
+        avg_dps_label = f"Avg DPS ({crit_weight}/{immune_weight})"
 
         # Check if results are in new multi-build format {build_name: {weapon: results}}
         # or legacy format {weapon: results}
@@ -247,11 +256,13 @@ def register_core_callbacks(app, cfg):
             # New multi-build format
             for build_name, weapons_results in results_dict.items():
                 for weapon, results in weapons_results.items():
+                    # Calculate weighted average dynamically
+                    weighted_avg = results["dps_crits"] * weight_fraction + results["dps_no_crits"] * (1 - weight_fraction)
                     # Add to comparative table rows with results reference
                     comparative_rows.append({
                         'Build Name': build_name,
                         'Weapon': weapon,
-                        'Avg DPS (50/50)': results["avg_dps_both"],
+                        avg_dps_label: weighted_avg,
                         'DPS (Crit Allowed)': results["dps_crits"],
                         'DPS (Crit Immune)': results["dps_no_crits"],
                         'Hit %': results["hit_rate_actual"],
@@ -262,10 +273,12 @@ def register_core_callbacks(app, cfg):
         else:
             # Legacy single-build format (for backwards compatibility)
             for weapon, results in results_dict.items():
+                # Calculate weighted average dynamically
+                weighted_avg = results["dps_crits"] * weight_fraction + results["dps_no_crits"] * (1 - weight_fraction)
                 comparative_rows.append({
                     'Build Name': 'Build 1',
                     'Weapon': weapon,
-                    'Avg DPS (50/50)': results["avg_dps_both"],
+                    avg_dps_label: weighted_avg,
                     'DPS (Crit Allowed)': results["dps_crits"],
                     'DPS (Crit Immune)': results["dps_no_crits"],
                     'Hit %': results["hit_rate_actual"],
@@ -274,8 +287,8 @@ def register_core_callbacks(app, cfg):
                     '_results': results,  # Keep reference to full results for detailed cards
                 })
 
-        # Sort by DPS descending
-        comparative_rows.sort(key=lambda x: x['Avg DPS (50/50)'], reverse=True)
+        # Sort by DPS descending (use dynamic column label)
+        comparative_rows.sort(key=lambda x: x[avg_dps_label], reverse=True)
 
         # Build detailed results in sorted order
         detailed_results = []

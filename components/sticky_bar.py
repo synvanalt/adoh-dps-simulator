@@ -19,14 +19,15 @@ def build_sticky_bottom_bar():
                 "Reset to Defaults",
                 id='sticky-reset-button',
                 color='secondary',
-                size='md'
+                size='md',
+                style={'display': 'none'}  # Hide button for now
             ),
             dbc.Button(
                 "Simulate DPS",
                 id='sticky-simulate-button',
                 color='primary',
                 size='md',
-                className='ms-2'
+                className='ms-2',
             ),
         ]
         # Remove the style prop - CSS handles initial hidden state

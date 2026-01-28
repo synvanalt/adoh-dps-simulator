@@ -1,8 +1,3 @@
-# Copilot Instructions - ADOH DPS Simulator
-
-## What This Is
-Web-based DPS calculator for ADOH (A Dawn of Heroes), a Neverwinter Nights server. Simulates attack rolls, weapon damage, crits, and character buffs using Python/Dash.
-
 ## Architecture at a Glance
 - **simulator/**: Core calculation engine (config.py, weapon.py, attack_simulator.py, damage_simulator.py)
 - **components/**: Modular Dash UI sections
@@ -53,12 +48,6 @@ Test: default state, enable/disable, expected behavior, integration with other f
 
 ## Key Implementation Details
 
-**Critical Hit Bonuses:**
-- Only apply on crits: `if crit_multiplier > 1:`
-- Flat damage: `[0, 0, flat_amount]`
-- Dice damage: `[num_dice, num_sides]`
-- Dice & flat damage: `[num_dice, num_sides, flat_amount]`
-
 **Weapon Properties:**
 - `self.weapon.size` → 'T', 'S', 'M', 'L'
 - `self.weapon.crit_multiplier` → 2, 3, 4
@@ -66,13 +55,15 @@ Test: default state, enable/disable, expected behavior, integration with other f
 
 **Damage Dictionary:**
 - `dmg_dict[type] = [[dice, sides], [dice, sides, flat], ...]`
+  - Dice damage: `[num_dice, num_sides]`
+  - Flat damage: `[0, 0, flat_amount]`
+  - Dice & flat damage: `[num_dice, num_sides, flat_amount]`
 - `legendary` weapon properties: `dmg_dict['legendary'] = {'proc': percent_chance, 'dmg_type': [[dice, sides, flat], ...]}`
 - `vs_race` weapon properties: `dmg_dict['vs_race_*'] = [[dice, sides, flat], ...]`
 
 ## Pre-Commit Checklist
 - [ ] All tests pass: `pytest tests/ -v`
 - [ ] No import errors
-- [ ] Feature flag defaults to False
 - [ ] UI component ID matches callback state ID
 - [ ] Reset callback updated
 
@@ -80,7 +71,6 @@ Test: default state, enable/disable, expected behavior, integration with other f
 - Forgetting to update reset callback (new switches won't reset)
 - Missing state in core_callbacks (switch won't connect)
 - Not checking feature flag (bonus applies when disabled)
-- Breaking existing tests (283 must all pass)
 
 ## When to Search Codebase
-Only when this document doesn't answer your question. This covers 95% of common tasks.
+Only when this document doesn't answer your question.

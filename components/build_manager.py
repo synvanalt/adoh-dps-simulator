@@ -104,7 +104,7 @@ def build_build_manager():
                     ),
                 ], className='flex-wrap'),
             ], xs=12, md=4, className='d-flex justify-content-md-end'),
-        ], className='mb-3 align-items-center'),
+        ], className='mb-2 align-items-center'),
 
         # Build name editor row
         dbc.Row([

@@ -14,7 +14,7 @@ from components.simulation_settings import build_simulation_settings
 from components.results_tab import build_results_tab
 from components.reference_tab import build_reference_info_tab
 from components.plots import build_plots_tab
-from components.progress_modal import build_progress_elements
+from components.modals import build_progress_modal, build_weights_modal, build_sim_error_modal
 from components.sticky_bar import build_sticky_bottom_bar
 import callbacks.ui_callbacks as cb_ui
 import callbacks.core_callbacks as cb_core
@@ -79,13 +79,17 @@ app.layout = dbc.Container([
     dcc.Store(id='active-build-index', data=0, storage_type='session'),
     dcc.Store(id='build-loading', data=False),  # Track if build is currently loading
     dcc.Store(id='config-buffer', data=None),  # Buffer for batch-loading build config
+    dcc.Store(id='dps-weights-store', data={'crit_allowed': 50}, storage_type='session'),
 
 
     # Navbar
     html.Div(build_navbar()),
 
-    # Add progress components
-    build_progress_elements(),
+    # Add modals
+    build_progress_modal(),
+    build_weights_modal(),
+    build_sim_error_modal(),
+
 
     # Dark overlay with spinner during simulation
     html.Div(
@@ -122,19 +126,6 @@ app.layout = dbc.Container([
             'justifyContent': 'center',
             'alignItems': 'center',
         }
-    ),
-
-    # Error modal to catch exceptions in risky simulation part
-    dbc.Modal(
-        [
-            dbc.ModalHeader(dbc.ModalTitle("Oops, unexpected error..."), close_button=False),
-            dbc.ModalBody(id='global-error-body'),
-            dbc.ModalFooter(dbc.Button("Close", id='close-global-error', class_name='ms-auto')),
-        ],
-        id='global-error-modal',
-        is_open=False,
-        backdrop='static',
-        style={"zIndex": 99999},
     ),
 
     dbc.Container([
@@ -191,6 +182,8 @@ cb_core.register_core_callbacks(app, cfg)
 cb_plots.register_plots_callbacks(app)
 cb_validation.register_validation_callbacks(app, cfg)
 cb_build.register_build_callbacks(app, cfg)
+import callbacks.weights_callbacks as cb_weights
+cb_weights.register_weights_callbacks(app)
 
 if __name__ == '__main__':
     app.run(debug=True)
