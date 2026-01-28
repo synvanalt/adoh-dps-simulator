@@ -303,6 +303,37 @@ window.dash_clientside.build_switching = {
     },
 
     /**
+     * Immediately show loading spinner when reset buttons are clicked
+     * This runs BEFORE the Python callbacks, eliminating perceived delay
+     *
+     * @param {number} reset_clicks - Reset button clicks
+     * @param {number} sticky_reset_clicks - Sticky reset button clicks
+     * @returns {Object} Style object for loading overlay
+     */
+    show_spinner_on_reset_click: function(reset_clicks, sticky_reset_clicks) {
+        // Check if any button was clicked
+        const triggered = window.dash_clientside.callback_context.triggered;
+        if (!triggered || triggered.length === 0) {
+            return window.dash_clientside.no_update;
+        }
+
+        // Show spinner immediately
+        return {
+            'display': 'flex',
+            'position': 'fixed',
+            'top': 0,
+            'left': 0,
+            'width': '100%',
+            'height': '100%',
+            'backgroundColor': 'rgba(0, 0, 0, 0.7)',
+            'zIndex': 9998,
+            'flexDirection': 'column',
+            'justifyContent': 'center',
+            'alignItems': 'center',
+        };
+    },
+
+    /**
      * Immediately show loading spinner when build tab is clicked
      * This runs BEFORE the Python callback, eliminating perceived delay
      *

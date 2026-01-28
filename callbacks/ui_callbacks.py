@@ -1,6 +1,6 @@
 # Third-party imports
 import dash
-from dash import Input, Output, ALL, MATCH, State, ctx
+from dash import Input, Output, ALL, MATCH, State, ctx, ClientsideFunction
 
 # Local imports
 from simulator.config import Config
@@ -9,6 +9,18 @@ from weapons_db import WEAPON_PROPERTIES, PURPLE_WEAPONS
 
 
 def register_ui_callbacks(app, cfg):
+
+    # Clientside callback: Immediately show spinner when reset buttons are clicked
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='build_switching',
+            function_name='show_spinner_on_reset_click'
+        ),
+        Output('loading-overlay', 'style', allow_duplicate=True),
+        Input('reset-button', 'n_clicks'),
+        Input('sticky-reset-button', 'n_clicks'),
+        prevent_initial_call=True
+    )
 
     # Callback: toggle additional damage inputs visibility
     @app.callback(
@@ -272,19 +284,20 @@ def register_ui_callbacks(app, cfg):
             reset_immunities_store,
         ]
 
-    # Callback 4: Reset stores and show toast (4 outputs)
+    # Callback 4: Reset stores and show toast (5 outputs)
     @app.callback(
         [Output('config-store', 'data', allow_duplicate=True),
          Output('builds-store', 'data', allow_duplicate=True),
          Output('active-build-index', 'data', allow_duplicate=True),
-         Output('reset-toast', 'is_open', allow_duplicate=True)],
+         Output('reset-toast', 'is_open', allow_duplicate=True),
+         Output('build-loading', 'data', allow_duplicate=True)],
         [Input('reset-button', 'n_clicks'),
          Input('sticky-reset-button', 'n_clicks')],
         prevent_initial_call=True
     )
     def reset_stores_and_toast(n1, n2):
         if not (n1 or n2):
-            return [dash.no_update] * 4
+            return [dash.no_update] * 5
         from components.build_manager import create_default_builds
         default_cfg = Config()
         return [
@@ -292,6 +305,7 @@ def register_ui_callbacks(app, cfg):
             create_default_builds(),
             0,
             True,  # Open the toast
+            False,  # Set build-loading to False to hide spinner
         ]
 
 
