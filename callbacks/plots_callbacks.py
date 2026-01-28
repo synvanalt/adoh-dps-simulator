@@ -114,9 +114,10 @@ def register_plots_callbacks(app):
     # Callback: DPS Comparison bar chart - three horizontal subplots
     @app.callback(
         Output('plots-dps-comparison', 'figure'),
-        Input('intermediate-value', 'data')
+        Input('intermediate-value', 'data'),
+        Input('dps-weights-store', 'data')
     )
-    def update_dps_comparison_figure(results_dict):
+    def update_dps_comparison_figure(results_dict, weights_data):
         from plotly.subplots import make_subplots
 
         if not results_dict:
@@ -125,16 +126,23 @@ def register_plots_callbacks(app):
             apply_dark_theme(fig)
             return fig
 
+        # Get weights from store (default 50/50)
+        crit_weight = weights_data.get('crit_allowed', 50) if weights_data else 50
+        immune_weight = 100 - crit_weight
+        weight_fraction = crit_weight / 100
+
         flattened = flatten_results(results_dict)
 
         # Create list of (build_name, weapon, avg_dps, dps_crits, dps_no_crits) tuples
         data_list = []
         for build_name, weapon, results in flattened:
+            # Calculate weighted average dynamically
+            weighted_avg = results['dps_crits'] * weight_fraction + results['dps_no_crits'] * (1 - weight_fraction)
             data_list.append({
                 'label': f'{build_name} | {weapon}',
                 'build': build_name,
                 'weapon': weapon,
-                'avg_dps': results['avg_dps_both'],
+                'avg_dps': weighted_avg,
                 'dps_crits': results['dps_crits'],
                 'dps_no_crits': results['dps_no_crits'],
             })
@@ -152,12 +160,15 @@ def register_plots_callbacks(app):
         color_palette = px.colors.qualitative.Plotly + px.colors.qualitative.Set3
         colors = [color_palette[i % len(color_palette)] for i in range(len(labels))]
 
+        # Dynamic subplot title
+        avg_dps_title = f'Average DPS ({crit_weight}/{immune_weight} Allowed/Immune)'
+
         # Create subplots: 3 rows, shared x-axis
         fig = make_subplots(
             rows=3, cols=1,
             shared_xaxes=True,
             vertical_spacing=0.1,
-            subplot_titles=('Average DPS (50/50 Allowed/Immune)', 'Crit Allowed', 'Crit Immune'),
+            subplot_titles=(avg_dps_title, 'Crit Allowed', 'Crit Immune'),
             row_heights=[0.33, 0.33, 0.33]
         )
 

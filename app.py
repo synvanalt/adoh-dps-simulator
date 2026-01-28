@@ -79,6 +79,7 @@ app.layout = dbc.Container([
     dcc.Store(id='active-build-index', data=0, storage_type='session'),
     dcc.Store(id='build-loading', data=False),  # Track if build is currently loading
     dcc.Store(id='config-buffer', data=None),  # Buffer for batch-loading build config
+    dcc.Store(id='dps-weights-store', data={'crit_allowed': 50}, storage_type='session'),
 
 
     # Navbar
@@ -137,6 +138,27 @@ app.layout = dbc.Container([
         style={"zIndex": 99999},
     ),
 
+    # DPS Weights Settings Modal
+    dbc.Modal([
+        dbc.ModalHeader(dbc.ModalTitle("DPS Weights Settings")),
+        dbc.ModalBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Crit Allowed Weight (%)", className='mb-2'),
+                    dbc.Input(id='weights-crit-allowed-input', type='number', min=0, max=100, value=50),
+                ], width=6),
+                dbc.Col([
+                    dbc.Label("Crit Immune Weight (%)", className='mb-2'),
+                    dbc.Input(id='weights-crit-immune-display', type='number', value=50, disabled=True),
+                ], width=6),
+            ]),
+        ]),
+        dbc.ModalFooter([
+            dbc.Button("Cancel", id='weights-cancel-btn', color='secondary', className='me-2'),
+            dbc.Button("Apply", id='weights-apply-btn', color='primary'),
+        ]),
+    ], id='weights-modal', is_open=False),
+
     dbc.Container([
         dbc.Tabs(id='tabs', active_tab='configuration', children=[
             # Tab 1: Configuration
@@ -191,6 +213,8 @@ cb_core.register_core_callbacks(app, cfg)
 cb_plots.register_plots_callbacks(app)
 cb_validation.register_validation_callbacks(app, cfg)
 cb_build.register_build_callbacks(app, cfg)
+import callbacks.weights_callbacks as cb_weights
+cb_weights.register_weights_callbacks(app)
 
 if __name__ == '__main__':
     app.run(debug=True)
