@@ -384,5 +384,35 @@ window.dash_clientside.build_switching = {
             'justifyContent': 'center',
             'alignItems': 'center',
         };
+    },
+
+    /**
+     * Immediately show loading spinner when weights apply button is clicked
+     * This runs BEFORE the Python callback, eliminating perceived delay
+     *
+     * @param {number} apply_clicks - Apply button clicks
+     * @returns {Object} Style object for loading overlay
+     */
+    show_spinner_on_weights_apply: function(apply_clicks) {
+        // Check if button was clicked
+        const triggered = window.dash_clientside.callback_context.triggered;
+        if (!triggered || triggered.length === 0) {
+            return window.dash_clientside.no_update;
+        }
+
+        // Show spinner immediately
+        return {
+            'display': 'flex',
+            'position': 'fixed',
+            'top': 0,
+            'left': 0,
+            'width': '100%',
+            'height': '100%',
+            'backgroundColor': 'rgba(0, 0, 0, 0.7)',
+            'zIndex': 9998,
+            'flexDirection': 'column',
+            'justifyContent': 'center',
+            'alignItems': 'center',
+        };
     }
 };

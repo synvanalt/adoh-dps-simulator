@@ -242,13 +242,15 @@ def register_core_callbacks(app, cfg):
     # Callback: update results based on stored simulation results
     @app.callback(
         [Output('comparative-table', 'children'),
-         Output('detailed-results', 'children')],
+         Output('detailed-results', 'children'),
+         Output('loading-overlay', 'style', allow_duplicate=True)],
         [Input('intermediate-value', 'data'),
-         Input('dps-weights-store', 'data')]
+         Input('dps-weights-store', 'data')],
+        prevent_initial_call=True
     )
     def update_results(results_dict, weights_data):
         if not results_dict:
-            return "Run simulation to see results...", ""
+            return "Run simulation to see results...", "", {'display': 'none'}
 
         # Get weights from store (default 50/50)
         crit_weight = weights_data.get('crit_allowed', 50) if weights_data else 50
@@ -327,7 +329,8 @@ def register_core_callbacks(app, cfg):
             )
         ], style={'overflow-x': 'auto'})
 
-        return comparative_table, html.Div(detailed_results)
+        # Hide loading overlay when results update completes
+        return comparative_table, html.Div(detailed_results), {'display': 'none'}
 
 
     def build_detailed_results_card(title, results):
