@@ -143,6 +143,7 @@ app.layout = dbc.Container([
 
                         # Additional damage
                         build_additional_damage_panel(cfg),
+
                     ], class_name='build-manager-container mb-4 p-3 border rounded', style={'display': 'flex', 'alignItems': 'flex-start'}),
 
                     # Simulation settings

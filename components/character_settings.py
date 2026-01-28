@@ -1,7 +1,7 @@
-from dash import html
+from dash import dcc, html
 import dash_bootstrap_components as dbc
-from weapons_db import WEAPON_PROPERTIES
 from typing import Literal
+from weapons_db import WEAPON_PROPERTIES, PURPLE_WEAPONS
 
 
 def build_character_settings(cfg):
@@ -325,4 +325,22 @@ def build_character_settings(cfg):
                 delay={'show': tooltip_delay},
             ),
         ], class_name='switcher'),
+
+        # Weapon Selection Row (per-build)
+        dbc.Row([
+            html.H5('Weapon Selection', className='mt-3 mb-3'),
+            dbc.Col(dcc.Dropdown(
+                id='weapon-dropdown',
+                options=[{'label': k, 'value': k} for k in sorted([
+                    k for k in PURPLE_WEAPONS.keys()
+                    if k.split('_')[0] in WEAPON_PROPERTIES
+                ])],
+                value=cfg.DEFAULT_WEAPONS,
+                multi=True,
+                closeOnSelect=False,
+                className='dbc',
+                # No persistence - builds-store handles it
+            ), xs=12, md=12),
+        ], className='mt-3 mb-3'),
+
     ], xs=12, md=6, class_name='col-left')

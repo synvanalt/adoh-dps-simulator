@@ -14,7 +14,7 @@ def build_sticky_bottom_bar():
     return html.Div(
         id='sticky-bottom-bar',
         className='sticky-bottom-bar',  # Remove 'hide' class - JS will add it
-        children=[
+    children=[
             dbc.Button(
                 "Reset to Defaults",
                 id='sticky-reset-button',

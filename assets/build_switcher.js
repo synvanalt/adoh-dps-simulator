@@ -24,6 +24,7 @@ window.dash_clientside.build_switching = {
                 Array(20).fill(no_upd),  // add-dmg-input1 (ALL)
                 Array(20).fill(no_upd),  // add-dmg-input2 (ALL)
                 Array(20).fill(no_upd),  // add-dmg-input3 (ALL)
+                no_upd,  // weapon-dropdown
                 no_upd,  // build-name-input
                 no_upd   // build-loading
             ];
@@ -80,7 +81,7 @@ window.dash_clientside.build_switching = {
             }
         });
 
-        // Return all 22 values in the correct order
+        // Return all 23 values in the correct order
         return [
             cfg.AB,
             cfg.AB_CAPPED,
@@ -102,6 +103,7 @@ window.dash_clientside.build_switching = {
             add_dmg_input1,
             add_dmg_input2,
             add_dmg_input3,
+            cfg.WEAPONS || [],  // weapon-dropdown with fallback
             config.name,
             false  // Clear loading state
         ];
