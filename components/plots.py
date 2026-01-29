@@ -42,10 +42,12 @@ def build_plots_tab():
     return dbc.Tab(label='Plots', tab_id='plots', children=[
         dbc.Container([
             html.H4('DPS Comparison', className='mt-3 mb-3'),
-            html.P('Compare DPS metrics across weapons with crits allowed, crits immune, and average of both.'),
+            html.P('Compare DPS metrics across weapons with crits allowed, crits immune, and weighted average of both.'),
             dcc.Graph(
                 id='plots-dps-comparison',
                 figure=_empty_dark_figure(),
+                responsive=True,
+                style={'width': '100%'},
                 config={
                     'displayModeBar': 'hover',
                     'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d'],
@@ -82,31 +84,39 @@ def build_plots_tab():
             dbc.Row([
                 dbc.Col([
                     html.H6('Mean DPS over Damage Inflicted'),
-                    dcc.Graph(
-                        id='plots-weapon-dps-vs-damage',
-                        figure=_empty_dark_figure(),
-                        config={
-                            'displayModeBar': 'hover',
-                            'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d'],
-                            'displaylogo': False,
-                            'scrollZoom': False,
-                            'toImageButtonOptions': {'format': 'png', 'filename': 'dps_vs_damage'},
-                        }
+                    dcc.Loading(
+                        type='circle',
+                        color='#0d6efd',    # Bootstrap theme primary color
+                        children=dcc.Graph(
+                            id='plots-weapon-dps-vs-damage',
+                            figure=_empty_dark_figure(),
+                            config={
+                                'displayModeBar': 'hover',
+                                'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d'],
+                                'displaylogo': False,
+                                'scrollZoom': False,
+                                'toImageButtonOptions': {'format': 'png', 'filename': 'dps_vs_damage'},
+                            }
+                        )
                     )
                  ], xs=12, md=6),
 
                 dbc.Col([
                     html.H6('Damage Breakdown'),
-                    dcc.Graph(
-                        id='plots-weapon-breakdown',
-                        figure=_empty_dark_figure(),
-                        config={
-                            'displayModeBar': False,
-                            'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d'],
-                            'displaylogo': False,
-                            'scrollZoom': False,
-                            'toImageButtonOptions': {'format': 'png', 'filename': 'damage_breakdown'},
-                        }
+                    dcc.Loading(
+                        type='circle',
+                        color='#0d6efd',    # Bootstrap theme primary color
+                        children=dcc.Graph(
+                            id='plots-weapon-breakdown',
+                            figure=_empty_dark_figure(),
+                            config={
+                                'displayModeBar': False,
+                                'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d'],
+                                'displaylogo': False,
+                                'scrollZoom': False,
+                                'toImageButtonOptions': {'format': 'png', 'filename': 'damage_breakdown'},
+                            }
+                        )
                     )
                  ], xs=12, md=6),
              ], class_name='mt-3')

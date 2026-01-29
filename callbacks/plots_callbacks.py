@@ -160,17 +160,21 @@ def register_plots_callbacks(app):
         dps_no_crits_values = [d['dps_no_crits'] for d in data_list]
 
         # Assign consistent colors to each build+weapon combination
+        # Sort labels alphabetically to create a stable color mapping independent of DPS order
         color_palette = px.colors.qualitative.Plotly + px.colors.qualitative.Set3
-        colors = [color_palette[i % len(color_palette)] for i in range(len(labels))]
+        sorted_labels = sorted(labels)
+        label_to_color = {label: color_palette[i % len(color_palette)] for i, label in enumerate(sorted_labels)}
+        colors = [label_to_color[label] for label in labels]
 
         # Dynamic subplot title
         avg_dps_title = f'Average DPS ({crit_weight}/{immune_weight} Allowed/Immune)'
+        dynamic_plot_height = max(400, len(labels) * 100)   # Dynamic spacing between subplots
 
         # Create subplots: 3 rows, shared x-axis
         fig = make_subplots(
             rows=3, cols=1,
             shared_xaxes=True,
-            vertical_spacing=0.1,
+            vertical_spacing=(50 / dynamic_plot_height),  # Dynamic spacing between subplots
             subplot_titles=(avg_dps_title, 'Crit Allowed', 'Crit Immune'),
             row_heights=[0.33, 0.33, 0.33]
         )
@@ -231,7 +235,7 @@ def register_plots_callbacks(app):
         # Update layout
         fig.update_xaxes(title_text='DPS', row=3, col=1)
         fig.update_layout(
-            height=max(600, len(labels) * 50),  # Dynamic height based on number of bars
+            height=max(400, dynamic_plot_height),  # Dynamic height based on number of bars
             showlegend=False,
         )
 
@@ -275,7 +279,13 @@ def register_plots_callbacks(app):
         if dps_vals and cum_damage:
             n = min(len(dps_vals), len(cum_damage))
             # X = cumulative damage, Y = DPS
-            fig1.add_trace(go.Scatter(x=cum_damage[:n], y=dps_vals[:n], mode='lines+markers', marker=dict(opacity=0.9)))
+            fig1.add_trace(go.Scatter(
+                x=cum_damage[:n],
+                y=dps_vals[:n],
+                mode='lines+markers',
+                marker=dict(opacity=0.9),
+                hovertemplate='DPS: %{y:.2f}<br>Cumulative Damage: %{x}<extra></extra>',
+            ))
             fig1.update_layout(title=f'', xaxis_title='Cumulative Damage', yaxis_title='Mean DPS')
         else:
             fig1.update_layout(title='Insufficient data for DPS vs Damage')
@@ -289,13 +299,22 @@ def register_plots_callbacks(app):
             colors = []
             for lab in labels:
                 key = lab.lower()
-                col = DAMAGE_TYPE_PALETTE.get(key)
-                if not col:
-                    col = FALLBACK_COLORS[abs(hash(lab)) % len(FALLBACK_COLORS)]
-                colors.append(col)
+                dmg_color = DAMAGE_TYPE_PALETTE.get(key)
+                if not dmg_color:
+                    dmg_color = FALLBACK_COLORS[abs(hash(lab)) % len(FALLBACK_COLORS)]
+                colors.append(dmg_color)
 
-            fig2 = px.pie(names=labels, values=values, title=f'')
-            fig2.update_traces(textinfo='percent+label', textfont=dict(color='#f8f9fa'), marker=dict(colors=colors, line=dict(color='rgba(255,255,255,0.06)', width=1)))
+            fig2 = px.pie(
+                names=labels,
+                values=values,
+                title=f'',
+            )
+            fig2.update_traces(
+                textinfo='percent+label',
+                textfont=dict(color='#f8f9fa'),
+                marker=dict(colors=colors, line=dict(color='rgba(255,255,255,0.06)', width=1)),
+                hovertemplate='Type: %{label}<br>Damage: %{value}<extra></extra>',
+            )
         else:
             fig2 = go.Figure()
             fig2.update_layout(title='No damage breakdown available')
