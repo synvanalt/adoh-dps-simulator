@@ -168,12 +168,13 @@ def register_plots_callbacks(app):
 
         # Dynamic subplot title
         avg_dps_title = f'Average DPS ({crit_weight}/{immune_weight} Allowed/Immune)'
+        dynamic_plot_height = max(400, len(labels) * 100)   # Dynamic spacing between subplots
 
         # Create subplots: 3 rows, shared x-axis
         fig = make_subplots(
             rows=3, cols=1,
             shared_xaxes=True,
-            vertical_spacing=0.1,
+            vertical_spacing=(50 / dynamic_plot_height),  # Dynamic spacing between subplots
             subplot_titles=(avg_dps_title, 'Crit Allowed', 'Crit Immune'),
             row_heights=[0.33, 0.33, 0.33]
         )
@@ -234,7 +235,7 @@ def register_plots_callbacks(app):
         # Update layout
         fig.update_xaxes(title_text='DPS', row=3, col=1)
         fig.update_layout(
-            height=max(300, len(labels) * 100),  # Dynamic height based on number of bars
+            height=max(400, dynamic_plot_height),  # Dynamic height based on number of bars
             showlegend=False,
         )
 
