@@ -341,6 +341,7 @@ def register_build_callbacks(app, cfg):
         Output('build-loading', 'data', allow_duplicate=True),
         Input('config-buffer', 'data'),
         State('build-loading', 'data'),
+        State('add-dmg-keys-store', 'data'),
         prevent_initial_call=True
     )
 

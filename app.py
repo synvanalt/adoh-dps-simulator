@@ -74,12 +74,13 @@ app.layout = dbc.Container([
     dcc.Store(id='is-simulating', data=False),     # Store for tracking simulation state
     dcc.Store(id='sim-progress', data={'current': 0, 'total': 0, 'results': {}}),
     dcc.Interval(id='sim-interval', interval=200, disabled=True),  # ticks while simulating
-    # Multi-build support stores
+    # Multi-build support stores:
     dcc.Store(id='builds-store', data=create_default_builds(), storage_type='session'),
     dcc.Store(id='active-build-index', data=0, storage_type='session'),
     dcc.Store(id='build-loading', data=False),  # Track if build is currently loading
     dcc.Store(id='config-buffer', data=None),  # Buffer for batch-loading build config
     dcc.Store(id='dps-weights-store', data={'crit_allowed': 50}, storage_type='session'),
+    dcc.Store(id='add-dmg-keys-store', data=list(cfg.ADDITIONAL_DAMAGE.keys())), # Store for additional damage keys (passed into build_switcher.js)
 
 
     # Navbar
