@@ -46,6 +46,8 @@ def build_plots_tab():
             dcc.Graph(
                 id='plots-dps-comparison',
                 figure=_empty_dark_figure(),
+                responsive=True,
+                style={'width': '100%'},
                 config={
                     'displayModeBar': 'hover',
                     'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d'],
