@@ -1,5 +1,7 @@
-window.dash_clientside = window.dash_clientside || {};
-window.dash_clientside.build_switching = window.dash_clientside.build_switching || {};
+/**
+ * Clientside callbacks for fast build switching
+ * These run in the browser (no server round-trip!) for instant UX
+ */
 
 window.dash_clientside = window.dash_clientside || {};
 window.dash_clientside.build_switching = window.dash_clientside.build_switching || {};
