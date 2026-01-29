@@ -231,7 +231,7 @@ def register_plots_callbacks(app):
         # Update layout
         fig.update_xaxes(title_text='DPS', row=3, col=1)
         fig.update_layout(
-            height=max(600, len(labels) * 50),  # Dynamic height based on number of bars
+            height=max(300, len(labels) * 100),  # Dynamic height based on number of bars
             showlegend=False,
         )
 
@@ -309,7 +309,7 @@ def register_plots_callbacks(app):
                 textinfo='percent+label',
                 textfont=dict(color='#f8f9fa'),
                 marker=dict(colors=colors, line=dict(color='rgba(255,255,255,0.06)', width=1)),
-                hovertemplate='Damage Type: %{label}<br>Total Damage: %{value}<extra></extra>',
+                hovertemplate='Type: %{label}<br>Damage: %{value}<extra></extra>',
             )
         else:
             fig2 = go.Figure()
