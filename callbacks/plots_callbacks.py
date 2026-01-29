@@ -275,7 +275,13 @@ def register_plots_callbacks(app):
         if dps_vals and cum_damage:
             n = min(len(dps_vals), len(cum_damage))
             # X = cumulative damage, Y = DPS
-            fig1.add_trace(go.Scatter(x=cum_damage[:n], y=dps_vals[:n], mode='lines+markers', marker=dict(opacity=0.9)))
+            fig1.add_trace(go.Scatter(
+                x=cum_damage[:n],
+                y=dps_vals[:n],
+                mode='lines+markers',
+                marker=dict(opacity=0.9),
+                hovertemplate='DPS: %{y:.2f}<br>Cumulative Damage: %{x}<extra></extra>',
+            ))
             fig1.update_layout(title=f'', xaxis_title='Cumulative Damage', yaxis_title='Mean DPS')
         else:
             fig1.update_layout(title='Insufficient data for DPS vs Damage')
@@ -289,13 +295,22 @@ def register_plots_callbacks(app):
             colors = []
             for lab in labels:
                 key = lab.lower()
-                col = DAMAGE_TYPE_PALETTE.get(key)
-                if not col:
-                    col = FALLBACK_COLORS[abs(hash(lab)) % len(FALLBACK_COLORS)]
-                colors.append(col)
+                dmg_color = DAMAGE_TYPE_PALETTE.get(key)
+                if not dmg_color:
+                    dmg_color = FALLBACK_COLORS[abs(hash(lab)) % len(FALLBACK_COLORS)]
+                colors.append(dmg_color)
 
-            fig2 = px.pie(names=labels, values=values, title=f'')
-            fig2.update_traces(textinfo='percent+label', textfont=dict(color='#f8f9fa'), marker=dict(colors=colors, line=dict(color='rgba(255,255,255,0.06)', width=1)))
+            fig2 = px.pie(
+                names=labels,
+                values=values,
+                title=f'',
+            )
+            fig2.update_traces(
+                textinfo='percent+label',
+                textfont=dict(color='#f8f9fa'),
+                marker=dict(colors=colors, line=dict(color='rgba(255,255,255,0.06)', width=1)),
+                hovertemplate='Damage Type: %{label}<br>Total Damage: %{value}<extra></extra>',
+            )
         else:
             fig2 = go.Figure()
             fig2.update_layout(title='No damage breakdown available')
