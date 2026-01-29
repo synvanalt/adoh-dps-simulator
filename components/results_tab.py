@@ -11,17 +11,16 @@ def build_results_tab():
             html.Div([
                 html.H4("Comparative Results", className='mt-4 mb-4'),
                 html.Div([
-                    dbc.Button("Re-simulate DPS", id='resimulate-button', color='primary', className='me-2'),
+                    dbc.Button("Simulate DPS", id='resimulate-button', color='primary', className='me-3'),
                     dbc.Button(
                         html.I(className='fas fa-cog'),
                         id='weights-settings-btn',
                         color='secondary',
                         outline=True,
-                        # size='sm',
                         title="Configure average DPS weight (Crit Allowed vs. Crit Immune)",
                     ),
-                ], style={'display': 'flex', 'alignItems': 'center'}),
-            ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between'}),
+                ], style={'display': 'flex', 'alignItems': 'center'}, className='mb-4'),
+            ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between', 'flex-wrap': 'wrap'}),
 
             # Main comparative table
             html.Div(id='comparative-table', className='mb-4'),

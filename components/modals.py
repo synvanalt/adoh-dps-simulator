@@ -28,7 +28,7 @@ def build_weights_modal():
     """Create DPS Weights Settings Modal."""
     # DPS Weights Settings Modal
     return dbc.Modal([
-        dbc.ModalHeader(dbc.ModalTitle("DPS Weights Settings")),
+        dbc.ModalHeader(dbc.ModalTitle("Average DPS Weights")),
         dbc.ModalBody([
             dbc.Row([
                 dbc.Col([
