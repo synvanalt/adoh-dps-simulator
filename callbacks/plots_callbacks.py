@@ -160,8 +160,11 @@ def register_plots_callbacks(app):
         dps_no_crits_values = [d['dps_no_crits'] for d in data_list]
 
         # Assign consistent colors to each build+weapon combination
+        # Sort labels alphabetically to create a stable color mapping independent of DPS order
         color_palette = px.colors.qualitative.Plotly + px.colors.qualitative.Set3
-        colors = [color_palette[i % len(color_palette)] for i in range(len(labels))]
+        sorted_labels = sorted(labels)
+        label_to_color = {label: color_palette[i % len(color_palette)] for i, label in enumerate(sorted_labels)}
+        colors = [label_to_color[label] for label in labels]
 
         # Dynamic subplot title
         avg_dps_title = f'Average DPS ({crit_weight}/{immune_weight} Allowed/Immune)'

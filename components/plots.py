@@ -42,7 +42,7 @@ def build_plots_tab():
     return dbc.Tab(label='Plots', tab_id='plots', children=[
         dbc.Container([
             html.H4('DPS Comparison', className='mt-3 mb-3'),
-            html.P('Compare DPS metrics across weapons with crits allowed, crits immune, and average of both.'),
+            html.P('Compare DPS metrics across weapons with crits allowed, crits immune, and weighted average of both.'),
             dcc.Graph(
                 id='plots-dps-comparison',
                 figure=_empty_dark_figure(),
