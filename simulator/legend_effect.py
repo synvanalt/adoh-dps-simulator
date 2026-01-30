@@ -2,6 +2,7 @@ from simulator.weapon import Weapon
 from simulator.stats_collector import StatsCollector
 from simulator.attack_simulator import AttackSimulator
 from simulator.legendary_effects import LegendaryEffectRegistry
+from simulator.constants import LEGEND_EFFECT_DURATION
 from copy import deepcopy
 from collections import defaultdict
 import random
@@ -21,121 +22,110 @@ class LegendEffect:
 
         self.registry = LegendEffect._registry
 
-        self.legend_effect_duration = 5  # Duration of the legendary effect in rounds
+        self.legend_effect_duration = LEGEND_EFFECT_DURATION  # Use constant from simulator/constants.py
         self.legend_attacks_left = 0  # Track remaining attacks that benefit from legendary property
+
+        # State for persistent effects
+        self._current_ab_bonus = 0
+        self._current_ac_reduction = 0
 
     def legend_proc(self, legend_proc_identifier: float):
         roll_threshold = 100 - (legend_proc_identifier * 100)  # Roll above it triggers the property
         legend_roll = random.randint(1, 100)
         if legend_roll > roll_threshold:
             self.stats.legend_procs += 1
-            self.legend_attacks_left = self.attack_sim.attacks_per_round * self.legend_effect_duration  # Reset\apply duration (5 rounds) for some unique properties
+            self.legend_attacks_left = self.attack_sim.attacks_per_round * self.legend_effect_duration  # Reset/apply duration (5 rounds)
             return True
         else:
             return False
 
-    def ab_bonus(self):
-        relevant_legend_weapons = ['Darts']
-        if (self.legend_attacks_left > 0) and (self.weapon.name_purple in relevant_legend_weapons):
-            legend_ab_bonus = 2
-        else:
-            legend_ab_bonus = 0
-        return legend_ab_bonus
+    @property
+    def ab_bonus(self) -> int:
+        """Get current AB bonus from legendary effect."""
+        return getattr(self, '_current_ab_bonus', 0)
 
-    def ac_reduction(self):
-        relevant_legend_weapons = ['Light Flail', 'Greatsword_Legion']
-        if (self.legend_attacks_left > 0) and (self.weapon.name_purple in relevant_legend_weapons):
-            legend_ac_reduction = -2
-        else:
-            legend_ac_reduction = 0
-        return legend_ac_reduction
+    @property
+    def ac_reduction(self) -> int:
+        """Get current AC reduction from legendary effect."""
+        return getattr(self, '_current_ac_reduction', 0)
 
     def get_legend_damage(self, legend_dict: dict, crit_multiplier: int):
-        """
-        * Calculate if legend proc is triggered or not (roll based on % of the legend property)
-        * Roll and store the damage results
-        * Track legend procs for correctly applying unique properties, such as:
-            ** Darts' +2 AB
-            ** Heavy Flail's +5 Physical damage
-            ** Club's reduction of Physical immunities (damage vulnerability)
+        """Calculate legendary damage with two-phase effect system.
 
-        :param legend_dict: dict, summary of damage dice per type, e.g., {'proc': 0.05, 'fire': [1, 30, 7], ... , 'effect': 'sunder'}
-        :param crit_multiplier: int, the critical multiplier, 1 if ordinary hit, >1 if critical hit
-        :return:
-            legend_dict_sums: dict, summary of damage to inflict per type, e.g., {'cold': 7, 'pure': 11}
-            legend_dmg_common: list, legendary damage that should be added to "common" damage summary,
-                               "common" means it must be added to the regular damage totals, before applying immunities
-            legend_imm_factors: dict, factor to apply to target's damage immunity\vulnerability
+        Phase 1 - On Proc: Apply burst + persistent effects
+        Phase 2 - During Window: Apply only persistent effects
+
+        Returns:
+            legend_dict_sums: Dict of burst damage by type
+            legend_dmg_common: List of persistent common damage
+            legend_imm_factors: Dict of persistent immunity factors
         """
-        legend_dict_sums = defaultdict(int)  # Changed from {}
-        legend_dmg_common = []          # Store common damage added by legendary proc (e.g., Heavy Flail)
-        legend_imm_factors = {}         # Store damage immunity factors
+        legend_dict_sums = defaultdict(int)
+        legend_dmg_common = []
+        legend_imm_factors = {}
+
+        # Reset persistent effects
+        self._current_ab_bonus = 0
+        self._current_ac_reduction = 0
 
         if not legend_dict:  # If the dict is empty, return empty results
-            return legend_dict_sums, legend_dmg_common, legend_imm_factors
+            return dict(legend_dict_sums), legend_dmg_common, legend_imm_factors
 
-        # Legend entries are stored as { 'proc': 0.05, 'fire': [1, 30, 7], ... , 'effect': 'sunder' }
-        proc = legend_dict['proc'] if 'proc' in legend_dict.keys() else None
+        proc = legend_dict.get('proc')
+        custom_effect = self.registry.get_effect(self.weapon.name_purple)
 
-        def add_legend_dmg():
-            # Check if weapon has a registered custom effect
-            custom_effect = self.registry.get_effect(self.weapon.name_purple)
+        if not custom_effect:
+            # No registered effect - weapon has no legendary property
+            return dict(legend_dict_sums), legend_dmg_common, legend_imm_factors
 
-            if custom_effect:
-                effect_result = custom_effect.apply(
-                    legend_dict,
-                    self.stats,
-                    crit_multiplier,
-                    self.attack_sim
-                )
-
-                # Apply damage from custom effect
-                for dmg_type, dmg_value in effect_result.get('damage_sums', {}).items():
-                    legend_dict_sums[dmg_type] += dmg_value
-
-                # Handle common damage
-                if effect_result.get('common_damage'):
-                    legend_dmg_common.extend(effect_result['common_damage'])
-
-                # Handle immunity factors
-                legend_imm_factors.update(effect_result.get('immunity_factors', {}))
-
-            else:
-                # Default behavior for weapons without custom effects
-                for dmg_type, dmg_list in legend_dict.items():
-                    if dmg_type in ('proc', 'effect'):
-                        continue
-                    for dmg_sublist in dmg_list:
-                        # dmg_sublist may be [dice, sides] or [dice, sides, flat]
-                        num_dice = dmg_sublist[0]
-                        num_sides = dmg_sublist[1]
-                        flat_dmg = dmg_sublist[2] if len(dmg_sublist) > 2 else 0
-                        legend_dict_sums[dmg_type] += self.attack_sim.damage_roll(num_dice, num_sides, flat_dmg)
-
-        def get_immunity_factors():
-            # Skip if weapon has custom effect (immunity factors already handled by registry)
-            if self.registry.get_effect(self.weapon.name_purple):
-                return
-
-            physical_imm_factor_weapons = ['Club_Stone']    # Crushing Blow legendary property, -5% physical immunity
-            if self.weapon.name_purple in physical_imm_factor_weapons:
-                legend_imm_factors['physical'] = -0.05
-
+        # Check proc type and phase
         if isinstance(proc, (int, float)):  # Legendary property triggers on-hit, by percentage
-            if self.legend_proc(proc): # Check if the legendary property is triggered
-                add_legend_dmg()
-                get_immunity_factors()
+            if self.legend_proc(proc):  # Phase 1: Just procced
+                burst, persistent = custom_effect.apply(
+                    legend_dict, self.stats, crit_multiplier, self.attack_sim)
+                # Apply BOTH burst and persistent
+                self._apply_effects(burst, persistent, legend_dict_sums,
+                                  legend_dmg_common, legend_imm_factors)
 
-            elif self.legend_attacks_left > 0:
-                self.legend_attacks_left = self.legend_attacks_left - 1
-                # Heavy Flail continues to apply damage during duration window
-                if self.weapon.name_purple == 'Heavy Flail':
-                    add_legend_dmg()
-                get_immunity_factors()
+            elif self.legend_attacks_left > 0:  # Phase 2: During window
+                self.legend_attacks_left -= 1
+                burst, persistent = custom_effect.apply(
+                    legend_dict, self.stats, crit_multiplier, self.attack_sim)
+                # Apply ONLY persistent (ignore burst)
+                self._apply_effects({}, persistent, legend_dict_sums,
+                                  legend_dmg_common, legend_imm_factors)
 
-        elif isinstance (proc, str) and crit_multiplier > 1:    # Legendary property triggers by crit-hit
+        elif isinstance(proc, str) and crit_multiplier > 1:  # Legendary property triggers on crit-hit
             self.stats.legend_procs += 1
-            add_legend_dmg()
+            burst, persistent = custom_effect.apply(
+                legend_dict, self.stats, crit_multiplier, self.attack_sim)
+            self._apply_effects(burst, persistent, legend_dict_sums,
+                              legend_dmg_common, legend_imm_factors)
 
         # Convert back to regular dict before returning
         return dict(legend_dict_sums), legend_dmg_common, legend_imm_factors
+
+    def _apply_effects(self, burst, persistent, legend_dict_sums,
+                       legend_dmg_common, legend_imm_factors):
+        """Helper to apply burst and persistent effects.
+
+        Args:
+            burst: Dict with 'damage_sums' key
+            persistent: Dict with 'common_damage', 'immunity_factors', 'ab_bonus', 'ac_reduction' keys
+            legend_dict_sums: defaultdict to accumulate damage
+            legend_dmg_common: List to extend with common damage
+            legend_imm_factors: Dict to update with immunity factors
+        """
+        # Apply burst damage
+        for dmg_type, dmg_value in burst.get('damage_sums', {}).items():
+            legend_dict_sums[dmg_type] += dmg_value
+
+        # Apply persistent effects
+        if persistent.get('common_damage'):
+            legend_dmg_common.extend(persistent['common_damage'])
+
+        legend_imm_factors.update(persistent.get('immunity_factors', {}))
+
+        # Store for property access
+        self._current_ab_bonus = persistent.get('ab_bonus', 0)
+        self._current_ac_reduction = persistent.get('ac_reduction', 0)

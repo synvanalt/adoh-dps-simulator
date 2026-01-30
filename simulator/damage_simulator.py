@@ -251,8 +251,8 @@ class DamageSimulator:
                 self.stats.attempts_made += 1
                 self.stats.attempts_made_per_attack[attack_idx] += 1
 
-                legend_ab_bonus = self.legend_effect.ab_bonus()  # Get the AB bonus from the legendary effect
-                legend_ac_reduction = self.legend_effect.ac_reduction()  # Get the AC reduction from the legendary effect
+                legend_ab_bonus = self.legend_effect.ab_bonus  # Get the AB bonus from the legendary effect
+                legend_ac_reduction = self.legend_effect.ac_reduction  # Get the AC reduction from the legendary effect
                 current_ab = min(attack_ab + legend_ab_bonus, self.attack_sim.ab_capped)
                 outcome, roll = self.attack_sim.attack_roll(current_ab, defender_ac_modifier=legend_ac_reduction)
 
