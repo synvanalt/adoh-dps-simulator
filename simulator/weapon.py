@@ -7,6 +7,10 @@ from simulator.constants import (
     AMMO_BASED_WEAPONS,
     DOUBLE_SIDED_WEAPONS,
 )
+from simulator.damage_source_resolver import (
+    unpack_and_merge_vs_race,
+    merge_enhancement_bonus,
+)
 from copy import deepcopy
 
 
@@ -126,69 +130,16 @@ class Weapon:
         For example: 'purple_dmg': [[2, 4, 'magical'], [1, 6, 'physical']]
         This master-list will later be looped over when damage is calculated.
         """
+        purple_props_updated = unpack_and_merge_vs_race(
+            self.purple_props,
+            damage_vs_race_enabled=self.cfg.DAMAGE_VS_RACE
+        )
 
-        def calculate_avg_dmg(dmg_obj):
-            """Calculates the average value of damage: dies * ((min + max) / 2) + flat."""
-            if isinstance(dmg_obj, DamageRoll):
-                return dmg_obj.average()
-            # Legacy list format support
-            num_dice = dmg_obj[0]
-            num_sides = dmg_obj[1]
-            flat_dmg = dmg_obj[2] if len(dmg_obj) > 2 else 0
-            return num_dice * ((1 + num_sides) / 2) + flat_dmg
-
-        def unpack_and_merge_vs_race(data_dict):
-            """Unpacks nested 'vs_race' dictionaries into the parent and resolves conflicts."""
-            # Create a new dictionary for the merged results
-            # Initialize it with all non-'vs_race' and non-'enhancement' items (enhancement is for future implementation)
-            merged_dict = {
-                k: v for k, v in data_dict.items()
-                if not k.startswith('vs_race') and k != 'enhancement'
-            }
-            # Process 'vs_race' keys for unpacking and conflict resolution
-            for key, sub_dict in data_dict.items():
-                if key.startswith('vs_race') and isinstance(sub_dict, dict) and self.cfg.DAMAGE_VS_RACE:
-                    for sub_key, sub_value in sub_dict.items():
-                        # Check for conflict
-                        if sub_key in merged_dict:
-                            # 1. Calculate the average for the existing list
-                            avg_existing = calculate_avg_dmg(merged_dict[sub_key])
-                            # 2. Calculate the average for the new list
-                            avg_new = calculate_avg_dmg(sub_value)
-                            # 3. Resolve conflict: keep the one with the higher average
-                            if avg_new > avg_existing:
-                                merged_dict[sub_key] = sub_value
-                            # If avg_new <= avg_existing, the existing value is kept (no change needed)
-                        elif sub_key == 'enhancement':
-                            # Skip enhancement here; it will be handled separately
-                            continue
-                        else:
-                            # No conflict, simply add the new key/value pair
-                            merged_dict[sub_key] = sub_value
-            return merged_dict
-
-        def merge_enhancement_bonus(data_dict):
-            """Combine Enhancement Bonus and weapon damage bonus properties"""
-            enhancement_dmg = self.enhancement_bonus()
-            dmg_type_eb, dmg_roll_eb = next(iter(enhancement_dmg.items()))
-            avg_dmg_eb = calculate_avg_dmg(dmg_roll_eb)
-
-            if dmg_type_eb not in PHYSICAL_DAMAGE_TYPES:
-                raise ValueError(f"Enhancement damage type '{dmg_type_eb}' is not a valid physical damage type.")
-
-            elif dmg_type_eb in data_dict.keys():
-                avg_dmg_purple = calculate_avg_dmg(data_dict[dmg_type_eb])
-                self.weapon_damage_stack_warning = True
-                # Compare average damages and keep the higher one (no stacking of same physical damage type):
-                if avg_dmg_eb > avg_dmg_purple:
-                    data_dict[dmg_type_eb] = dmg_roll_eb
-            else:
-                data_dict[dmg_type_eb] = dmg_roll_eb
-
-            return data_dict
-
-        purple_props_updated = unpack_and_merge_vs_race(self.purple_props)
-        purple_props_updated = merge_enhancement_bonus(purple_props_updated)
+        purple_props_updated, warning = merge_enhancement_bonus(
+            purple_props_updated,
+            self.enhancement_bonus()
+        )
+        self.weapon_damage_stack_warning = warning
 
         # Remove Tenacious Blow damage bonus if not wielding a double-sided weapon
         additional_dmg_copy = deepcopy(self.cfg.ADDITIONAL_DAMAGE)
@@ -197,7 +148,7 @@ class Weapon:
                 and self.name_base not in DOUBLE_SIDED_WEAPONS):
             additional_dmg_copy["Tenacious_Blow"][0] = False    # Turn off Tenacious Blow for this instance
 
-        # Aggreagte all damage sources:
+        # Aggregate all damage sources:
         dmg_src_dict = {
             'weapon_base_dmg': self.dmg,
             'weapon_bonus_dmg': purple_props_updated,
