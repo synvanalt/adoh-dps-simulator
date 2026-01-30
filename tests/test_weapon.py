@@ -13,6 +13,7 @@ This test suite covers:
 import pytest
 from simulator.weapon import Weapon
 from simulator.config import Config
+from simulator.damage_roll import DamageRoll
 
 
 class TestWeaponInitialization:
@@ -25,7 +26,10 @@ class TestWeaponInitialization:
 
         assert weapon.name_base == "Scythe"
         assert weapon.name_purple == "Scythe"
-        assert weapon.dmg == {'physical': [2, 4, 0]}
+        assert isinstance(weapon.dmg['physical'], DamageRoll)
+        assert weapon.dmg['physical'].dice == 2
+        assert weapon.dmg['physical'].sides == 4
+        assert weapon.dmg['physical'].flat == 0
         assert weapon.threat_base == 20
         assert weapon.multiplier_base == 4
         assert weapon.size == 'L'
@@ -51,7 +55,10 @@ class TestWeaponInitialization:
         cfg = Config()
         weapon = Weapon("Halberd", cfg)
 
-        assert weapon.dmg == {'physical': [1, 10, 0]}
+        assert isinstance(weapon.dmg['physical'], DamageRoll)
+        assert weapon.dmg['physical'].dice == 1
+        assert weapon.dmg['physical'].sides == 10
+        assert weapon.dmg['physical'].flat == 0
         assert weapon.threat_base == 20
         assert weapon.multiplier_base == 3
 
@@ -194,7 +201,8 @@ class TestEnhancementBonus:
         bonus = weapon.enhancement_bonus()
         assert 'slashing' in bonus
         # Scimitar has 7 enhancement + 3 set bonus = 10
-        assert bonus['slashing'][2] == 10
+        assert isinstance(bonus['slashing'], DamageRoll)
+        assert bonus['slashing'].flat == 10
 
     def test_scythe_has_fixed_enhancement_bonus(self):
         """Test that Scythe combines its fixed 10 enhancement with set bonus."""
@@ -203,7 +211,9 @@ class TestEnhancementBonus:
 
         bonus = weapon.enhancement_bonus()
         # Scythe has 10 enhancement + 3 set bonus = 13
-        assert bonus['slashing'][2] == 13 or bonus['piercing'][2] == 13
+        dmg_type = next(iter(bonus.keys()))
+        assert isinstance(bonus[dmg_type], DamageRoll)
+        assert bonus[dmg_type].flat == 13
 
     def test_dwarven_waraxe_damage_vs_race_bonus(self):
         """Test that Dwarven Waraxe gets special vs_race enhancement bonus."""
@@ -217,9 +227,11 @@ class TestEnhancementBonus:
         bonus_with_race = weapon_with_bonus.enhancement_bonus()
 
         # Without DAMAGE_VS_RACE: 7 + 3 = 10
-        assert bonus_no_race['slashing'][2] == 10
+        assert isinstance(bonus_no_race['slashing'], DamageRoll)
+        assert bonus_no_race['slashing'].flat == 10
         # With DAMAGE_VS_RACE and vs_race_dragon: 12 + 3 = 15
-        assert bonus_with_race['slashing'][2] == 15
+        assert isinstance(bonus_with_race['slashing'], DamageRoll)
+        assert bonus_with_race['slashing'].flat == 15
 
     def test_ranged_weapons_have_zero_enhancement_bonus(self):
         """Test that ammo-based ranged weapons get 0 enhancement bonus regardless of set bonus."""
@@ -230,7 +242,7 @@ class TestEnhancementBonus:
             bonus = weapon.enhancement_bonus()
 
             # Ranged weapons should have 0 enhancement (ammo-based weapons ignore set bonus)
-            assert all(v[2] == 0 for v in bonus.values())
+            assert all(isinstance(v, DamageRoll) and v.flat == 0 for v in bonus.values())
 
     def test_throwing_weapons_enhancement_bonus(self):
         """Test enhancement bonus for throwing weapons (different from ranged ammo-based)."""
@@ -239,7 +251,8 @@ class TestEnhancementBonus:
 
         bonus = weapon.enhancement_bonus()
         # Darts have 7 enhancement + 3 set bonus = 10
-        assert bonus['piercing'][2] == 10
+        assert isinstance(bonus['piercing'], DamageRoll)
+        assert bonus['piercing'].flat == 10
 
     def test_damage_type_prioritization(self):
         """Test that enhancement bonus uses correct damage type prioritization."""
@@ -252,7 +265,8 @@ class TestEnhancementBonus:
         # Should prioritize slashing over piercing
         # Halberd has 7 enhancement + 3 set bonus = 10
         assert 'slashing' in bonus
-        assert bonus['slashing'][2] == 10
+        assert isinstance(bonus['slashing'], DamageRoll)
+        assert bonus['slashing'].flat == 10
 
 
 class TestStrengthBonus:
@@ -264,7 +278,8 @@ class TestStrengthBonus:
         weapon = Weapon("Scimitar", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 21
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 21
 
     def test_melee_two_handed_str_bonus_doubles(self):
         """Test that two-handed weapons double strength bonus."""
@@ -272,7 +287,8 @@ class TestStrengthBonus:
         weapon = Weapon("Scythe", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 42  # 21 * 2
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 42  # 21 * 2
 
     def test_ranged_str_bonus_capped_by_mighty(self):
         """Test that ranged weapons cap strength bonus by Mighty property."""
@@ -280,7 +296,8 @@ class TestStrengthBonus:
         weapon = Weapon("Longbow_FireDragon", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 10  # min(21, 10)
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 10  # min(21, 10)
 
     def test_ranged_str_bonus_uses_lower_value(self):
         """Test that ranged strength bonus uses min(STR_MOD, MIGHTY)."""
@@ -288,7 +305,8 @@ class TestStrengthBonus:
         weapon = Weapon("Longbow_FireDragon", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 5  # min(5, 10)
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 5  # min(5, 10)
 
     def test_throwing_weapons_get_str_bonus(self):
         """Test that throwing weapons get strength bonus."""
@@ -296,7 +314,8 @@ class TestStrengthBonus:
         weapon = Weapon("Darts", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 21  # Throwing weapons have "auto-mighty"
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 21  # Throwing weapons have "auto-mighty"
 
     def test_throwing_axes_get_str_bonus(self):
         """Test that Throwing Axes get strength bonus."""
@@ -304,7 +323,8 @@ class TestStrengthBonus:
         weapon = Weapon("Throwing Axes", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 21
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 21
 
     def test_invalid_combat_type_raises_error(self):
         """Test that invalid combat type raises ValueError."""
@@ -341,7 +361,8 @@ class TestAggregateDamageSources:
 
         dmg_sources = weapon.aggregate_damage_sources()
         assert 'str_dmg' in dmg_sources
-        assert dmg_sources['str_dmg']['physical'][2] == 21
+        assert isinstance(dmg_sources['str_dmg']['physical'], DamageRoll)
+        assert dmg_sources['str_dmg']['physical'].flat == 21
 
     def test_aggregate_includes_additional_damage(self):
         """Test that aggregation includes enabled additional damage sources."""
@@ -410,7 +431,8 @@ class TestWeaponWithDifferentConfigs:
         assert weapon.crit_threat == 16  # 20 - 1 (base range) - 1 (Keen) - 1 (Improved) - 2 (WM)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 42  # 21 * 2
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 42  # 21 * 2
 
     def test_weapon_ranged_configuration(self):
         """Test weapon with ranged configuration."""
@@ -425,7 +447,8 @@ class TestWeaponWithDifferentConfigs:
         weapon = Weapon("Longbow_FireDragon", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 10  # Capped by Mighty
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 10  # Capped by Mighty
 
     def test_weapon_shape_override(self):
         """Test weapon with shape override configuration."""
@@ -433,7 +456,10 @@ class TestWeaponWithDifferentConfigs:
         weapon = Weapon("Scimitar", cfg)
 
         # Should use Scythe properties instead of Scimitar
-        assert weapon.dmg == {'physical': [2, 4, 0]}
+        assert isinstance(weapon.dmg['physical'], DamageRoll)
+        assert weapon.dmg['physical'].dice == 2
+        assert weapon.dmg['physical'].sides == 4
+        assert weapon.dmg['physical'].flat == 0
 
     def test_multiple_additional_damage_enabled(self):
         """Test aggregation with multiple additional damage sources enabled."""
@@ -457,7 +483,8 @@ class TestEdgeCases:
         weapon = Weapon("Scimitar", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 0
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 0
 
     def test_negative_strength_modifier(self):
         """Test weapon with negative strength modifier."""
@@ -465,7 +492,8 @@ class TestEdgeCases:
         weapon = Weapon("Scimitar", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == -2
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == -2
 
     def test_all_features_disabled(self):
         """Test weapon with all features disabled."""
@@ -480,7 +508,9 @@ class TestEdgeCases:
 
         assert weapon.crit_threat == 18
         assert weapon.crit_multiplier == 2
-        assert weapon.strength_bonus()['physical'][2] == 0
+        str_bonus = weapon.strength_bonus()
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 0
 
     def test_empty_additional_damage(self):
         """Test aggregation when no additional damage is configured."""
@@ -622,7 +652,8 @@ class TestStrengthBonusConfiguration:
 
         dmg_sources = weapon.aggregate_damage_sources()
         assert 'str_dmg' in dmg_sources
-        assert dmg_sources['str_dmg']['physical'][2] == 21
+        assert isinstance(dmg_sources['str_dmg']['physical'], DamageRoll)
+        assert dmg_sources['str_dmg']['physical'].flat == 21
 
     def test_strength_bonus_doubled_two_handed(self):
         """Test that strength bonus is doubled for two-handed weapons."""
@@ -634,7 +665,8 @@ class TestStrengthBonusConfiguration:
         weapon = Weapon("Longsword", cfg)
 
         str_bonus = weapon.strength_bonus()
-        assert str_bonus['physical'][2] == 42  # 21 * 2
+        assert isinstance(str_bonus['physical'], DamageRoll)
+        assert str_bonus['physical'].flat == 42  # 21 * 2
 
 
 

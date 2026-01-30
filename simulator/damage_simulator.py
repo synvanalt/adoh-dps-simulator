@@ -3,6 +3,7 @@ from simulator.attack_simulator import AttackSimulator
 from simulator.stats_collector import StatsCollector
 from simulator.legend_effect import LegendEffect
 from simulator.config import Config
+from simulator.damage_roll import DamageRoll
 from copy import deepcopy
 from collections import deque
 import statistics
@@ -43,6 +44,24 @@ class DamageSimulator:
         self.dps_crit_imm_per_round = []
         self.cumulative_damage_by_type = {}
 
+    def _convert_to_dmg_list(self, dmg_obj):
+        """Convert DamageRoll or list to [dice, sides] or [dice, sides, flat] format.
+
+        Args:
+            dmg_obj: Either a DamageRoll object or a list [dice, sides] or [dice, sides, flat]
+
+        Returns:
+            List in format [dice, sides] or [dice, sides, flat]
+        """
+        if isinstance(dmg_obj, DamageRoll):
+            if dmg_obj.flat == 0:
+                return [dmg_obj.dice, dmg_obj.sides]
+            else:
+                return [dmg_obj.dice, dmg_obj.sides, dmg_obj.flat]
+        else:
+            # Already a list, return as is
+            return dmg_obj
+
     def collect_damage_from_all_sources(self):
         """Collect damage information from all sources and organize it into dictionaries"""
         damage_sources = self.weapon.aggregate_damage_sources()
@@ -57,19 +76,13 @@ class DamageSimulator:
                             if leg_key in ('proc', 'effect'):
                                 self.dmg_dict_legend[leg_key] = leg_val  # Store proc and effect directly
                                 continue
-                            # leg_val expected to be [dice, sides] or [dice, sides, flat]
-                            dice = leg_val[0]
-                            sides = leg_val[1]
-                            flat = leg_val[2] if len(leg_val) > 2 else None
-                            dmg_entry = [dice, sides] if flat is None else [dice, sides, flat]
+                            # leg_val expected to be DamageRoll or [dice, sides] or [dice, sides, flat]
+                            dmg_entry = self._convert_to_dmg_list(leg_val)
                             self.dmg_dict_legend.setdefault(leg_key, []).append(dmg_entry)
 
-                    # Regular damage entries, e.g., 'fire': [dice, sides] or 'slashing': [dice, sides, flat]
+                    # Regular damage entries, e.g., 'fire': DamageRoll or [dice, sides] or 'slashing': [dice, sides, flat]
                     else:
-                        dice = val[0]
-                        sides = val[1]
-                        flat = val[2] if len(val) > 2 else None
-                        dmg_entry = [dice, sides] if flat is None else [dice, sides, flat]
+                        dmg_entry = self._convert_to_dmg_list(val)
                         if key in ['slashing', 'piercing', 'bludgeoning']:
                             self.dmg_dict.setdefault('physical', []).append(dmg_entry)  # Aggregate all physical damage types under 'physical'
                         else:
@@ -81,10 +94,7 @@ class DamageSimulator:
                     if isinstance(item, dict):
                         # Handling additional damage entries that are dicts, e.g., {'fire_fw': [1, 4, 10]}
                         dmg_type_key, dmg_nums = next(iter(item.items()))
-                        dice = dmg_nums[0]
-                        sides = dmg_nums[1]
-                        flat = dmg_nums[2] if len(dmg_nums) > 2 else None
-                        dmg_entry = [dice, sides] if flat is None else [dice, sides, flat]
+                        dmg_entry = self._convert_to_dmg_list(dmg_nums)
                         self.dmg_dict.setdefault(dmg_type_key, []).append(dmg_entry)
 
                     else:
@@ -126,7 +136,8 @@ class DamageSimulator:
             offhand_attack_1_idx = attack_prog_length - 2   # First Offhand attack
             offhand_attack_2_idx = attack_prog_length - 1   # Second Offhand attack
             str_dmg = self.weapon.strength_bonus()                  # Find the STR bonus damage (again)
-            str_idx = self.dmg_dict['physical'].index(str_dmg['physical'])      # Store index of STR damage for halving it later
+            str_dmg_converted = self._convert_to_dmg_list(str_dmg['physical'])  # Convert to list format for comparison
+            str_idx = self.dmg_dict['physical'].index(str_dmg_converted)      # Store index of STR damage for halving it later
 
         else:
             offhand_attack_1_idx = None

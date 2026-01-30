@@ -1058,7 +1058,7 @@ class TestDualWieldOffhandDamage:
 
         str_bonus = weapon.strength_bonus()
         # Should be 21, not 42 (only two-handed doubles STR)
-        assert str_bonus['physical'][2] == 21
+        assert str_bonus['physical'].flat == 21
 
 
 class TestDualWieldFlagDetection:
