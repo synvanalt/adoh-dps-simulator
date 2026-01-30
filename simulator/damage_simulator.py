@@ -24,6 +24,9 @@ class DamageSimulator:
         self.dmg_dict_legend = {}
         self.collect_damage_from_all_sources()
 
+        # Pre-compute damage structures to avoid deep copies in hot loop
+        self.dmg_dict_base = deepcopy(self.dmg_dict)  # One-time deep copy
+
         # Convergence params, z-score lookup (normal distribution)
         z_values = {0.90: 1.645, 0.95: 1.96, 0.99: 2.576}
         self.confidence = 0.99
@@ -267,7 +270,8 @@ class DamageSimulator:
                         self.legend_effect.get_legend_damage(self.dmg_dict_legend, crit_multiplier)
                     )
 
-                    dmg_dict = deepcopy(self.dmg_dict)  # Prep dmg dict for CRIT calculation
+                    # Use shallow copy from pre-computed base
+                    dmg_dict = {k: list(v) for k, v in self.dmg_dict_base.items()}
 
                     if self.attack_sim.dual_wield:  # Halve (and round down) Strength damage for offhand attacks
                         if attack_idx in (offhand_attack_1_idx, offhand_attack_2_idx):
@@ -298,7 +302,8 @@ class DamageSimulator:
                         dmg_popped.extend([legend_dmg_common])
                         dmg_dict[dmg_type_name] = dmg_popped
 
-                    dmg_dict_crit_imm = deepcopy(dmg_dict)  # Make a deep copy of dmg dict for NON-CRIT calculation
+                    # Use shallow copy
+                    dmg_dict_crit_imm = {k: list(v) for k, v in dmg_dict.items()}
 
                     if crit_multiplier > 1:     # Store an additional dictionary for damage without crit multiplication
                         self.stats.crit_hits += 1
