@@ -62,6 +62,38 @@ class DamageSimulator:
             # Already a list, return as is
             return dmg_obj
 
+    def _setup_dual_wield_tracking(self) -> dict:
+        """Set up tracking indices for dual-wield strength bonus halving.
+
+        Returns:
+            Dictionary with:
+            - is_dual_wield: bool
+            - offhand_attack_1_idx: int or None
+            - offhand_attack_2_idx: int or None
+            - str_idx: int or None (index of STR damage in physical damage list)
+        """
+        if self.attack_sim.dual_wield:
+            attack_prog_length = len(self.attack_sim.attack_prog)
+            offhand_attack_1_idx = attack_prog_length - 2
+            offhand_attack_2_idx = attack_prog_length - 1
+            str_dmg = self.weapon.strength_bonus()
+            str_dmg_converted = self._convert_to_dmg_list(str_dmg['physical'])
+            str_idx = self.dmg_dict['physical'].index(str_dmg_converted)
+
+            return {
+                'is_dual_wield': True,
+                'offhand_attack_1_idx': offhand_attack_1_idx,
+                'offhand_attack_2_idx': offhand_attack_2_idx,
+                'str_idx': str_idx,
+            }
+        else:
+            return {
+                'is_dual_wield': False,
+                'offhand_attack_1_idx': None,
+                'offhand_attack_2_idx': None,
+                'str_idx': None,
+            }
+
     def collect_damage_from_all_sources(self):
         """Collect damage information from all sources and organize it into dictionaries"""
         damage_sources = self.weapon.aggregate_damage_sources()
@@ -106,6 +138,64 @@ class DamageSimulator:
                 print(f"Warning: Unexpected damage source format: {dmg_source}")
                 continue
 
+    def _calculate_final_statistics(self, round_num: int) -> dict:
+        """Calculate final DPS statistics after simulation completes.
+
+        Args:
+            round_num: Number of rounds simulated
+
+        Returns:
+            Dictionary with all calculated statistics
+        """
+        # Illegal DW config, no results to show - set all to zeroes
+        if self.attack_sim.illegal_dual_wield_config:
+            return {
+                'dps_mean': 0,
+                'dps_stdev': 0,
+                'dps_error': 0,
+                'dps_crit_imm_mean': 0,
+                'dps_crit_imm_stdev': 0,
+                'dps_crit_imm_error': 0,
+                'dps_both': 0,
+                'dpr': 0,
+                'dpr_crit_imm': 0,
+                'dph': 0,
+                'dph_crit_imm': 0,
+            }
+
+        # DPS values (crit allowed)
+        dps_mean = statistics.mean(self.dps_per_round)
+        dps_stdev = statistics.stdev(self.dps_per_round) if round_num > 1 else 0
+        dps_error = self.z * (dps_stdev / math.sqrt(round_num))
+
+        # DPS values (crit immune)
+        dps_crit_imm_mean = statistics.mean(self.dps_crit_imm_per_round)
+        dps_crit_imm_stdev = statistics.stdev(self.dps_crit_imm_per_round) if round_num > 1 else 0
+        dps_crit_imm_error = self.z * (dps_crit_imm_stdev / math.sqrt(round_num))
+
+        # Averaging crit-allowed and crit-immune
+        dps_both = (dps_mean + dps_crit_imm_mean) / 2
+
+        # Damage per round and per hit
+        dpr = self.total_dmg / round_num
+        dpr_crit_imm = self.total_dmg_crit_imm / round_num
+        dph = self.total_dmg / self.stats.hits
+        dph_crit_imm = self.total_dmg_crit_imm / self.stats.hits
+
+        return {
+            'dps_mean': dps_mean,
+            'dps_stdev': dps_stdev,
+            'dps_error': dps_error,
+            'dps_crit_imm_mean': dps_crit_imm_mean,
+            'dps_crit_imm_stdev': dps_crit_imm_stdev,
+            'dps_crit_imm_error': dps_crit_imm_error,
+            'dps_both': dps_both,
+            'dpr': dpr,
+            'dpr_crit_imm': dpr_crit_imm,
+            'dph': dph,
+            'dph_crit_imm': dph_crit_imm,
+        }
+
     def convergence(self, round_num) -> bool:
         dps_window_mean = statistics.mean(self.dps_window)
         dps_window_stdev = statistics.stdev(self.dps_window)
@@ -130,19 +220,11 @@ class DamageSimulator:
         round_num = 0
         legend_imm_factors = None
 
-        # Check if offhand attack are present in the attack progression
-        if self.attack_sim.dual_wield:
-            attack_prog_length = len(self.attack_sim.attack_prog)
-            offhand_attack_1_idx = attack_prog_length - 2   # First Offhand attack
-            offhand_attack_2_idx = attack_prog_length - 1   # Second Offhand attack
-            str_dmg = self.weapon.strength_bonus()                  # Find the STR bonus damage (again)
-            str_dmg_converted = self._convert_to_dmg_list(str_dmg['physical'])  # Convert to list format for comparison
-            str_idx = self.dmg_dict['physical'].index(str_dmg_converted)      # Store index of STR damage for halving it later
-
-        else:
-            offhand_attack_1_idx = None
-            offhand_attack_2_idx = None
-            str_idx = None
+        # Set up dual-wield tracking indices
+        dw_tracking = self._setup_dual_wield_tracking()
+        offhand_attack_1_idx = dw_tracking['offhand_attack_1_idx']
+        offhand_attack_2_idx = dw_tracking['offhand_attack_2_idx']
+        str_idx = dw_tracking['str_idx']
 
         for round_num in range(1, total_rounds + 1):
             total_round_dmg = 0
@@ -305,33 +387,19 @@ class DamageSimulator:
                 if self.convergence(round_num):
                     break
 
-        # Illegal DW config, no results to show - set all to zeroes
-        if self.attack_sim.illegal_dual_wield_config:
-
-            dps_mean = dps_stdev = dps_error = 0
-            dps_crit_imm_mean = dps_crit_imm_stdev = dps_crit_imm_error = 0
-            dps_both = 0
-            dpr = dpr_crit_imm = dph = dph_crit_imm = 0
-
-        else:
-            # DPS values (crit allowed)
-            dps_mean = statistics.mean(self.dps_per_round)
-            dps_stdev = statistics.stdev(self.dps_per_round) if round_num > 1 else 0
-            dps_error = self.z * (dps_stdev / math.sqrt(round_num))
-
-            # DPS values (crit immune)
-            dps_crit_imm_mean = statistics.mean(self.dps_crit_imm_per_round)
-            dps_crit_imm_stdev = statistics.stdev(self.dps_crit_imm_per_round) if round_num > 1 else 0
-            dps_crit_imm_error = self.z * (dps_crit_imm_stdev / math.sqrt(round_num))
-
-            # Averaging crit-allowed and crit-immune
-            dps_both = (dps_mean + dps_crit_imm_mean) / 2
-
-            # Damage per round and per hit
-            dpr = self.total_dmg / round_num
-            dpr_crit_imm = self.total_dmg_crit_imm / round_num
-            dph = self.total_dmg / self.stats.hits
-            dph_crit_imm = self.total_dmg_crit_imm / self.stats.hits
+        # Calculate final statistics
+        stats = self._calculate_final_statistics(round_num)
+        dps_mean = stats['dps_mean']
+        dps_stdev = stats['dps_stdev']
+        dps_error = stats['dps_error']
+        dps_crit_imm_mean = stats['dps_crit_imm_mean']
+        dps_crit_imm_stdev = stats['dps_crit_imm_stdev']
+        dps_crit_imm_error = stats['dps_crit_imm_error']
+        dps_both = stats['dps_both']
+        dpr = stats['dpr']
+        dpr_crit_imm = stats['dpr_crit_imm']
+        dph = stats['dph']
+        dph_crit_imm = stats['dph_crit_imm']
 
         warning_dupe = f">>> WARNING: Duplicate weapon damage bonus detected! Using higher damage values where applicable. <<<\n\n" if self.weapon.weapon_damage_stack_warning else ""
         error_illegal_dw = f">>> ERROR: Character size '{self.cfg.TOON_SIZE}' cannot dual-wield '{self.weapon.name_base}'. Simulation skipped. <<<\n\n" if self.attack_sim.illegal_dual_wield_config else ""
