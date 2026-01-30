@@ -4,7 +4,7 @@ This factory decouples instantiation logic from the simulators themselves,
 making it easier to test components in isolation.
 """
 
-from typing import Optional
+from typing import Optional, Callable
 from collections import deque
 from simulator.config import Config
 from simulator.weapon import Weapon
@@ -28,8 +28,8 @@ class SimulatorFactory:
         self,
         weapon_name: str,
         stats_collector: Optional[StatsCollector] = None,
-        progress_callback=None
-    ):
+        progress_callback: Optional[Callable[..., None]] = None
+    ) -> 'DamageSimulator':
         """Create a DamageSimulator with all dependencies.
 
         Args:
