@@ -170,3 +170,29 @@ def test_perfect_strike_effect_adds_ab_bonus():
     # Should have persistent AB bonus
     assert 'ab_bonus' in persistent
     assert persistent['ab_bonus'] == 2
+
+
+def test_sunder_effect_adds_ac_reduction():
+    """Test that SunderEffect adds -2 AC reduction as persistent effect."""
+    from simulator.legendary_effects.sunder_effect import SunderEffect
+    from simulator.stats_collector import StatsCollector
+    from simulator.attack_simulator import AttackSimulator
+    from simulator.weapon import Weapon
+    from simulator.config import Config
+
+    cfg = Config()
+    weapon = Weapon('Light Flail', cfg)
+    attack_sim = AttackSimulator(weapon, cfg)
+    stats = StatsCollector()
+
+    effect = SunderEffect()
+    legend_dict = {
+        'proc': 0.05,
+        'effect': 'sunder'
+    }
+
+    burst, persistent = effect.apply(legend_dict, stats, 1, attack_sim)
+
+    # Should have persistent AC reduction
+    assert 'ac_reduction' in persistent
+    assert persistent['ac_reduction'] == -2
