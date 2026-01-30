@@ -12,6 +12,16 @@ import math
 
 class DamageSimulator:
     def __init__(self, weapon_chosen, config: Config, progress_callback=None):
+        """Initialize DamageSimulator (legacy constructor).
+
+        Note: For better testability, consider using SimulatorFactory.create_damage_simulator()
+        which supports dependency injection.
+
+        Args:
+            weapon_chosen: Name of weapon to simulate
+            config: Configuration instance
+            progress_callback: Optional callback for progress updates
+        """
         self.cfg = config
         self.stats = StatsCollector()   # Create object for collecting statistics
         self.weapon = Weapon(weapon_chosen, config=self.cfg)  # Pass Config instance to Weapon
