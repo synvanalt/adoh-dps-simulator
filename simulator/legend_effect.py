@@ -2,6 +2,7 @@ from simulator.weapon import Weapon
 from simulator.stats_collector import StatsCollector
 from simulator.attack_simulator import AttackSimulator
 from copy import deepcopy
+from collections import defaultdict
 import random
 
 
@@ -57,7 +58,7 @@ class LegendEffect:
                                "common" means it must be added to the regular damage totals, before applying immunities
             legend_imm_factors: dict, factor to apply to target's damage immunity\vulnerability
         """
-        legend_dict_sums = {}           # Empty dictionary to store the damage roll results in
+        legend_dict_sums = defaultdict(int)  # Changed from {}
         legend_dmg_common = []          # Store common damage added by legendary proc (e.g., Heavy Flail)
         legend_imm_factors = {}         # Store damage immunity factors
 
@@ -81,11 +82,10 @@ class LegendEffect:
                          continue
                      for dmg_sublist in dmg_list:
                         # dmg_sublist may be [dice, sides] or [dice, sides, flat]
-                        dmg_popped = legend_dict_sums.pop(dmg_type, 0)
                         num_dice = dmg_sublist[0]
                         num_sides = dmg_sublist[1]
                         flat_dmg = dmg_sublist[2] if len(dmg_sublist) > 2 else 0
-                        legend_dict_sums[dmg_type] = dmg_popped + self.attack_sim.damage_roll(num_dice, num_sides, flat_dmg)
+                        legend_dict_sums[dmg_type] += self.attack_sim.damage_roll(num_dice, num_sides, flat_dmg)
 
         def get_immunity_factors():
             physical_imm_factor_weapons = ['Club_Stone']    # Crushing Blow legendary property, -5% physical immunity
@@ -106,4 +106,5 @@ class LegendEffect:
             self.stats.legend_procs += 1
             add_legend_dmg()
 
-        return legend_dict_sums, legend_dmg_common, legend_imm_factors
+        # Convert back to regular dict before returning
+        return dict(legend_dict_sums), legend_dmg_common, legend_imm_factors

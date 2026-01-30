@@ -5,7 +5,7 @@ from simulator.legend_effect import LegendEffect
 from simulator.config import Config
 from simulator.damage_roll import DamageRoll
 from copy import deepcopy
-from collections import deque
+from collections import deque, defaultdict
 import statistics
 import math
 
@@ -372,17 +372,19 @@ class DamageSimulator:
         }
 
     def get_damage_results(self, damage_dict: dict, imm_factors: dict):
-        damage_sums = {}
+        damage_sums = defaultdict(int)
         for dmg_key, dmg_list in damage_dict.items():
             for dmg_sublist in dmg_list:
-                dmg_popped = damage_sums.pop(dmg_key, 0)
                 num_dice = dmg_sublist[0]
                 num_sides = dmg_sublist[1]
                 flat_dmg = dmg_sublist[2] if len(dmg_sublist) > 2 else 0    # Get flat damage if it exists, otherwise 0
                 dmg_roll_results = self.attack_sim.damage_roll(num_dice, num_sides, flat_dmg)
-                damage_sums[dmg_key] = dmg_popped + dmg_roll_results
+                damage_sums[dmg_key] += dmg_roll_results
+
+        # Convert back to regular dict before applying immunities
+        damage_sums_dict = dict(damage_sums)
 
         # Finally, apply target immunities and vulnerabilities
-        damage_sums = self.attack_sim.damage_immunity_reduction(damage_sums, imm_factors)
+        damage_sums_dict = self.attack_sim.damage_immunity_reduction(damage_sums_dict, imm_factors)
 
-        return damage_sums
+        return damage_sums_dict
