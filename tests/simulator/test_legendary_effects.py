@@ -50,3 +50,33 @@ def test_crushing_blow_effect_reduces_physical_immunity():
     assert result['immunity_factors'] == {'physical': -0.05}
     assert result['common_damage'] is None
     assert result['damage_sums'] == {}
+
+
+def test_base_interface_returns_two_tuple():
+    """Verify that effect.apply() returns (burst, persistent) tuple."""
+    from simulator.legendary_effects.base import LegendaryEffect
+    from simulator.stats_collector import StatsCollector
+    from typing import get_type_hints, Tuple
+
+    # Check the type annotation on the base interface
+    hints = get_type_hints(LegendaryEffect.apply)
+    return_type = hints.get('return')
+
+    # The return type should be a Tuple, not a Dict
+    assert return_type is not None, "apply() must have a return type annotation"
+    assert hasattr(return_type, '__origin__'), "Return type should be a generic type (Tuple)"
+    assert return_type.__origin__ == tuple, f"Expected tuple, got {return_type.__origin__}"
+
+    # Test a concrete implementation
+    class TestEffect(LegendaryEffect):
+        def apply(self, legend_dict, stats_collector, crit_multiplier, attack_sim):
+            return {'damage_sums': {}}, {'ab_bonus': 0}
+
+    effect = TestEffect()
+    result = effect.apply({}, StatsCollector(), 1, None)
+
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    burst, persistent = result
+    assert isinstance(burst, dict)
+    assert isinstance(persistent, dict)

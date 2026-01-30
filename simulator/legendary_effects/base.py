@@ -1,13 +1,14 @@
 """Base interface for legendary weapon effects."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Tuple
 
 
 class LegendaryEffect(ABC):
     """Abstract base class for legendary weapon effects.
 
     Each legendary weapon with unique behavior should implement this interface.
+    Effects return two dictionaries: burst (one-time) and persistent (duration window).
     """
 
     @abstractmethod
@@ -17,7 +18,7 @@ class LegendaryEffect(ABC):
         stats_collector,
         crit_multiplier: int,
         attack_sim
-    ) -> Dict[str, Any]:
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Apply the legendary effect and return damage results.
 
         Args:
@@ -27,9 +28,15 @@ class LegendaryEffect(ABC):
             attack_sim: AttackSimulator instance for damage rolls
 
         Returns:
-            Dictionary with:
-            - 'damage_sums': Dict of damage by type
-            - 'common_damage': List for damage added to common pool (optional)
-            - 'immunity_factors': Dict of immunity modifiers (optional)
+            Tuple of (burst_effects, persistent_effects)
+
+            burst_effects: Applied only when effect procs
+                - 'damage_sums': Dict of rolled damage by type {type: value}
+
+            persistent_effects: Applied during legendary window
+                - 'common_damage': List [dice, sides, flat, type] to add to main damage
+                - 'immunity_factors': Dict of immunity modifiers {type: factor}
+                - 'ab_bonus': Int AB bonus to apply
+                - 'ac_reduction': Int AC reduction to apply
         """
         pass
