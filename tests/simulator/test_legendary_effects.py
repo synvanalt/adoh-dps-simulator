@@ -22,6 +22,10 @@ def test_registry_returns_none_for_unknown_weapon():
 
 
 def test_heavy_flail_effect_applies_damage():
+    """DEPRECATED: Use test_heavy_flail_effect_returns_persistent_common_damage instead.
+
+    This test is kept for backwards compatibility but tests the old behavior.
+    """
     stats = StatsCollector()
     effect = HeavyFlailEffect()
 
@@ -30,13 +34,18 @@ def test_heavy_flail_effect_applies_damage():
         'physical': [[0, 0, 5]]
     }
 
-    result = effect.apply(legend_dict, stats, crit_multiplier=1, attack_sim=None)
+    burst, persistent = effect.apply(legend_dict, stats, crit_multiplier=1, attack_sim=None)
 
-    assert 'common_damage' in result
-    assert result['common_damage'] == [0, 0, 5, 'physical']
+    # Old test updated to use new tuple interface
+    assert 'common_damage' in persistent
+    assert persistent['common_damage'] == [0, 0, 5, 'physical']
 
 
 def test_crushing_blow_effect_reduces_physical_immunity():
+    """DEPRECATED: Use test_crushing_blow_returns_damage_and_immunity instead.
+
+    This test is kept for backwards compatibility but tests the old behavior.
+    """
     stats = StatsCollector()
     effect = CrushingBlowEffect()
 
@@ -44,12 +53,65 @@ def test_crushing_blow_effect_reduces_physical_immunity():
         'proc': 0.20,
     }
 
-    result = effect.apply(legend_dict, stats, crit_multiplier=1, attack_sim=None)
+    burst, persistent = effect.apply(legend_dict, stats, crit_multiplier=1, attack_sim=None)
 
-    assert 'immunity_factors' in result
-    assert result['immunity_factors'] == {'physical': -0.05}
-    assert result['common_damage'] is None
-    assert result['damage_sums'] == {}
+    # Old test updated to use new tuple interface
+    assert 'immunity_factors' in persistent
+    assert persistent['immunity_factors'] == {'physical': -0.05}
+    assert burst['damage_sums'] == {}
+
+
+def test_heavy_flail_effect_returns_persistent_common_damage():
+    """Test that Heavy Flail returns common_damage as persistent effect."""
+    from simulator.legendary_effects.heavy_flail_effect import HeavyFlailEffect
+    from simulator.stats_collector import StatsCollector
+
+    stats = StatsCollector()
+    effect = HeavyFlailEffect()
+
+    legend_dict = {
+        'proc': 0.05,
+        'physical': [[0, 0, 5]]
+    }
+
+    burst, persistent = effect.apply(legend_dict, stats, 1, None)
+
+    # Should have NO burst damage (Heavy Flail is pure persistent)
+    assert burst == {}
+
+    # Should have persistent common_damage
+    assert 'common_damage' in persistent
+    assert persistent['common_damage'] == [0, 0, 5, 'physical']
+
+
+def test_crushing_blow_returns_damage_and_immunity():
+    """Test that Crushing Blow returns damage and immunity factor."""
+    from simulator.legendary_effects.crushing_blow_effect import CrushingBlowEffect
+    from simulator.stats_collector import StatsCollector
+    from simulator.attack_simulator import AttackSimulator
+    from simulator.weapon import Weapon
+    from simulator.config import Config
+
+    cfg = Config()
+    weapon = Weapon('Club_Stone', cfg)
+    attack_sim = AttackSimulator(weapon, cfg)
+    stats = StatsCollector()
+
+    effect = CrushingBlowEffect()
+    legend_dict = {
+        'proc': 0.05,
+        'effect': 'crushing_blow'
+    }
+
+    burst, persistent = effect.apply(legend_dict, stats, 1, attack_sim)
+
+    # Should have burst damage from legend_dict (if any damage types present)
+    # Note: This specific legend_dict has no damage, so damage_sums will be empty
+    assert 'damage_sums' in burst
+
+    # Should have persistent immunity factor
+    assert 'immunity_factors' in persistent
+    assert persistent['immunity_factors'] == {'physical': -0.05}
 
 
 def test_base_interface_returns_two_tuple():
