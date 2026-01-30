@@ -21,7 +21,13 @@ class DamageRoll:
 
         Returns:
             DamageRoll instance
+
+        Raises:
+            ValueError: If list has fewer than 2 elements
         """
+        if len(dmg_list) < 2:
+            raise ValueError(f"dmg_list must have at least 2 elements, got {len(dmg_list)}")
+
         dice = dmg_list[0]
         sides = dmg_list[1]
         flat = dmg_list[2] if len(dmg_list) > 2 else 0

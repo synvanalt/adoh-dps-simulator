@@ -39,3 +39,13 @@ def test_damage_roll_average():
     dmg = DamageRoll(dice=2, sides=6, flat=3)
     # 2 * ((1+6)/2) + 3 = 2 * 3.5 + 3 = 10.0
     assert dmg.average() == 10.0
+
+
+def test_damage_roll_from_list_empty_raises_error():
+    with pytest.raises(ValueError, match="must have at least 2 elements"):
+        DamageRoll.from_list([])
+
+
+def test_damage_roll_from_list_single_element_raises_error():
+    with pytest.raises(ValueError, match="must have at least 2 elements"):
+        DamageRoll.from_list([2])
