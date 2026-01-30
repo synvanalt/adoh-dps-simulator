@@ -140,3 +140,33 @@ def test_simple_damage_effect_skips_proc_and_effect_keys():
     assert 'proc' not in burst['damage_sums']
     assert 'effect' not in burst['damage_sums']
     assert 'fire' in burst['damage_sums']
+
+
+def test_perfect_strike_effect_adds_ab_bonus():
+    """Test that PerfectStrikeEffect adds +2 AB bonus as persistent effect."""
+    from simulator.legendary_effects.perfect_strike_effect import PerfectStrikeEffect
+    from simulator.stats_collector import StatsCollector
+    from simulator.attack_simulator import AttackSimulator
+    from simulator.weapon import Weapon
+    from simulator.config import Config
+
+    cfg = Config()
+    weapon = Weapon('Darts', cfg)
+    attack_sim = AttackSimulator(weapon, cfg)
+    stats = StatsCollector()
+
+    effect = PerfectStrikeEffect()
+    legend_dict = {
+        'proc': 0.05,
+        'pure': [[4, 6, 0]]
+    }
+
+    burst, persistent = effect.apply(legend_dict, stats, 1, attack_sim)
+
+    # Should have burst damage (from parent SimpleDamageEffect)
+    assert 'damage_sums' in burst
+    assert 'pure' in burst['damage_sums']
+
+    # Should have persistent AB bonus
+    assert 'ab_bonus' in persistent
+    assert persistent['ab_bonus'] == 2
