@@ -80,3 +80,63 @@ def test_base_interface_returns_two_tuple():
     burst, persistent = result
     assert isinstance(burst, dict)
     assert isinstance(persistent, dict)
+
+
+def test_simple_damage_effect_rolls_damage():
+    """Test that SimpleDamageEffect rolls damage correctly."""
+    from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+    from simulator.stats_collector import StatsCollector
+    from simulator.attack_simulator import AttackSimulator
+    from simulator.weapon import Weapon
+    from simulator.config import Config
+
+    cfg = Config()
+    weapon = Weapon('Spear', cfg)
+    attack_sim = AttackSimulator(weapon, cfg)
+    stats = StatsCollector()
+
+    effect = SimpleDamageEffect()
+    legend_dict = {
+        'proc': 0.05,
+        'acid': [[4, 6, 0]],  # 4d6 acid
+        'pure': [[4, 6, 0]]   # 4d6 pure
+    }
+
+    burst, persistent = effect.apply(legend_dict, stats, 1, attack_sim)
+
+    # Should have burst damage
+    assert 'damage_sums' in burst
+    assert 'acid' in burst['damage_sums']
+    assert 'pure' in burst['damage_sums']
+    assert burst['damage_sums']['acid'] > 0
+    assert burst['damage_sums']['pure'] > 0
+
+    # Should have no persistent effects
+    assert persistent == {}
+
+
+def test_simple_damage_effect_skips_proc_and_effect_keys():
+    """Test that SimpleDamageEffect ignores proc and effect keys."""
+    from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+    from simulator.stats_collector import StatsCollector
+    from simulator.attack_simulator import AttackSimulator
+    from simulator.weapon import Weapon
+    from simulator.config import Config
+
+    cfg = Config()
+    weapon = Weapon('Spear', cfg)
+    attack_sim = AttackSimulator(weapon, cfg)
+
+    effect = SimpleDamageEffect()
+    legend_dict = {
+        'proc': 0.05,
+        'effect': 'some_effect',
+        'fire': [[1, 50, 0]]
+    }
+
+    burst, persistent = effect.apply(legend_dict, StatsCollector(), 1, attack_sim)
+
+    # Should only have fire damage, not proc or effect
+    assert 'proc' not in burst['damage_sums']
+    assert 'effect' not in burst['damage_sums']
+    assert 'fire' in burst['damage_sums']
