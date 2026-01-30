@@ -8,11 +8,18 @@ import random
 
 
 class LegendEffect:
+    _registry = None  # Class-level shared registry
+
     def __init__(self, stats_obj: StatsCollector, weapon_obj: Weapon, attack_sim: AttackSimulator):
         self.stats = stats_obj
         self.weapon = weapon_obj
         self.attack_sim = attack_sim
-        self.registry = LegendaryEffectRegistry()
+
+        # Initialize shared registry once
+        if LegendEffect._registry is None:
+            LegendEffect._registry = LegendaryEffectRegistry()
+
+        self.registry = LegendEffect._registry
 
         self.legend_effect_duration = 5  # Duration of the legendary effect in rounds
         self.legend_attacks_left = 0  # Track remaining attacks that benefit from legendary property
