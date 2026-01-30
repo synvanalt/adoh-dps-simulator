@@ -307,7 +307,7 @@ class DamageSimulator:
                     dmg_flameweap_max = max(dmg_flameweap, key=get_max_dmg, default=None)  # Find the highest 'fire_fw' dmg, can't stack multiple on-hits
 
                     if legend_dmg_common:   # Checking if list is NOT empty, then adding the legend common damage to ordinary damage dictionary
-                        dmg_type_name = legend_dmg_common.pop(2)
+                        dmg_type_name = legend_dmg_common.pop(-1)
                         dmg_popped = dmg_dict.pop(dmg_type_name, [])
                         dmg_popped.extend([legend_dmg_common])
                         dmg_dict[dmg_type_name] = dmg_popped
