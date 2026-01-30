@@ -1,6 +1,7 @@
 from simulator.weapon import Weapon
 from simulator.stats_collector import StatsCollector
 from simulator.attack_simulator import AttackSimulator
+from simulator.legendary_effects import LegendaryEffectRegistry
 from copy import deepcopy
 from collections import defaultdict
 import random
@@ -11,6 +12,7 @@ class LegendEffect:
         self.stats = stats_obj
         self.weapon = weapon_obj
         self.attack_sim = attack_sim
+        self.registry = LegendaryEffectRegistry()
 
         self.legend_effect_duration = 5  # Duration of the legendary effect in rounds
         self.legend_attacks_left = 0  # Track remaining attacks that benefit from legendary property
@@ -69,18 +71,34 @@ class LegendEffect:
         proc = legend_dict['proc'] if 'proc' in legend_dict.keys() else None
 
         def add_legend_dmg():
-            if self.weapon.name_purple == 'Heavy Flail':  # H.Flail 5 bludg damage is "common"
-                hflail_phys_dmg = deepcopy(legend_dict['physical'][0])
-                # hflail_phys_dmg is [dice, sides, proc] or [dice, sides, flat, proc]
-                legend_dmg_common.extend(hflail_phys_dmg)
-                # remove proc (last element) and append damage type
-                legend_dmg_common.pop(-1)
-                legend_dmg_common.append('physical')
-            else:   # All other weapons
-                 for dmg_type, dmg_list in legend_dict.items():
-                     if dmg_type in ('proc', 'effect'):
-                         continue
-                     for dmg_sublist in dmg_list:
+            # Check if weapon has a registered custom effect
+            custom_effect = self.registry.get_effect(self.weapon.name_purple)
+
+            if custom_effect:
+                effect_result = custom_effect.apply(
+                    legend_dict,
+                    self.stats,
+                    crit_multiplier,
+                    self.attack_sim
+                )
+
+                # Apply damage from custom effect
+                for dmg_type, dmg_value in effect_result.get('damage_sums', {}).items():
+                    legend_dict_sums[dmg_type] += dmg_value
+
+                # Handle common damage
+                if effect_result.get('common_damage'):
+                    legend_dmg_common.extend(effect_result['common_damage'])
+
+                # Handle immunity factors
+                legend_imm_factors.update(effect_result.get('immunity_factors', {}))
+
+            else:
+                # Default behavior for weapons without custom effects
+                for dmg_type, dmg_list in legend_dict.items():
+                    if dmg_type in ('proc', 'effect'):
+                        continue
+                    for dmg_sublist in dmg_list:
                         # dmg_sublist may be [dice, sides] or [dice, sides, flat]
                         num_dice = dmg_sublist[0]
                         num_sides = dmg_sublist[1]
@@ -88,6 +106,10 @@ class LegendEffect:
                         legend_dict_sums[dmg_type] += self.attack_sim.damage_roll(num_dice, num_sides, flat_dmg)
 
         def get_immunity_factors():
+            # Skip if weapon has custom effect (immunity factors already handled by registry)
+            if self.registry.get_effect(self.weapon.name_purple):
+                return
+
             physical_imm_factor_weapons = ['Club_Stone']    # Crushing Blow legendary property, -5% physical immunity
             if self.weapon.name_purple in physical_imm_factor_weapons:
                 legend_imm_factors['physical'] = -0.05
@@ -99,7 +121,9 @@ class LegendEffect:
 
             elif self.legend_attacks_left > 0:
                 self.legend_attacks_left = self.legend_attacks_left - 1
-                add_legend_dmg() if self.weapon.name_purple == 'Heavy Flail' else None
+                # Heavy Flail continues to apply damage during duration window
+                if self.weapon.name_purple == 'Heavy Flail':
+                    add_legend_dmg()
                 get_immunity_factors()
 
         elif isinstance (proc, str) and crit_multiplier > 1:    # Legendary property triggers by crit-hit
