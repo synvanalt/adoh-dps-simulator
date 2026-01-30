@@ -196,3 +196,49 @@ def test_sunder_effect_adds_ac_reduction():
     # Should have persistent AC reduction
     assert 'ac_reduction' in persistent
     assert persistent['ac_reduction'] == -2
+
+
+def test_inconsequence_effect_random_damage():
+    """Test that InconsequenceEffect applies random Pure/Sonic/nothing."""
+    from simulator.legendary_effects.inconsequence_effect import InconsequenceEffect
+    from simulator.stats_collector import StatsCollector
+    from simulator.attack_simulator import AttackSimulator
+    from simulator.weapon import Weapon
+    from simulator.config import Config
+
+    cfg = Config()
+    weapon = Weapon('Kukri_Inconseq', cfg)
+    attack_sim = AttackSimulator(weapon, cfg)
+    stats = StatsCollector()
+
+    effect = InconsequenceEffect()
+    legend_dict = {
+        'proc': 'on_crit',
+        'effect': 'inconsequence'
+    }
+
+    # Run multiple times to test randomness
+    results = {'pure': 0, 'sonic': 0, 'nothing': 0}
+
+    for _ in range(100):
+        burst, persistent = effect.apply(legend_dict, stats, 2, attack_sim)
+
+        damage_sums = burst.get('damage_sums', {})
+
+        if 'pure' in damage_sums:
+            results['pure'] += 1
+            assert damage_sums['pure'] > 0
+        elif 'sonic' in damage_sums:
+            results['sonic'] += 1
+            assert damage_sums['sonic'] > 0
+        else:
+            results['nothing'] += 1
+
+        # Should have no persistent effects
+        assert persistent == {}
+
+    # Rough probability check (25% each, 50% nothing)
+    # Allow wide range due to randomness
+    assert 10 < results['pure'] < 40
+    assert 10 < results['sonic'] < 40
+    assert 30 < results['nothing'] < 70
