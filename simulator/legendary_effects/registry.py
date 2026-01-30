@@ -14,11 +14,42 @@ class LegendaryEffectRegistry:
 
     def _register_default_effects(self):
         """Register all default legendary effects."""
+        from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+        from simulator.legendary_effects.perfect_strike_effect import PerfectStrikeEffect
+        from simulator.legendary_effects.sunder_effect import SunderEffect
+        from simulator.legendary_effects.inconsequence_effect import InconsequenceEffect
         from simulator.legendary_effects.heavy_flail_effect import HeavyFlailEffect
         from simulator.legendary_effects.crushing_blow_effect import CrushingBlowEffect
 
+        # Special mechanics effects
+        self.register('Darts', PerfectStrikeEffect())
+        self.register('Kukri_Crow', PerfectStrikeEffect())
+
+        self.register('Light Flail', SunderEffect())
+        self.register('Greatsword_Legion', SunderEffect())
+
+        self.register('Kukri_Inconseq', InconsequenceEffect())
         self.register('Heavy Flail', HeavyFlailEffect())
         self.register('Club_Stone', CrushingBlowEffect())
+
+        # Simple damage-only effects (shared instance for efficiency)
+        simple = SimpleDamageEffect()
+
+        simple_damage_weapons = [
+            'Halberd', 'Spear', 'Trident_Fire', 'Trident_Ice',
+            'Dire Mace', 'Double Axe',
+            'Heavy Crossbow', 'Light Crossbow',
+            'Longbow_FireDragon', 'Longbow_FireCeles',
+            'Longbow_ElecDragon', 'Longbow_ElecCeles',
+            'Kama', 'Quarterstaff_Hanged', 'Greatsword_Tyr',
+            'Bastard Sword_Vald', 'Katana_Kin', 'Katana_Soul',
+            'Longsword', 'Rapier_Stinger', 'Rapier_Touch',
+            'Warhammer_Mjolnir', 'Club_Fish', 'Dagger_FW',
+            'Handaxe_Ichor', 'Light Hammer', 'Mace', 'Whip'
+        ]
+
+        for weapon in simple_damage_weapons:
+            self.register(weapon, simple)
 
     def register(self, weapon_name: str, effect: LegendaryEffect):
         """Register a legendary effect for a weapon.
@@ -36,6 +67,6 @@ class LegendaryEffectRegistry:
             weapon_name: Name of the weapon
 
         Returns:
-            LegendaryEffect instance or None if weapon has no special effect
+            LegendaryEffect instance or None if weapon has no registered effect
         """
         return self._effects.get(weapon_name)

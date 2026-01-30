@@ -304,3 +304,25 @@ def test_inconsequence_effect_random_damage():
     assert 10 < results['pure'] < 40
     assert 10 < results['sonic'] < 40
     assert 30 < results['nothing'] < 70
+
+
+def test_registry_has_all_legendary_weapons():
+    """Verify that all legendary weapons have registered effects."""
+    from simulator.legendary_effects.registry import LegendaryEffectRegistry
+    from weapons_db import PURPLE_WEAPONS
+
+    registry = LegendaryEffectRegistry()
+
+    # Get all legendary weapons from weapons_db
+    legendary_weapons = []
+    for weapon_name, props in PURPLE_WEAPONS.items():
+        if 'legendary' in props:
+            legendary_weapons.append(weapon_name)
+
+    # Verify each has a registered effect
+    missing = []
+    for weapon_name in legendary_weapons:
+        if registry.get_effect(weapon_name) is None:
+            missing.append(weapon_name)
+
+    assert len(missing) == 0, f"Missing effects for: {missing}"
