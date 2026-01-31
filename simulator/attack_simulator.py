@@ -2,7 +2,7 @@ from copy import deepcopy
 from math import floor
 from simulator.weapon import Weapon
 from simulator.config import Config
-from simulator.constants import DOUBLE_SIDED_WEAPONS
+from simulator.constants import DOUBLE_SIDED_WEAPONS, AUTO_MIGHTY_WEAPONS, AMMO_BASED_WEAPONS
 import random
 
 
@@ -55,6 +55,11 @@ class AttackSimulator:
             and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
             and not self.cfg.SHAPE_WEAPON_OVERRIDE):
             return True
+
+        # Ranged weapons cannot be dual-wielded
+        if (self.weapon.name_base in AUTO_MIGHTY_WEAPONS or
+                self.weapon.name_base in AMMO_BASED_WEAPONS):
+            return False
 
         # Large weapons cannot be dual-wielded
         if weapon_size == 'L':
