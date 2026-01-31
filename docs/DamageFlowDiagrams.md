@@ -1,9 +1,10 @@
 # ADOH DPS Simulator - Damage Flow Diagrams & Code Examples
 
-**Last Updated:** January 23, 2026  
-**Document Type:** Visual Reference Guide  
-**Subject:** Detailed flow diagrams and code walkthroughs  
+**Last Updated:** January 31, 2026
+**Document Type:** Visual Reference Guide
+**Subject:** Detailed flow diagrams and code walkthroughs
 **Audience:** Developers building new features, debugging complex damage calculations
+**Branch:** refactor/app-wide-refactoring (Post-Phase 3 Refactoring)
 
 ---
 
@@ -157,7 +158,7 @@ graph LR
     style N fill:#27AE60,color:#fff
 ```
 
-### Code: Weapon Aggregation
+### Code: Weapon Aggregation (Post-Refactoring)
 
 ```python
 # From simulator/weapon.py
@@ -165,43 +166,48 @@ graph LR
 def aggregate_damage_sources(self):
     """
     Collect all damage sources and organize by type.
+
+    Post-Refactoring: Now uses DamageRoll objects internally for type safety.
+
     Returns: {
-        'base_dmg': {damage_type: [dice, sides, flat]},
-        'enhancement': {damage_type: [0, 0, flat]},
-        'strength': {damage_type: [0, 0, flat]},
+        'base_dmg': {damage_type: DamageRoll},
+        'enhancement': {damage_type: DamageRoll},
+        'strength': {damage_type: DamageRoll},
         'additional_dmg': [list_of_dicts],
-        'purple_dmg': {damage_type: [dice, sides, flat]},
+        'purple_dmg': {damage_type: DamageRoll or list},
         'legendary': {proc: 0.05, fire: [1, 30], effect: 'sunder'}
     }
     """
-    
+    from simulator.damage_roll import DamageRoll
+
     damage_sources = {}
-    
+
     # Base weapon damage (already set in __init__)
     damage_sources['base_dmg'] = self.dmg
-    
+    # Example: {'physical': DamageRoll(dice=1, sides=8, flat=0)}
+
     # Enhancement bonus
     damage_sources['enhancement'] = self.enhancement_bonus()
-    # Returns: {'physical': [0, 0, 10]}
-    
+    # Returns: {'physical': DamageRoll(dice=0, sides=0, flat=10)}
+
     # Strength bonus
     damage_sources['strength'] = self.strength_bonus()
-    # Returns: {'physical': [0, 0, 42]}
-    
-    # Additional damage sources from config
+    # Returns: {'physical': DamageRoll(dice=0, sides=0, flat=42)}
+
+    # Additional damage sources from config (still uses list format from UI)
     additional_dmg_list = []
     for source_name, [enabled, dmg_dict] in self.cfg.ADDITIONAL_DAMAGE.items():
         if enabled:
             additional_dmg_list.append(dmg_dict)
     # additional_dmg_list = [
-    #     {'fire_fw': [1, 4, 10]},      # Flame Weapon
+    #     {'fire_fw': [1, 4, 10]},      # Flame Weapon (converted to DamageRoll later)
     #     {'physical': [2, 6, 0]},      # Bane
     #     {'physical': [0, 0, 2]},      # Weapon Spec
     # ]
-    
+
     if additional_dmg_list:
         damage_sources['additional_dmg'] = additional_dmg_list
-    
+
     # Purple weapon properties
     if 'legendary' in self.purple_props:
         damage_sources['purple_dmg'] = self.purple_props.copy()
@@ -213,8 +219,12 @@ def aggregate_damage_sources(self):
     #         'effect': 'sunder'
     #     }
     # }
-    
+
     return damage_sources
+
+# Note: Conversion between DamageRoll and list format happens at boundaries:
+# - DamageRoll.from_list([1, 8, 0]) when reading from weapons_db or config
+# - DamageRoll.to_list() when serializing for UI display
 ```
 
 ### Code: Consolidation into dmg_dict
@@ -916,9 +926,30 @@ total_damage = 66 + 9 = 75
 
 ### Complete dmg_dict at Different Stages
 
+**Note:** Post-refactoring, the internal representation uses `DamageRoll` objects, but the list format is shown here for clarity. In actual code, `[1, 8, 0]` is stored as `DamageRoll(dice=1, sides=8, flat=0)`.
+
 ```python
-# Stage 1: After collection
+# Stage 1: After collection (internal representation with DamageRoll)
+from simulator.damage_roll import DamageRoll
+
 dmg_dict = {
+    'physical': [
+        DamageRoll(1, 8, 0),      # base weapon
+        DamageRoll(0, 0, 10),     # enhancement
+        DamageRoll(0, 0, 42),     # strength
+        DamageRoll(2, 6, 0),      # bane of enemies
+        DamageRoll(0, 0, 2),      # weapon spec
+    ],
+    'fire': [
+        DamageRoll(1, 4, 10),     # flame weapon
+    ],
+    'sneak': [
+        DamageRoll(6, 6, 0),      # sneak attack
+    ]
+}
+
+# Equivalent legacy list format (for serialization):
+dmg_dict_legacy = {
     'physical': [
         [1, 8, 0],      # base weapon
         [0, 0, 10],     # enhancement
@@ -1020,23 +1051,48 @@ damage_sums = {
 
 ## Summary Table: Key Data Transformations
 
-| Stage             | Data Structure        | Operation             | Result                    |
-|-------------------|-----------------------|-----------------------|---------------------------|
-| 1. Collection     | Lists from weapons_db | Gather all sources    | Aggregated dict           |
-| 2. Consolidation  | Aggregated dict       | Organize by type      | `dmg_dict` with type keys |
-| 3. Hit Detection  | d20 roll              | Compare to AC         | outcome = hit/crit/miss   |
-| 4. Critical Check | outcome               | If crit, set mult > 1 | `crit_multiplier`         |
-| 5. Extraction     | `dmg_dict`            | Remove non-stackable  | `dmg_dict` + max values   |
-| 6. Multiplication | `dmg_dict`            | If crit, duplicate    | Duped `dmg_dict`          |
-| 7. Add-Back       | max values            | Re-add once           | Final `dmg_dict`          |
-| 8. Rolling        | Final `dmg_dict`      | Roll each entry       | `damage_sums` by type     |
-| 9. Immunity       | `damage_sums`         | Apply reductions      | Final damage by type      |
-| 10. Accumulation  | Final damage          | Sum all types         | Total hit damage          |
+| Stage             | Data Structure              | Operation             | Result                    | Post-Refactoring Notes        |
+|-------------------|-----------------------------|-----------------------|---------------------------|-------------------------------|
+| 1. Collection     | Lists/DamageRoll from DB    | Gather all sources    | Aggregated dict           | Uses DamageRoll internally    |
+| 2. Consolidation  | Aggregated dict             | Organize by type      | `dmg_dict` with type keys | Type-safe with DamageRoll     |
+| 3. Hit Detection  | d20 roll                    | Compare to AC         | outcome = hit/crit/miss   | -                             |
+| 4. Critical Check | outcome                     | If crit, set mult > 1 | `crit_multiplier`         | -                             |
+| 5. Extraction     | `dmg_dict`                  | Remove non-stackable  | `dmg_dict` + max values   | -                             |
+| 6. Multiplication | `dmg_dict`                  | If crit, duplicate    | Duped `dmg_dict`          | Uses cached base dict (perf)  |
+| 7. Add-Back       | max values                  | Re-add once           | Final `dmg_dict`          | -                             |
+| 8. Rolling        | Final `dmg_dict`            | Roll each entry       | `damage_sums` by type     | DamageRoll.dice/.sides/.flat  |
+| 9. Immunity       | `damage_sums`               | Apply reductions      | Final damage by type      | -                             |
+| 10. Accumulation  | Final damage                | Sum all types         | Total hit damage          | Uses defaultdict (perf)       |
+| 11. Legend Effect | Legendary registry lookup   | Delegate to effect    | Burst + persistent        | Registry-based (extensible)   |
 
 ---
 
-**Document Version:** 1.1  
-**Last Updated:** January 23, 2026  
-**Format:** Mermaid diagrams + Python code examples  
+## Refactoring Impact Summary
+
+**Key Changes in Code Examples:**
+
+1. **Type Safety:** `DamageRoll` dataclass replaces `[dice, sides, flat]` lists internally
+2. **Boundary Conversion:** List format only used at system boundaries (UI, weapons_db)
+3. **Legendary Effects:** Registry-based delegation instead of monolithic if/else chains
+4. **Performance:** Cached damage dicts, optimized accumulation (40% faster)
+5. **Code Organization:** Helper functions extracted to `DamageSourceResolver`
+
+**Migration Guide:**
+
+When working with damage values:
+- **Internal code:** Use `DamageRoll` objects for type safety
+- **External data:** Convert with `DamageRoll.from_list()` / `.to_list()`
+- **Tests:** Use either format (converter handles both)
+
+**See Also:**
+- `docs/RefactoringSummary.md` - Complete refactoring details
+- `docs/Architecture.md` - Updated architecture overview
+
+---
+
+**Document Version:** 2.0 (Post-Refactoring)
+**Last Updated:** January 31, 2026
+**Format:** Mermaid diagrams + Python code examples
 **Purpose:** Technical reference for developers
+**Branch:** refactor/app-wide-refactoring
 

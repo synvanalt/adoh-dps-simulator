@@ -8,7 +8,7 @@ A web-based damage-per-second (DPS) simulator for ADOH (A Dawn of Heroes), a pop
 - **Weapon Support**: Extensive ADOH-based weapon database with base and unique weapon properties
 - **Critical Hit Mechanics**: Accurate modeling of threat ranges, confirmation rolls, and critical multipliers
 - **Character Customization**: Dual-wield penalties, feats, buffs, and legendary weapon effects
-- **Interactive UI**: Built with Dash and Plotly for real-time results and visualizations
+- **Interactive UI**: Built with Dash and Plotly for friendly configuration and results visualizations
 - **Convergence Tracking**: Ensures simulation stability with rolling window standard deviation checks
 
 ## Installation
@@ -41,29 +41,6 @@ The application will start on `http://127.0.0.1:8050`. Open this URL in your web
 ```bash
 pytest tests/ -v
 ```
-
-## Architecture
-
-The simulator uses a modular architecture with:
-- **Dash UI**: Web interface with Bootstrap theming
-- **Simulation Engine**: Core DPS calculation logic in Python
-- **Config-Driven Design**: Centralized configuration management
-- **Background Processing**: Diskcache for long-running simulations
-
-For detailed architecture information, see [docs/Architecture.md](docs/Architecture.md).
-
-## Recent Improvements
-
-The simulator engine has been recently refactored for better performance and maintainability:
-
-- **40% faster** simulations through caching and optimization
-- **Type-safe** code with comprehensive type hints
-- **Extensible** legendary effects system
-- **Well-tested** with 425+ unit and integration tests
-
-For details, see:
-- [Architecture Documentation](docs/SimulatorArchitecture.md)
-- [Refactoring Summary](docs/RefactoringSummary.md)
 
 ## License
 

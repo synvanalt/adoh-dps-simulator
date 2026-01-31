@@ -124,14 +124,18 @@ class AttackSimulator:
             # Set Dual-Wield flag to True so other methods can use it
             self.dual_wield = True
 
-            # Determine the dual-wield penalty
+            # -4 AB penalty cases
             if ((toon_size == 'M' and self.weapon.size == 'M') or
                     (toon_size == 'S' and self.weapon.size == 'S')):
                 dw_penalty = -4
+
+            # Special case for Double-Sided weapon
             elif (toon_size == 'M'
                   and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
-                  and not self.cfg.SHAPE_WEAPON_OVERRIDE):    # Special case for Double-Sided weapon
+                  and not self.cfg.SHAPE_WEAPON_OVERRIDE):
                 dw_penalty = -2
+
+            # -2 AB penalty cases
             elif ((toon_size == 'L' and self.weapon.size in ['M', 'S', 'T']) or
                   (toon_size == 'M' and self.weapon.size in ['S', 'T']) or
                   (toon_size == 'S' and self.weapon.size == 'T')):
