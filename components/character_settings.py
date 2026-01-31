@@ -339,7 +339,8 @@ def build_character_settings(cfg):
                 multi=True,
                 closeOnSelect=False,
                 className='dbc',
-                # No persistence - builds-store handles it
+                persistence=True,
+                persistence_type=persist_type,
             ), xs=12, md=12),
         ], className='mt-3 mb-3'),
 

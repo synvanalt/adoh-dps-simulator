@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest:*)",
+      "Bash(python:*)",
+      "Bash(node -c:*)",
+      "Bash(node --check:*)",
+      "Bash(pytest:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add DamageRoll dataclass for type-safe damage representation\n\nCreate DamageRoll dataclass to replace legacy [dice, sides, flat] list format.\nProvides type safety, better IDE support, and clearer code for damage rolls.\n\n- Add DamageRoll dataclass with dice, sides, and flat fields\n- Add from_list\\(\\) classmethod for legacy format conversion\n- Add to_list\\(\\) method for backward compatibility\n- Add average\\(\\) method to calculate expected damage value\n- Add comprehensive test suite with 6 tests \\(all passing\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git mv:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add constants module to centralize magic values\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(test:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: update Weapon class to use DamageRoll dataclass and constants\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: add backward compatibility for DamageRoll in damage processing\n\n- Added _convert_to_dmg_list\\(\\) helper to handle DamageRoll/list duality\n- Updated test assertions to use DamageRoll attributes\n- Ensures all 376 tests pass with zero regressions\n- Completes Task 3 regression prevention requirement\n\nRelates to: 0ce5c5b \\(Task 3 primary implementation\\)\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: add comprehensive type hints to Config dataclass\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: add type hints to StatsCollector\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: extract damage helper functions into damage_source_resolver module\n\nExtract three nested helper functions from Weapon.aggregate_damage_sources\\(\\)\ninto a new standalone module for improved testability and maintainability:\n\n- calculate_avg_dmg\\(\\): Calculates average damage for DamageRoll or legacy list\n- unpack_and_merge_vs_race\\(\\): Unpacks vs_race damage and resolves conflicts\n- merge_enhancement_bonus\\(\\): Merges enhancement bonus with weapon damage\n\nChanges:\n- Create simulator/damage_source_resolver.py with extracted functions\n- Create tests/simulator/test_damage_source_resolver.py with 16 new tests\n- Update simulator/weapon.py to import and use extracted functions\n- Fix typo: \"Aggreagte\" -> \"Aggregate\"\n\nBenefits:\n- Improves testability by making helper functions independently testable\n- Reduces complexity of Weapon class \\(~80 lines extracted\\)\n- Follows Single Responsibility Principle\n- Maintains 100% backward compatibility \\(all 392 tests pass\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nperf: use defaultdict for damage accumulation to reduce dict operations\n\nReplace inefficient pop/reassign pattern with defaultdict\\(int\\) in:\n- DamageSimulator.get_damage_results\\(\\): Eliminate pop operations during damage accumulation\n- LegendEffect.get_legend_damage\\(\\): Simplify damage dict updates in nested function\n\nBenefits:\n- 5-10% performance improvement by reducing dictionary operations\n- Cleaner, more Pythonic code\n- Maintains backward compatibility by converting to regular dict before return\n\nAll 392 tests pass.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(powershell:*)",
+      "Bash(git commit:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"Run $i:\")",
+      "Bash(done)",
+      "Bash(dir:*)",
+      "Bash(git show:*)",
+      "Bash(ls:*)",
+      "Bash(git rm:*)"
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  }
+}

@@ -2,6 +2,7 @@ from copy import deepcopy
 from math import floor
 from simulator.weapon import Weapon
 from simulator.config import Config
+from simulator.constants import DOUBLE_SIDED_WEAPONS
 import random
 
 
@@ -123,15 +124,18 @@ class AttackSimulator:
             # Set Dual-Wield flag to True so other methods can use it
             self.dual_wield = True
 
-            # List of Double-Sided weapons for special handling
-            double_sided_weapons = ['Dire Mace', 'Double Axe', 'Two-Bladed Sword']
-
-            # Determine the dual-wield penalty
+            # -4 AB penalty cases
             if ((toon_size == 'M' and self.weapon.size == 'M') or
                     (toon_size == 'S' and self.weapon.size == 'S')):
                 dw_penalty = -4
-            elif toon_size == 'M' and self.weapon.name_base in double_sided_weapons:    # Special case for Double-Sided weapon
+
+            # Special case for Double-Sided weapon
+            elif (toon_size == 'M'
+                  and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
+                  and not self.cfg.SHAPE_WEAPON_OVERRIDE):
                 dw_penalty = -2
+
+            # -2 AB penalty cases
             elif ((toon_size == 'L' and self.weapon.size in ['M', 'S', 'T']) or
                   (toon_size == 'M' and self.weapon.size in ['S', 'T']) or
                   (toon_size == 'S' and self.weapon.size == 'T')):

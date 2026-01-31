@@ -99,6 +99,8 @@ PURPLE_WEAPONS = {
     'Bastard Sword_Reaver': {'enhancement': 7, 'bludgeoning': [7, 6], 'cold': [2, 8]}, # 5% Cold imm, On-hit Slow DC42/100%/1round
     'Bastard Sword_Vald': {'enhancement': 7, 'bludgeoning': [2, 6], 'divine': [2, 6], 'magical': [2, 6], 'negative': [2, 6], 'sneak': [1, 6], 'legendary': {'proc': 0.05, 'pure': [10, 6]}}, # 2d6 Pure per second in 2.25 radius, lasts 5 seconds
     'Battleaxe': {'enhancement': 7, 'bludgeoning': [2, 8], 'magical': [2, 8], 'negative': [2, 8], 'vs_race_good': {'pure': [2, 12]}},  # Divine resist 5/-, Divine 5% immune
+    'Club_Fish': {'enhancement': 7, 'piercing': [2, 10], 'acid': [7, 6], 'legendary': {'proc': 0.05, 'acid': [4, 6], 'pure': [4, 6]}},  # Acid 20/-
+    'Club_Stone': {'enhancement': 7, 'piercing': [2, 8], 'sonic': [7, 6], 'legendary': {'proc': 0.05, 'effect': 'crushing_blow'}},  # 5% reduce immunities by 5% for 2 rounds
     'Dwarven Waraxe': {'enhancement': 7, 'bludgeoning': [2, 8], 'acid': [2, 10], 'negative': [2, 8], 'vs_race_dragon': {'enhancement': 12, 'pure': [4, 10]}},    # +12 Enhancement vs. Dragons, Immunity Knockdown & Fear
     'Katana_Kin': {'enhancement': 7, 'bludgeoning': [7, 6], 'pure': [1, 10], 'legendary': {'proc': 0.10, 'physical': [2, 20]}},
     'Katana_Soul': {'enhancement': 7, 'bludgeoning': [2, 12], 'divine': [2, 6], 'sonic': [2, 8], 'legendary': {'proc': 0.10, 'fire': [2, 20]}}, # On-Hit Level Drain DC=44, 5% Divine+Sonic imm
@@ -112,8 +114,6 @@ PURPLE_WEAPONS = {
     'Warhammer_Mjolnir': {'enhancement': 7, 'slashing': [7, 6], 'electrical': [2, 6], 'legendary': {'proc': 0.05, 'electrical': [20, 6]}},  # On-hit Chain Lightining lvl 20
 
     # SMALL\TINY WEAPONS:
-    'Club_Fish': {'enhancement': 7, 'piercing': [2, 10], 'acid': [7, 6], 'legendary': {'proc': 0.05, 'acid': [4, 6], 'pure': [4, 6]}},  # Acid 20/-
-    'Club_Stone': {'enhancement': 7, 'piercing': [2, 8], 'sonic': [7, 6], 'legendary': {'proc': 0.05, 'effect': 'crushing_blow'}},  # 5% reduce immunities by 5% for 2 rounds
     'Dagger_FW': {'enhancement': 7, 'bludgeoning': [2, 6], 'divine': [2, 4], 'acid': [2, 4], 'pure': [2, 4], 'legendary': {'proc': 0.02, 'physical': [0, 0, 300]}}, # [0, 3, 'physical']],  # Leg Last Words
     'Dagger_PK': {'enhancement': 7, 'bludgeoning': [2, 6], 'negative': [2, 6], 'massive': [0, 0, 80]}, # On-hit 5%: gain 90% concealment for 1 round
     'Handaxe_Adam': {'enhancement': 7, 'bludgeoning': [2, 8], 'divine': [2, 6], 'pure': [2, 4], 'sneak': [1, 6]}, # On-hit 5%: receive 5% phys immune 2 rounds (stacks)

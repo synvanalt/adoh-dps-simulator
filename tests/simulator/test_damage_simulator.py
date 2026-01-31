@@ -25,6 +25,7 @@ from simulator.config import Config
 from simulator.attack_simulator import AttackSimulator
 from simulator.stats_collector import StatsCollector
 from simulator.legend_effect import LegendEffect
+from simulator.damage_roll import DamageRoll
 
 
 class TestDamageSimulatorInitialization:
@@ -213,7 +214,7 @@ class TestDamageResults:
         cfg = Config(TARGET_IMMUNITIES={'physical': 0.0})
         simulator = DamageSimulator("Scimitar", cfg)
 
-        damage_dict = {'slashing': [[2, 6, 5]]}  # 2d6+5
+        damage_dict = {'slashing': [DamageRoll(dice=2, sides=6, flat=5)]}  # 2d6+5
         results = simulator.get_damage_results(damage_dict, {})
 
         assert 'slashing' in results
@@ -226,8 +227,8 @@ class TestDamageResults:
         simulator = DamageSimulator("Scimitar", cfg)
 
         damage_dict = {
-            'slashing': [[2, 6, 5]],
-            'fire': [[1, 4, 2]]
+            'slashing': [DamageRoll(dice=2, sides=6, flat=5)],
+            'fire': [DamageRoll(dice=1, sides=4, flat=2)]
         }
         results = simulator.get_damage_results(damage_dict, {})
 
@@ -239,7 +240,7 @@ class TestDamageResults:
         cfg = Config(TARGET_IMMUNITIES={'physical': 0.2})  # 20% immunity
         simulator = DamageSimulator("Scimitar", cfg)
 
-        damage_dict = {'slashing': [[0, 0, 100]]}  # Flat 100 damage
+        damage_dict = {'slashing': [DamageRoll(dice=0, sides=0, flat=100)]}  # Flat 100 damage
         results = simulator.get_damage_results(damage_dict, {})
 
         # Should be reduced by 20%
@@ -251,7 +252,7 @@ class TestDamageResults:
         cfg = Config(TARGET_IMMUNITIES={'physical': 0.0})
         simulator = DamageSimulator("Scimitar", cfg)
 
-        damage_dict = {'physical': [[1, 6, 0], [1, 4, 3]]}  # 1d6 + 1d4+3
+        damage_dict = {'physical': [DamageRoll(dice=1, sides=6, flat=0), DamageRoll(dice=1, sides=4, flat=3)]}  # 1d6 + 1d4+3
         results = simulator.get_damage_results(damage_dict, {})
 
         # Should combine both damage rolls
@@ -448,7 +449,7 @@ class TestDamageImmunityVulnerability:
         cfg = Config(TARGET_IMMUNITIES={'physical': 0.1})  # 10% immunity
         simulator = DamageSimulator("Scimitar", cfg)
 
-        damage_dict = {'slashing': [[0, 0, 100]]}
+        damage_dict = {'slashing': [DamageRoll(dice=0, sides=0, flat=100)]}
         results = simulator.get_damage_results(damage_dict, {})
 
         # Should have 10% reduction
@@ -460,7 +461,7 @@ class TestDamageImmunityVulnerability:
         cfg = Config(TARGET_IMMUNITIES={'fire': -0.1})  # 10% vulnerability
         simulator = DamageSimulator("Scimitar", cfg)
 
-        damage_dict = {'fire_fw': [[0, 0, 100]]}
+        damage_dict = {'fire_fw': [DamageRoll(dice=0, sides=0, flat=100)]}
         results = simulator.get_damage_results(damage_dict, {})
 
         # Should have 10% vulnerability bonus
@@ -471,7 +472,7 @@ class TestDamageImmunityVulnerability:
         cfg = Config(TARGET_IMMUNITIES={'physical': 0.2})
         simulator = DamageSimulator("Scimitar", cfg)
 
-        damage_dict = {'slashing': [[0, 0, 100]]}
+        damage_dict = {'slashing': [DamageRoll(dice=0, sides=0, flat=100)]}
         # Legend immunity modification
         imm_factors = {'physical': -0.05}  # Reduce physical immunity by 5%
         results = simulator.get_damage_results(damage_dict, imm_factors)
@@ -485,7 +486,7 @@ class TestDamageImmunityVulnerability:
         cfg = Config(TARGET_IMMUNITIES={'physical': 0.95})  # Heavy immunity
         simulator = DamageSimulator("Scimitar", cfg)
 
-        damage_dict = {'slashing': [[0, 0, 10]]}
+        damage_dict = {'slashing': [DamageRoll(dice=0, sides=0, flat=10)]}
         results = simulator.get_damage_results(damage_dict, {})
 
         # Even with 95% immunity, should have minimum 1 damage
@@ -1221,6 +1222,48 @@ class TestDevastatingCritical:
 
         # Enabled should have higher DPS on crit-heavy builds
         assert result_enabled['dps_crits'] >= result_disabled['dps_crits']
+
+
+class TestInternalMethods:
+    """Tests for internal/private methods (from newer test suite)."""
+
+    def test_setup_dual_wield_tracking_non_dw(self):
+        """Test dual-wield tracking setup for non-dual-wield builds."""
+        cfg = Config()
+        cfg.AB_PROG = "5APR Classic"
+        sim = DamageSimulator('Spear', cfg)
+
+        result = sim._setup_dual_wield_tracking()
+        assert result['is_dual_wield'] is False
+        assert result['offhand_attack_1_idx'] is None
+        assert result['offhand_attack_2_idx'] is None
+        assert result['str_idx'] is None
+
+    def test_setup_dual_wield_tracking_with_dw(self):
+        """Test dual-wield tracking setup for dual-wield builds."""
+        cfg = Config()
+        cfg.AB_PROG = "5APR & Dual-Wield"
+        cfg.TOON_SIZE = "M"
+        sim = DamageSimulator('Longsword', cfg)
+
+        result = sim._setup_dual_wield_tracking()
+        assert result['is_dual_wield'] is True
+        assert result['offhand_attack_1_idx'] is not None
+        assert result['offhand_attack_2_idx'] is not None
+        assert result['str_idx'] is not None
+
+    def test_calculate_final_statistics_zero_rounds(self):
+        """Test final statistics calculation with zero rounds."""
+        cfg = Config()
+        sim = DamageSimulator('Spear', cfg)
+        sim.stats.hits = 0
+        sim.attack_sim.illegal_dual_wield_config = True
+
+        result = sim._calculate_final_statistics(round_num=0)
+
+        assert result['dps_mean'] == 0
+        assert result['dps_stdev'] == 0
+        assert result['dpr'] == 0
 
 
 if __name__ == '__main__':

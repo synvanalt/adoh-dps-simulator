@@ -1,24 +1,25 @@
+from typing import List
 
 
 class StatsCollector:
-    def __init__(self):
-        self.attempts_made = 0
-        self.hits = 0
-        self.crit_hits = 0
-        self.legend_procs = 0
-        self.hit_rate = 0.0
-        self.crit_hit_rate = 0.0
-        self.legend_proc_rate = 0.0
-        self.attempts_made_per_attack = []
-        self.hits_per_attack = []
-        self.crits_per_attack = []
+    def __init__(self) -> None:
+        self.attempts_made: int = 0
+        self.hits: int = 0
+        self.crit_hits: int = 0
+        self.legend_procs: int = 0
+        self.hit_rate: float = 0.0
+        self.crit_hit_rate: float = 0.0
+        self.legend_proc_rate: float = 0.0
+        self.attempts_made_per_attack: List[int] = []
+        self.hits_per_attack: List[float] = []
+        self.crits_per_attack: List[float] = []
 
-    def init_zeroes_lists(self, list_length):
+    def init_zeroes_lists(self, list_length: int) -> None:
         self.attempts_made_per_attack = [0] * list_length
         self.hits_per_attack = [0] * list_length
         self.crits_per_attack = [0] * list_length
 
-    def calc_rates_percentages(self):
+    def calc_rates_percentages(self) -> None:
         if self.attempts_made == 0 or self.hits == 0:
             return  # Avoid division by zero
 

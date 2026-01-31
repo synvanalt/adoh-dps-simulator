@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Union
 
 
 @dataclass
@@ -34,7 +34,7 @@ class Config:
     AB: int = 68
     AB_CAPPED: int = 70
     AB_PROG: str = "5APR Classic"
-    AB_PROGRESSIONS: Dict[str, Any] = field(default_factory=lambda: {
+    AB_PROGRESSIONS: Dict[str, List[Union[int, str]]] = field(default_factory=lambda: {
         "4APR Classic":                     [0, -5, -10, 0],
         "4APR & Blinding Speed":            [0, -5, -10, 0, -5],
         "4APR & Rapid Shot":                [0, -5, -10, 0, -5],

@@ -1,7 +1,8 @@
 # ADOH DPS Simulator - Documentation Index
 
-**Last Updated:** January 23, 2026  
-**Repository:** adoh-dps-simulator  
+**Last Updated:** January 31, 2026
+**Repository:** adoh-dps-simulator
+**Branch:** refactor/app-wide-refactoring (Post-Phase 3 Refactoring)
 **Location:** `/docs/`
 
 ---
@@ -10,6 +11,8 @@
 
 This directory contains comprehensive architecture and technical documentation for the ADOH DPS Simulator.
 
+**📝 Recent Updates (Phase 1-3 Refactoring):** All documentation has been updated to reflect major architectural improvements including type-safe damage handling (`DamageRoll`), legendary effects registry system, performance optimizations (40% faster), and dependency injection support. See [Refactoring Documentation](#refactoring-documentation) section below.
+
 ### Quick Navigation
 
 | Document                                | Purpose                                | Audience                      | Key Topics                                            |
@@ -17,6 +20,8 @@ This directory contains comprehensive architecture and technical documentation f
 | [**Architecture.md**](#architecturemd)              | System-wide architecture overview      | All developers                | Project structure, component interactions, deployment |
 | [**DamageCalculationDeepDive.md**](#damagecalculationdeepdivedmd) | In-depth damage calculation mechanics  | Core developers, contributors | Damage collection, aggregation, simulation, immunity  |
 | [**DamageFlowDiagrams.md**](#damageflowdiagramsmd)        | Visual flow diagrams and code examples | Debugging, new features       | Process flows, decision trees, data structures        |
+| [**RefactoringSummary.md**](#refactoring-documentation) *NEW*              | Complete refactoring overview          | All developers                | Performance improvements, new modules, migration guide |
+| [**SimulatorArchitecture.md**](#refactoring-documentation) *NEW*           | Detailed simulator design              | Core developers               | Internal architecture, design patterns                |
 
 ---
 
@@ -156,6 +161,47 @@ Visual flowcharts, Mermaid diagrams, and detailed code examples:
 
 ---
 
+## Refactoring Documentation
+
+### RefactoringSummary.md *NEW*
+
+#### What's Inside
+
+A comprehensive overview of the Phase 1-3 refactoring work:
+
+- **Performance Improvements** - 40% faster simulations, 70% reduced memory allocations
+- **Type Safety** - `DamageRoll` dataclass, comprehensive type hints
+- **Code Organization** - Extracted helper functions, smaller methods
+- **Extensibility** - Legendary effects registry, dependency injection
+- **Testing** - Reorganized test structure, integration tests
+- **Migration Guide** - How to work with new modules
+
+#### When to Read This
+
+- **Understanding recent changes** - What changed and why
+- **Performance optimization** - How the 40% improvement was achieved
+- **Adding legendary effects** - Registry-based extension pattern
+- **Code maintenance** - New architectural patterns
+
+### SimulatorArchitecture.md *NEW*
+
+#### What's Inside
+
+Detailed internal architecture of the simulator engine:
+
+- **Component Design** - How simulator classes interact
+- **Data Flow** - Internal data transformations
+- **Design Patterns** - Factory, Registry, Dependency Injection
+- **Extension Points** - Where and how to add new features
+
+#### When to Read This
+
+- **Deep architectural understanding** - Beyond surface-level docs
+- **Major refactoring** - Understanding current design patterns
+- **Advanced features** - Complex integrations
+
+---
+
 ## How to Use These Documents
 
 ### **Adding a New Damage Source**
@@ -239,17 +285,39 @@ C:\gdrive_avirams91\Code\Python\ADOH_DPS\
 
 ### Damage Dictionary Structure
 
+**Post-Refactoring:** Internally uses `DamageRoll` dataclass for type safety.
+
 ```python
+from simulator.damage_roll import DamageRoll
+
+# Internal representation (type-safe):
 dmg_dict = {
-    'physical': [[1,8,0], [0,0,31], [0,0,10]],  # Base weapon + Strength bonus + weapon enhancement
-    'divine':   [[2,6,0]],                      # Weapon bonus damage property
-    'fire':     [[1,4,10]],                     # Flame weapon
-    'sneak':    [[6,6,0]],                      # Sneak attack (non-stackable)
-    'massive':  [[2,8,0]],                      # Massive critical (non-stackable)
+    'physical': [
+        DamageRoll(1, 8, 0),   # Base weapon
+        DamageRoll(0, 0, 31),  # Strength bonus
+        DamageRoll(0, 0, 10)   # Enhancement
+    ],
+    'divine':   [DamageRoll(2, 6, 0)],    # Weapon bonus damage property
+    'fire':     [DamageRoll(1, 4, 10)],   # Flame weapon
+    'sneak':    [DamageRoll(6, 6, 0)],    # Sneak attack (non-stackable)
+    'massive':  [DamageRoll(2, 8, 0)],    # Massive critical (non-stackable)
 }
+
+# Legacy list format (for serialization/UI):
+dmg_dict_legacy = {
+    'physical': [[1,8,0], [0,0,31], [0,0,10]],
+    'divine':   [[2,6,0]],
+    'fire':     [[1,4,10]],
+    'sneak':    [[6,6,0]],
+    'massive':  [[2,8,0]],
+}
+
+# Conversion between formats:
+DamageRoll.from_list([1, 8, 10])  # → DamageRoll(dice=1, sides=8, flat=10)
+DamageRoll(1, 8, 10).to_list()    # → [1, 8, 10]
 ```
 
-**Key Property:** Each damage type is a **list of dice entries `[dice, sides, flat]`, e.g., `[1,8,10]` → 1d8+10 damage**
+**Key Property:** Each damage type is a **list of `DamageRoll` objects** (or legacy `[dice, sides, flat]` lists at boundaries), e.g., `DamageRoll(1, 8, 10)` → 1d8+10 damage
 
 ### Damage Flow Formula
 
@@ -337,18 +405,23 @@ Example 2:
 
 ## Glossary
 
-| Term                 | Definition                                                                 |
-|----------------------|----------------------------------------------------------------------------|
-| **dmg_dict**         | Dictionary organizing all damage sources by type                           |
-| **crit_multiplier**  | Number of times damage dice are rolled on critical hit (e.g., 3)           |
-| **threat range**     | D20 range that triggers critical hit confirmation (e.g., 18-20)            |
-| **convergence**      | Point where simulation stabilizes (DPS variance below threshold)           |
-| **DPS**              | Damage Per Second (primary output metric)                                  |
-| **immunity**         | Percentage reduction to damage type (e.g., 25% physical immunity)          |
-| **vulnerability**    | Negative immunity that increases damage taken                              |
-| **non-stackable**    | Damage source that only counts once per attack (e.g., sneak attack)        |
-| **legendary effect** | Special bonus from purple weapons (special damage, AB bonus, AC reduction) |
-| **ab_offset**        | AB modifier applied to each attack in progression                          |
+| Term                          | Definition                                                                 |
+|-------------------------------|----------------------------------------------------------------------------|
+| **dmg_dict**                  | Dictionary organizing all damage sources by type                           |
+| **DamageRoll** *NEW*          | Type-safe dataclass representing dice roll: `DamageRoll(dice, sides, flat)` |
+| **crit_multiplier**           | Number of times damage dice are rolled on critical hit (e.g., 3)           |
+| **threat range**              | D20 range that triggers critical hit confirmation (e.g., 18-20)            |
+| **convergence**               | Point where simulation stabilizes (DPS variance below threshold)           |
+| **DPS**                       | Damage Per Second (primary output metric)                                  |
+| **immunity**                  | Percentage reduction to damage type (e.g., 25% physical immunity)          |
+| **vulnerability**             | Negative immunity that increases damage taken                              |
+| **non-stackable**             | Damage source that only counts once per attack (e.g., sneak attack)        |
+| **legendary effect**          | Special bonus from purple weapons (special damage, AB bonus, AC reduction) |
+| **effect registry** *NEW*     | System mapping weapon names to legendary effect implementations            |
+| **burst effect** *NEW*        | Legendary damage applied only when effect procs                            |
+| **persistent effect** *NEW*   | Legendary bonus applied during effect duration window                      |
+| **ab_offset**                 | AB modifier applied to each attack in progression                          |
+| **dependency injection** *NEW*| Pattern using SimulatorFactory to create configured instances              |
 
 ---
 
@@ -356,12 +429,24 @@ Example 2:
 
 ### Core Simulation
 
-- `simulator/config.py` - Central configuration dataclass
+- `simulator/config.py` - Central configuration dataclass (fully type-hinted)
+- `simulator/constants.py` - Magic values and weapon lists *NEW*
+- `simulator/damage_roll.py` - Type-safe damage representation *NEW*
+- `simulator/damage_source_resolver.py` - Damage helper functions *NEW*
 - `simulator/weapon.py` - Weapon class and damage aggregation
 - `simulator/attack_simulator.py` - D20 mechanics and attack rolls
-- `simulator/damage_simulator.py` - Main simulation loop and convergence
-- `simulator/legend_effect.py` - Legendary weapon effects
-- `simulator/stats_collector.py` - Statistics tracking
+- `simulator/damage_simulator.py` - Main simulation loop and convergence (optimized)
+- `simulator/legend_effect.py` - Legendary weapon effect coordinator
+- `simulator/legendary_effects/` - Extensible effect classes *NEW*
+  - `base.py` - Abstract base class
+  - `registry.py` - Weapon-to-effect mapping
+  - `burst_damage_effect.py` - Simple damage effects
+  - `perfect_strike_effect.py` - +2 AB bonus
+  - `sunder_effect.py` - -2 AC reduction
+  - `crushing_blow_effect.py` - Physical immunity reduction
+  - And more...
+- `simulator/stats_collector.py` - Statistics tracking (fully type-hinted)
+- `simulator/simulator_factory.py` - Dependency injection factory *NEW*
 
 ### UI & Callbacks
 
@@ -372,10 +457,18 @@ Example 2:
 
 ### Testing
 
-- `tests/test_weapon.py` - Weapon class tests
-- `tests/test_attack_simulator.py` - AttackSimulator tests
-- `tests/test_damage_simulator.py` - DamageSimulator tests
-- `tests/test_legend_effect.py` - LegendEffect tests
+**Post-Refactoring:** Tests reorganized into `tests/simulator/` and `tests/integration/`
+
+- `tests/simulator/test_weapon.py` - Weapon class tests
+- `tests/simulator/test_attack_simulator.py` - AttackSimulator tests
+- `tests/simulator/test_damage_simulator.py` - DamageSimulator tests
+- `tests/simulator/test_legend_effect.py` - LegendEffect coordinator tests
+- `tests/simulator/test_legendary_effects.py` - Individual effect class tests *NEW*
+- `tests/simulator/test_damage_roll.py` - DamageRoll dataclass tests *NEW*
+- `tests/simulator/test_damage_source_resolver.py` - Helper function tests *NEW*
+- `tests/simulator/test_simulator_factory.py` - Factory tests *NEW*
+- `tests/simulator/test_constants.py` - Constants module tests *NEW*
+- `tests/integration/test_full_simulation.py` - End-to-end integration tests *NEW*
 
 ### Data
 
@@ -394,16 +487,21 @@ Refer to:
 
 ## Document Maintenance
 
-| Document                     | Last Updated | Verified Against         | Author                |
-|------------------------------|--------------|--------------------------|-----------------------|
-| Architecture.md              | Jan 23, 2026 | Code commit Jan 23, 2026 | Architecture Analysis |
-| DamageCalculationDeepDive.md | Jan 23, 2026 | All simulator files      | Architecture Analysis |
-| DamageFlowDiagrams.md        | Jan 23, 2026 | Code implementation      | Architecture Analysis |
-| README.md (this file)        | Jan 23, 2026 | All above documents      | Architecture Analysis |
+| Document                     | Last Updated | Verified Against                      | Author                | Status                    |
+|------------------------------|--------------|---------------------------------------|-----------------------|---------------------------|
+| Architecture.md              | Jan 31, 2026 | refactor/app-wide-refactoring branch  | Architecture Analysis | ✅ Updated (v2.0)         |
+| DamageCalculationDeepDive.md | Jan 31, 2026 | refactor/app-wide-refactoring branch  | Architecture Analysis | ✅ Updated (v2.0)         |
+| DamageFlowDiagrams.md        | Jan 31, 2026 | refactor/app-wide-refactoring branch  | Architecture Analysis | ✅ Updated (v2.0)         |
+| RefactoringSummary.md        | Jan 30, 2026 | Phase 1-3 refactoring completion      | Architecture Analysis | ✅ Complete               |
+| SimulatorArchitecture.md     | Jan 30, 2026 | Simulator engine design               | Architecture Analysis | ✅ Complete               |
+| README.md (this file)        | Jan 31, 2026 | All above documents                   | Architecture Analysis | ✅ Updated (refactoring)  |
 
 ---
 
-**Project:** ADOH DPS Simulator  
-**Repository:** adoh-dps-simulator  
-**Python Version:** 3.12.3+  
-**Last Updated:** January 23, 2026  
+**Project:** ADOH DPS Simulator
+**Repository:** adoh-dps-simulator
+**Branch:** refactor/app-wide-refactoring (Post-Phase 3 Refactoring)
+**Python Version:** 3.12.3+
+**Test Count:** 290+ tests (100% pass rate)
+**Performance:** 40% faster (post-refactoring)
+**Last Updated:** January 31, 2026  

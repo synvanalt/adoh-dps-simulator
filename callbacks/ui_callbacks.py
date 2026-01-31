@@ -223,7 +223,8 @@ def register_ui_callbacks(app, cfg):
          Output('overwhelm-crit-switch', 'value', allow_duplicate=True),
          Output('dev-crit-switch', 'value', allow_duplicate=True),
          Output('shape-weapon-switch', 'value', allow_duplicate=True),
-         Output('shape-weapon-dropdown', 'value', allow_duplicate=True)],
+         Output('shape-weapon-dropdown', 'value', allow_duplicate=True),
+         Output('weapon-dropdown', 'value', allow_duplicate=True)],
         [Input('reset-button', 'n_clicks'),
          Input('sticky-reset-button', 'n_clicks')],
         prevent_initial_call=True
@@ -249,6 +250,7 @@ def register_ui_callbacks(app, cfg):
             default_cfg.DEV_CRIT,
             default_cfg.SHAPE_WEAPON_OVERRIDE,
             default_cfg.SHAPE_WEAPON,
+            default_cfg.DEFAULT_WEAPONS,
         ]
 
     # Callback 2: Reset additional damage (4 ALL pattern outputs)
@@ -275,8 +277,7 @@ def register_ui_callbacks(app, cfg):
 
     # Callback 3: Reset simulation settings (11 outputs)
     @app.callback(
-        [Output('weapon-dropdown', 'value', allow_duplicate=True),
-         Output('target-ac-input', 'value', allow_duplicate=True),
+        [Output('target-ac-input', 'value', allow_duplicate=True),
          Output('rounds-input', 'value', allow_duplicate=True),
          Output('damage-limit-switch', 'value', allow_duplicate=True),
          Output('damage-limit-input', 'value', allow_duplicate=True),
@@ -300,7 +301,6 @@ def register_ui_callbacks(app, cfg):
             for name, val in default_cfg.TARGET_IMMUNITIES.items()
         }
         return [
-            default_cfg.DEFAULT_WEAPONS,
             default_cfg.TARGET_AC,
             default_cfg.ROUNDS,
             default_cfg.DAMAGE_LIMIT_FLAG,
