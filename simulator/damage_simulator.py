@@ -272,7 +272,7 @@ class DamageSimulator:
                     if ("Tenacious_Blow" in self.cfg.ADDITIONAL_DAMAGE
                             and self.cfg.ADDITIONAL_DAMAGE["Tenacious_Blow"][0] is True
                             and self.weapon.name_base in ["Dire Mace", "Double Axe", "Two-Bladed Sword"]):
-                        dmg_dict = {'pure': [[0, 0, 4]]}
+                        dmg_dict = {'pure': [DamageRoll(dice=0, sides=0, flat=4)]}
                         if legend_imm_factors is None:
                             legend_imm_factors = {}
                         dmg_sums = self.get_damage_results(dmg_dict, legend_imm_factors)
@@ -296,9 +296,13 @@ class DamageSimulator:
                     dmg_dict = {k: list(v) for k, v in self.dmg_dict_base.items()}
 
                     if self.attack_sim.dual_wield:  # Halve (and round down) Strength damage for offhand attacks
-                        if attack_idx in (offhand_attack_1_idx, offhand_attack_2_idx):
-                            current_str_flat_dmg = dmg_dict['physical'][str_idx][2]
-                            dmg_dict['physical'][str_idx][2] = math.floor(current_str_flat_dmg / 2)
+                        if attack_idx in (offhand_attack_1_idx, offhand_attack_2_idx) and str_idx is not None:
+                            str_roll = dmg_dict['physical'][str_idx]
+                            dmg_dict['physical'][str_idx] = DamageRoll(
+                                dice=str_roll.dice,
+                                sides=str_roll.sides,
+                                flat=math.floor(str_roll.flat / 2)
+                            )
 
                     dmg_sneak = dmg_dict.pop('sneak', [])                                                # Remove the 'Sneak Attack' dmg from crit multiplication
                     dmg_sneak_max = max(dmg_sneak, key=lambda sublist: sublist[0], default=None)         # Find the highest 'sneak' dmg, can't stack Sneak Attacks
@@ -306,11 +310,8 @@ class DamageSimulator:
                     dmg_death = dmg_dict.pop('death', [])                                           # Remove the 'Death Attack' dmg from crit multiplication
                     dmg_death_max = max(dmg_death, key=lambda sublist: sublist[0], default=None)    # Find the highest 'death' dmg, can't stack Death Attacks
 
-                    def get_max_dmg(dmg_list):
-                        dice = dmg_list[0]
-                        sides = dmg_list[1]
-                        flat = dmg_list[2] if len(dmg_list) > 2 else 0
-                        return dice * sides + flat
+                    def get_max_dmg(dmg_roll: DamageRoll) -> int:
+                        return dmg_roll.dice * dmg_roll.sides + dmg_roll.flat
 
                     dmg_massive = dmg_dict.pop('massive', [])                          # Remove the 'Massive Critical' dmg from crit multiplication
                     dmg_massive_max = max(dmg_massive, key=get_max_dmg, default=None)  # Find the highest 'massive' dmg, can't stack Massive Criticals
@@ -318,11 +319,10 @@ class DamageSimulator:
                     dmg_flameweap = dmg_dict.pop('fire_fw', [])                            # Remove the 'Flame Weapon' dmg from crit multiplication
                     dmg_flameweap_max = max(dmg_flameweap, key=get_max_dmg, default=None)  # Find the highest 'fire_fw' dmg, can't stack multiple on-hits
 
-                    if legend_dmg_common:   # Checking if list is NOT empty, then adding the legend common damage to ordinary damage dictionary
-                        dmg_type_name = legend_dmg_common.pop(-1)
-                        dmg_popped = dmg_dict.pop(dmg_type_name, [])
-                        dmg_popped.extend([legend_dmg_common])
-                        dmg_dict[dmg_type_name] = dmg_popped
+                    if legend_dmg_common:   # Checking if dict is NOT empty, then adding the legend common damage to ordinary damage dictionary
+                        # legend_dmg_common format: Dict[str, List[DamageRoll]]
+                        for dmg_type, dmg_rolls in legend_dmg_common.items():
+                            dmg_dict.setdefault(dmg_type, []).extend(dmg_rolls)
 
                     # Use shallow copy
                     dmg_dict_crit_imm = {k: list(v) for k, v in dmg_dict.items()}
@@ -338,21 +338,21 @@ class DamageSimulator:
                         # Overwhelm Critical: Add bonus damage based on crit multiplier
                         if self.cfg.OVERWHELM_CRIT:
                             if crit_multiplier == 2:
-                                overwhelm_dmg = [1, 6]  # 1d6
+                                overwhelm_dmg = DamageRoll(dice=1, sides=6)  # 1d6
                             elif crit_multiplier == 3:
-                                overwhelm_dmg = [2, 6]  # 2d6
+                                overwhelm_dmg = DamageRoll(dice=2, sides=6)  # 2d6
                             else:  # crit_multiplier >= 4
-                                overwhelm_dmg = [3, 6]  # 3d6
+                                overwhelm_dmg = DamageRoll(dice=3, sides=6)  # 3d6
                             dmg_dict.setdefault('physical', []).append(overwhelm_dmg)
 
                         # Devastating Critical: Add bonus pure damage based on weapon size
                         if self.cfg.DEV_CRIT:
                             if self.weapon.size in ['T', 'S']:  # Tiny or Small
-                                dev_dmg = [0, 0, 10]  # +10 pure damage
+                                dev_dmg = DamageRoll(dice=0, sides=0, flat=10)  # +10 pure damage
                             elif self.weapon.size == 'M':  # Medium
-                                dev_dmg = [0, 0, 20]  # +20 pure damage
+                                dev_dmg = DamageRoll(dice=0, sides=0, flat=20)  # +20 pure damage
                             else:  # Large or larger
-                                dev_dmg = [0, 0, 30]  # +30 pure damage
+                                dev_dmg = DamageRoll(dice=0, sides=0, flat=30)  # +30 pure damage
                             dmg_dict.setdefault('pure', []).append(dev_dmg)
 
                     if dmg_sneak_max is not None:   # Add 'Sneak Attack' again after crit dmg rolls have been multiplied
@@ -467,13 +467,32 @@ class DamageSimulator:
         }
 
     def get_damage_results(self, damage_dict: dict, imm_factors: dict):
+        """Calculate damage results from a dictionary of DamageRoll objects or legacy lists.
+
+        Args:
+            damage_dict: Dictionary with damage type keys and lists of DamageRoll objects or lists
+            imm_factors: Dictionary of immunity/vulnerability factors
+
+        Returns:
+            Dictionary of damage sums by type after applying immunities
+        """
         damage_sums = defaultdict(int)
         for dmg_key, dmg_list in damage_dict.items():
-            for dmg_sublist in dmg_list:
-                num_dice = dmg_sublist[0]
-                num_sides = dmg_sublist[1]
-                flat_dmg = dmg_sublist[2] if len(dmg_sublist) > 2 else 0    # Get flat damage if it exists, otherwise 0
-                dmg_roll_results = self.attack_sim.damage_roll(num_dice, num_sides, flat_dmg)
+            for dmg_entry in dmg_list:
+                # Handle both DamageRoll objects and legacy list format
+                if isinstance(dmg_entry, DamageRoll):
+                    dice = dmg_entry.dice
+                    sides = dmg_entry.sides
+                    flat = dmg_entry.flat
+                elif isinstance(dmg_entry, list):
+                    # Legacy list format [dice, sides] or [dice, sides, flat]
+                    dice = dmg_entry[0]
+                    sides = dmg_entry[1]
+                    flat = dmg_entry[2] if len(dmg_entry) > 2 else 0
+                else:
+                    raise TypeError(f"Expected DamageRoll or list, got {type(dmg_entry)}")
+
+                dmg_roll_results = self.attack_sim.damage_roll(dice, sides, flat)
                 damage_sums[dmg_key] += dmg_roll_results
 
         # Convert back to regular dict before applying immunities

@@ -27,7 +27,7 @@ def test_legend_effect_on_proc_applies_burst_and_persistent():
     # If procced, should have damage
     # (exact values depend on random, just check structure)
     assert isinstance(damage_sums, dict)
-    assert isinstance(common_damage, list)
+    assert isinstance(common_damage, dict)  # Changed from list to dict
     assert isinstance(imm_factors, dict)
 
 
@@ -48,7 +48,7 @@ def test_legend_effect_during_window_applies_only_persistent():
 
     # During window: no burst damage, but common_damage should be present
     # Note: Heavy Flail has no burst damage anyway
-    assert isinstance(common_damage, list)
+    assert isinstance(common_damage, dict)  # Changed from list to dict
 
 
 def test_legend_effect_ab_bonus_property():

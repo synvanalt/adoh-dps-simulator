@@ -29,16 +29,20 @@ def test_heavy_flail_effect_applies_damage():
     stats = StatsCollector()
     effect = HeavyFlailEffect()
 
+    from simulator.damage_roll import DamageRoll
     legend_dict = {
         'proc': 0.05,
-        'physical': [[0, 0, 5]]
+        'physical': [DamageRoll(dice=0, sides=0, flat=5)]
     }
 
     burst, persistent = effect.apply(legend_dict, stats, crit_multiplier=1, attack_sim=None)
 
-    # Old test updated to use new tuple interface
+    # Updated to use new Dict[str, DamageRoll] interface
     assert 'common_damage' in persistent
-    assert persistent['common_damage'] == [0, 0, 5, 'physical']
+    assert 'physical' in persistent['common_damage']
+    assert persistent['common_damage']['physical'].dice == 0
+    assert persistent['common_damage']['physical'].sides == 0
+    assert persistent['common_damage']['physical'].flat == 5
 
 
 def test_crushing_blow_effect_reduces_physical_immunity():
@@ -69,9 +73,10 @@ def test_heavy_flail_effect_returns_persistent_common_damage():
     stats = StatsCollector()
     effect = HeavyFlailEffect()
 
+    from simulator.damage_roll import DamageRoll
     legend_dict = {
         'proc': 0.05,
-        'physical': [[0, 0, 5]]
+        'physical': [DamageRoll(dice=0, sides=0, flat=5)]
     }
 
     burst, persistent = effect.apply(legend_dict, stats, 1, None)
@@ -79,9 +84,10 @@ def test_heavy_flail_effect_returns_persistent_common_damage():
     # Should have NO burst damage (Heavy Flail is pure persistent)
     assert burst == {}
 
-    # Should have persistent common_damage
+    # Should have persistent common_damage in new Dict[str, DamageRoll] format
     assert 'common_damage' in persistent
-    assert persistent['common_damage'] == [0, 0, 5, 'physical']
+    assert 'physical' in persistent['common_damage']
+    assert persistent['common_damage']['physical'].flat == 5
 
 
 def test_crushing_blow_returns_damage_and_immunity():
@@ -158,10 +164,11 @@ def test_burst_damage_effect_rolls_damage():
     stats = StatsCollector()
 
     effect = BurstDamageEffect()
+    from simulator.damage_roll import DamageRoll
     legend_dict = {
         'proc': 0.05,
-        'acid': [[4, 6, 0]],  # 4d6 acid
-        'pure': [[4, 6, 0]]   # 4d6 pure
+        'acid': [DamageRoll(dice=4, sides=6, flat=0)],  # 4d6 acid
+        'pure': [DamageRoll(dice=4, sides=6, flat=0)]   # 4d6 pure
     }
 
     burst, persistent = effect.apply(legend_dict, stats, 1, attack_sim)
@@ -190,10 +197,11 @@ def test_burst_damage_effect_skips_proc_and_effect_keys():
     attack_sim = AttackSimulator(weapon, cfg)
 
     effect = BurstDamageEffect()
+    from simulator.damage_roll import DamageRoll
     legend_dict = {
         'proc': 0.05,
         'effect': 'some_effect',
-        'fire': [[1, 50, 0]]
+        'fire': [DamageRoll(dice=1, sides=50, flat=0)]
     }
 
     burst, persistent = effect.apply(legend_dict, StatsCollector(), 1, attack_sim)
@@ -218,9 +226,10 @@ def test_perfect_strike_effect_adds_ab_bonus():
     stats = StatsCollector()
 
     effect = PerfectStrikeEffect()
+    from simulator.damage_roll import DamageRoll
     legend_dict = {
         'proc': 0.05,
-        'pure': [[4, 6, 0]]
+        'pure': [DamageRoll(dice=4, sides=6, flat=0)]
     }
 
     burst, persistent = effect.apply(legend_dict, stats, 1, attack_sim)

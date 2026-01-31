@@ -1,7 +1,7 @@
 """Heavy Flail legendary effect implementation."""
 
-from copy import deepcopy
 from simulator.legendary_effects.base import LegendaryEffect
+from simulator.damage_roll import DamageRoll
 
 
 class HeavyFlailEffect(LegendaryEffect):
@@ -21,24 +21,16 @@ class HeavyFlailEffect(LegendaryEffect):
         Returns:
             (burst_effects, persistent_effects)
             - burst: {} (no burst damage)
-            - persistent: {'common_damage': [0, 0, 5, 'physical']}
+            - persistent: {'common_damage': {'physical': DamageRoll(...)}}
         """
         burst = {}
         persistent = {}
 
         if 'physical' in legend_dict:
-            hflail_phys_dmg = deepcopy(legend_dict['physical'][0])
-            # hflail_phys_dmg is [dice, sides, flat] or [dice, sides, flat, proc]
-            common_dmg = list(hflail_phys_dmg)
-
-            # Remove proc (last element) if present
-            if len(common_dmg) > 3:
-                common_dmg.pop(-1)
-
-            # Add damage type at end: [dice, sides, flat, type]
-            common_dmg.append('physical')
+            hflail_phys_roll = legend_dict['physical'][0]  # DamageRoll object
 
             # Common damage is PERSISTENT (continues during window)
-            persistent['common_damage'] = common_dmg
+            # Format: Dict[damage_type, DamageRoll]
+            persistent['common_damage'] = {'physical': hflail_phys_roll}
 
         return burst, persistent

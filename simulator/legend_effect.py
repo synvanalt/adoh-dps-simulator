@@ -55,11 +55,11 @@ class LegendEffect:
 
         Returns:
             legend_dict_sums: Dict of burst damage by type
-            legend_dmg_common: List of persistent common damage
+            legend_dmg_common: Dict of persistent common damage {dmg_type: [DamageRoll, ...]}
             legend_imm_factors: Dict of persistent immunity factors
         """
         legend_dict_sums = defaultdict(int)
-        legend_dmg_common = []
+        legend_dmg_common = {}
         legend_imm_factors = {}
 
         # Reset persistent effects
@@ -135,7 +135,9 @@ class LegendEffect:
 
         # Apply persistent effects
         if persistent.get('common_damage'):
-            legend_dmg_common.extend(persistent['common_damage'])
+            # common_damage format: Dict[str, DamageRoll]
+            for dmg_type, dmg_roll in persistent['common_damage'].items():
+                legend_dmg_common.setdefault(dmg_type, []).append(dmg_roll)
 
         legend_imm_factors.update(persistent.get('immunity_factors', {}))
 

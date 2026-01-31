@@ -1,6 +1,7 @@
 """Burst damage effect for legendary weapons without special mechanics."""
 
 from simulator.legendary_effects.base import LegendaryEffect
+from simulator.damage_roll import DamageRoll
 
 
 class BurstDamageEffect(LegendaryEffect):
@@ -15,7 +16,7 @@ class BurstDamageEffect(LegendaryEffect):
         """Roll damage for all damage types in legend_dict.
 
         Args:
-            legend_dict: Dict with damage types as keys, lists of [dice, sides, flat] as values
+            legend_dict: Dict with damage types as keys, lists of DamageRoll objects as values
             stats_collector: StatsCollector (unused for burst damage)
             crit_multiplier: Critical multiplier (unused for burst damage)
             attack_sim: AttackSimulator for rolling damage dice
@@ -32,14 +33,10 @@ class BurstDamageEffect(LegendaryEffect):
             if dmg_type in ('proc', 'effect'):
                 continue
 
-            # Roll damage for each entry of this type
-            for dmg_sublist in dmg_list:
-                num_dice = dmg_sublist[0]
-                num_sides = dmg_sublist[1]
-                flat_dmg = dmg_sublist[2] if len(dmg_sublist) > 2 else 0
-
+            # Roll damage for each DamageRoll in this type
+            for dmg_roll in dmg_list:
                 damage_sums[dmg_type] = damage_sums.get(dmg_type, 0) + \
-                    attack_sim.damage_roll(num_dice, num_sides, flat_dmg)
+                    attack_sim.damage_roll(dmg_roll.dice, dmg_roll.sides, dmg_roll.flat)
 
         burst = {'damage_sums': damage_sums}
         persistent = {}
