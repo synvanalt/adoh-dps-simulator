@@ -1237,6 +1237,84 @@ class TestCalculateDwPenalties:
         assert offhand == -6
 
 
+class TestBuildSimpleProgression:
+    """Tests for _build_simple_progression method."""
+
+    def test_build_simple_progression_with_markers(self):
+        """Test simple progression converts markers to offsets"""
+        cfg = Config()
+        cfg.AB = 68
+        cfg.AB_PROG = "4APR & Blinding Speed"
+        cfg.DUAL_WIELD = False
+        weapon = Weapon("Scimitar", cfg)
+        attack_sim = AttackSimulator(weapon, cfg)
+
+        offsets = [0, -5, -10, "hasted", "bspeed"]
+        result = attack_sim._build_simple_progression(offsets)
+
+        # Expected: [68, 63, 58, 68, 63]
+        assert result == [68, 63, 58, 68, 63]
+
+    def test_build_simple_progression_three_specials(self):
+        """Test special attacks follow 0, -5, -10 progression"""
+        cfg = Config()
+        cfg.AB = 70
+        cfg.DUAL_WIELD = False
+        weapon = Weapon("Scimitar", cfg)
+        attack_sim = AttackSimulator(weapon, cfg)
+
+        offsets = [0, "hasted", "rapid", "bspeed"]
+        result = attack_sim._build_simple_progression(offsets)
+
+        # Expected: [70, 70, 65, 60]
+        assert result == [70, 70, 65, 60]
+
+
+class TestBuildDwProgression:
+    """Tests for _build_dw_progression method."""
+
+    def test_build_dw_progression_basic(self):
+        """Test DW progression applies penalties correctly"""
+        cfg = Config()
+        cfg.AB = 68
+        cfg.DUAL_WIELD = True
+        cfg.TWO_WEAPON_FIGHTING = True
+        cfg.AMBIDEXTERITY = True
+        cfg.TOON_SIZE = 'M'
+        cfg.IMPROVED_TWF = True
+        weapon = Weapon("Shortsword_Adam", cfg)
+        attack_sim = AttackSimulator(weapon, cfg)
+
+        primary_penalty = -2
+        offhand_penalty = -2
+        offsets = [0, -5, -10, "hasted"]
+
+        result = attack_sim._build_dw_progression(offsets, primary_penalty, offhand_penalty)
+
+        # Expected: [66, 61, 56, 68, 66, 61]
+        assert result == [66, 61, 56, 68, 66, 61]
+
+    def test_build_dw_progression_no_improved_twf(self):
+        """Test DW without Improved TWF gives only 1 off-hand attack"""
+        cfg = Config()
+        cfg.AB = 68
+        cfg.DUAL_WIELD = True
+        cfg.IMPROVED_TWF = False
+        cfg.TWO_WEAPON_FIGHTING = True
+        cfg.TOON_SIZE = 'M'
+        weapon = Weapon("Scimitar", cfg)
+        attack_sim = AttackSimulator(weapon, cfg)
+
+        primary_penalty = -4
+        offhand_penalty = -8
+        offsets = [0, -5, "hasted"]
+
+        result = attack_sim._build_dw_progression(offsets, primary_penalty, offhand_penalty)
+
+        # Expected: [64, 59, 68, 60]
+        assert result == [64, 59, 68, 60]
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
 

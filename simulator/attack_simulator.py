@@ -130,6 +130,41 @@ class AttackSimulator:
 
         return (primary_penalty, offhand_penalty)
 
+    def _build_simple_progression(self, attack_prog_offsets):
+        """Build attack progression when dual-wield is disabled."""
+        attack_prog = []
+        special_attack_count = 0
+
+        for offset in attack_prog_offsets:
+            if isinstance(offset, str):
+                special_offset = special_attack_count * -5
+                attack_prog.append(self.ab + special_offset)
+                special_attack_count += 1
+            else:
+                attack_prog.append(self.ab + offset)
+
+        return attack_prog
+
+    def _build_dw_progression(self, attack_prog_offsets, primary_penalty, offhand_penalty):
+        """Build attack progression when dual-wield is enabled."""
+        attack_prog = []
+        special_attack_count = 0
+
+        for offset in attack_prog_offsets:
+            if isinstance(offset, str):
+                special_offset = special_attack_count * -5
+                attack_prog.append(self.ab + special_offset)
+                special_attack_count += 1
+            else:
+                attack_prog.append(self.ab + primary_penalty + offset)
+
+        attack_prog.append(self.ab + offhand_penalty)
+
+        if self.cfg.IMPROVED_TWF:
+            attack_prog.append(self.ab + offhand_penalty - 5)
+
+        return attack_prog
+
     def calculate_hit_chances(self):
         """
         Total average chance to hit for all attacks in round.
