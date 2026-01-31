@@ -81,6 +81,25 @@ def build_character_settings(cfg):
             ),
         ], class_name=''),
 
+        # Dual-Wield Master Toggle
+        dbc.Row([
+            dbc.Col(dbc.Switch(
+                id='dual-wield-switch',
+                label='Dual-Wield',
+                value=cfg.DUAL_WIELD,
+                persistence=True,
+                persistence_type=persist_type,
+            ), xs=12, md=12),
+            dbc.Tooltip(
+                "Enable dual-wielding to access off-hand attacks and feat configuration. "
+                "When enabled, configure Two-Weapon Fighting, Ambidexterity, and Improved TWF feats.",
+                target='dual-wield-switch',
+                placement='left',
+                delay={'show': tooltip_delay},
+            ),
+        ], class_name='switcher'),
+
+        # Character Size (shown only when dual-wield enabled)
         dbc.Row([
             dbc.Col(dbc.Label(
                 'Character Size:',
@@ -98,12 +117,67 @@ def build_character_settings(cfg):
                 persistence_type=persist_type,
             ), xs=6, md=6),
             dbc.Tooltip(
-                "Used for applying the correct dual-wield penalty.",
-                target='toon-size-dropdown',  # must match the component's id
-                placement='right',  # top, bottom, left, right
+                "Used to determine dual-wield penalties based on weapon size. "
+                "Smaller weapons relative to character size reduce penalties (light weapon bonus).",
+                target='toon-size-dropdown',
+                placement='right',
                 delay={'show': tooltip_delay},
             ),
-        ], class_name=''),
+        ], class_name='', id={'type': 'dw-row', 'name': 'character-size'}, style={'display': 'none'}),
+
+        # Two-Weapon Fighting feat
+        dbc.Row([
+            dbc.Col(dbc.Switch(
+                id='two-weapon-fighting-switch',
+                label='Two-Weapon Fighting',
+                value=cfg.TWO_WEAPON_FIGHTING,
+                persistence=True,
+                persistence_type=persist_type,
+            ), xs=12, md=12),
+            dbc.Tooltip(
+                "Reduces dual-wield penalties from -6/-10 to -4/-8 (primary/off-hand). "
+                "This feat is essential for effective dual-wielding.",
+                target='two-weapon-fighting-switch',
+                placement='left',
+                delay={'show': tooltip_delay},
+            ),
+        ], class_name='switcher', id={'type': 'dw-row', 'name': 'two-weapon-fighting'}, style={'display': 'none'}),
+
+        # Ambidexterity feat
+        dbc.Row([
+            dbc.Col(dbc.Switch(
+                id='ambidexterity-switch',
+                label='Ambidexterity',
+                value=cfg.AMBIDEXTERITY,
+                persistence=True,
+                persistence_type=persist_type,
+            ), xs=12, md=12),
+            dbc.Tooltip(
+                "Reduces off-hand penalty by 4. Combined with TWF, brings penalties to -4/-4. "
+                "With light weapon bonus, achieves optimal -2/-2 penalties.",
+                target='ambidexterity-switch',
+                placement='left',
+                delay={'show': tooltip_delay},
+            ),
+        ], class_name='switcher', id={'type': 'dw-row', 'name': 'ambidexterity'}, style={'display': 'none'}),
+
+        # Improved Two-Weapon Fighting feat
+        dbc.Row([
+            dbc.Col(dbc.Switch(
+                id='improved-twf-switch',
+                label='Improved Two-Weapon Fighting',
+                value=cfg.IMPROVED_TWF,
+                persistence=True,
+                persistence_type=persist_type,
+            ), xs=12, md=12),
+            dbc.Tooltip(
+                "Grants a second off-hand attack at -5 penalty. "
+                "Without this feat, you only get one off-hand attack per round.",
+                target='improved-twf-switch',
+                placement='left',
+                delay={'show': tooltip_delay},
+            ),
+        ], class_name='switcher', id={'type': 'dw-row', 'name': 'improved-twf'}, style={'display': 'none'}),
 
         # Combat Settings
         dbc.Row([
