@@ -36,16 +36,45 @@ class LegendaryEffectRegistry:
         burst = BurstDamageEffect()
 
         burst_damage_weapons = [
-            'Halberd', 'Spear', 'Trident_Fire', 'Trident_Ice',
-            'Dire Mace', 'Double Axe',
-            'Heavy Crossbow', 'Light Crossbow',
-            'Longbow_FireDragon', 'Longbow_FireCeles',
-            'Longbow_ElecDragon', 'Longbow_ElecCeles',
-            'Kama', 'Quarterstaff_Hanged', 'Greatsword_Tyr',
-            'Bastard Sword_Vald', 'Katana_Kin', 'Katana_Soul',
-            'Longsword', 'Rapier_Stinger', 'Rapier_Touch',
-            'Warhammer_Mjolnir', 'Club_Fish', 'Dagger_FW',
-            'Handaxe_Ichor', 'Light Hammer', 'Mace', 'Whip'
+            # MELEE TWO-HANDED WEAPONS
+            'Halberd',
+            'Greatsword_Tyr',
+            'Spear',
+            'Trident_Fire',
+            'Trident_Ice',
+
+            # DOUBLE-SIDED WEAPONS:
+            'Dire Mace',
+            'Double Axe',
+
+            #RANGED WEAPONS - AMMO-BASED:
+            'Heavy Crossbow',
+            'Light Crossbow',
+            'Longbow_FireDragon',
+            'Longbow_FireCeles',
+            'Longbow_ElecDragon',
+            'Longbow_ElecCeles',
+
+            # MONK WEAPONS:
+            'Kama',
+            'Quarterstaff_Hanged',
+
+            # MEDIUM WEAPONS:
+            'Bastard Sword_Vald',
+            'Club_Fish',
+            'Katana_Kin',
+            'Katana_Soul',
+            'Longsword',
+            'Rapier_Stinger',
+            'Rapier_Touch',
+            'Warhammer_Mjolnir',
+
+            # SMALL/TINY WEAPONS:
+            'Dagger_FW',
+            'Handaxe_Ichor',
+            'Light Hammer',
+            'Mace',
+            'Whip'
         ]
 
         for weapon in burst_damage_weapons:

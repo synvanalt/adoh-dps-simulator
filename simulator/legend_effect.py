@@ -3,7 +3,6 @@ from simulator.stats_collector import StatsCollector
 from simulator.attack_simulator import AttackSimulator
 from simulator.legendary_effects import LegendaryEffectRegistry
 from simulator.constants import LEGEND_EFFECT_DURATION
-from copy import deepcopy
 from collections import defaultdict
 import random
 
@@ -29,12 +28,11 @@ class LegendEffect:
         self._current_ab_bonus = 0
         self._current_ac_reduction = 0
 
+    # Determine if legendary property procs on hit
     def legend_proc(self, legend_proc_identifier: float):
         roll_threshold = 100 - (legend_proc_identifier * 100)  # Roll above it triggers the property
         legend_roll = random.randint(1, 100)
         if legend_roll > roll_threshold:
-            self.stats.legend_procs += 1
-            self.legend_attacks_left = self.attack_sim.attacks_per_round * self.legend_effect_duration  # Reset/apply duration (5 rounds)
             return True
         else:
             return False
@@ -78,27 +76,42 @@ class LegendEffect:
             # No registered effect - weapon has no legendary property
             return dict(legend_dict_sums), legend_dmg_common, legend_imm_factors
 
-        # Check proc type and phase
-        if isinstance(proc, (int, float)):  # Legendary property triggers on-hit, by percentage
-            if self.legend_proc(proc):  # Phase 1: Just procced
+        # Legendary property triggers on-hit, by percentage
+        if isinstance(proc, (int, float)):
+            # Phase 1: Just procced
+            if self.legend_proc(proc):
+                self.stats.legend_procs += 1    # Update proc count
+                self.legend_attacks_left = self.attack_sim.attacks_per_round * self.legend_effect_duration  # Reset/apply duration (5 rounds)
+
+                # Get legendary effects outcomes
                 burst, persistent = custom_effect.apply(
                     legend_dict, self.stats, crit_multiplier, self.attack_sim)
+
                 # Apply BOTH burst and persistent
                 self._apply_effects(burst, persistent, legend_dict_sums,
                                   legend_dmg_common, legend_imm_factors)
 
-            elif self.legend_attacks_left > 0:  # Phase 2: During window
-                self.legend_attacks_left -= 1
+            # Phase 2: During window
+            elif self.legend_attacks_left > 0:
+                self.legend_attacks_left -= 1   # Decrement remaining attacks
+
+                # Get legendary effects outcomes
                 burst, persistent = custom_effect.apply(
                     legend_dict, self.stats, crit_multiplier, self.attack_sim)
+
                 # Apply ONLY persistent (ignore burst)
                 self._apply_effects({}, persistent, legend_dict_sums,
                                   legend_dmg_common, legend_imm_factors)
 
-        elif isinstance(proc, str) and crit_multiplier > 1:  # Legendary property triggers on crit-hit
-            self.stats.legend_procs += 1
+        # Legendary property triggers on crit-hit
+        elif isinstance(proc, str) and crit_multiplier > 1:
+            self.stats.legend_procs += 1    # Update proc count
+
+            # Get legendary effects outcomes
             burst, persistent = custom_effect.apply(
                 legend_dict, self.stats, crit_multiplier, self.attack_sim)
+
+            # Apply BOTH burst and persistent
             self._apply_effects(burst, persistent, legend_dict_sums,
                               legend_dmg_common, legend_imm_factors)
 
