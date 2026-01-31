@@ -450,3 +450,24 @@ def register_ui_callbacks(app, cfg):
     def toggle_damage_limit(show):
         style = {'display': 'flex'} if show else {'display': 'none'}
         return style
+
+
+    # =========================================================================
+    # DUAL-WIELD SHOW/HIDE CALLBACK
+    # =========================================================================
+
+    @app.callback(
+        [
+            Output({'type': 'dw-row', 'name': 'character-size'}, 'style'),
+            Output({'type': 'dw-row', 'name': 'two-weapon-fighting'}, 'style'),
+            Output({'type': 'dw-row', 'name': 'ambidexterity'}, 'style'),
+            Output({'type': 'dw-row', 'name': 'improved-twf'}, 'style'),
+        ],
+        Input('dual-wield-switch', 'value')
+    )
+    def toggle_dual_wield_section(dual_wield_enabled):
+        """Show/hide dual-wield feat widgets based on master toggle"""
+        if dual_wield_enabled:
+            return [{'display': 'block'}] * 4
+        else:
+            return [{'display': 'none'}] * 4
