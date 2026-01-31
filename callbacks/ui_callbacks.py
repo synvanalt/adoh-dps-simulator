@@ -466,16 +466,13 @@ def register_ui_callbacks(app, cfg):
 
     @app.callback(
         [
-            Output({'type': 'dw-row', 'name': 'character-size'}, 'style'),
-            Output({'type': 'dw-row', 'name': 'two-weapon-fighting'}, 'style'),
-            Output({'type': 'dw-row', 'name': 'ambidexterity'}, 'style'),
-            Output({'type': 'dw-row', 'name': 'improved-twf'}, 'style'),
+            Output({'type': 'dw-row', 'name': 'container-row'}, 'style'),
         ],
         Input('dual-wield-switch', 'value')
     )
     def toggle_dual_wield_section(dual_wield_enabled):
         """Show/hide dual-wield feat widgets based on master toggle"""
         if dual_wield_enabled:
-            return [{'display': 'block'}] * 4
+            return [{'display': 'flex'}]
         else:
-            return [{'display': 'none'}] * 4
+            return [{'display': 'none'}]
