@@ -7,7 +7,7 @@ Run noise (per-iteration variance) DPS tests for weapon configurations and plot 
 Usage:
     python scripts\noise_demo.po --runs 100
 
-The script expects a `weapons_config` dictionary (same shape as `ab_sweetspot.py`) and will run
+The script expects a `weapons_config` dictionary and will run
 `runs` independent simulations for each configured weapon/iteration, collecting the reported
 `dps_crits` value from `DamageSimulator.simulate_dps()` each time.
 
@@ -33,7 +33,7 @@ def noise_demo(weapons_config, runs=100, show_plot=True):
     Run `runs` independent DPS simulations for each entry in `weapons_config` and plot the per-run DPS.
 
     Parameters:
-    - weapons_config: dict like in `ab_sweetspot.py` where each key is an iteration name and the value
+    - weapons_config: dict where each key is an iteration name and the value
                       is a dict of Config parameters. It may optionally include a literal `"weapon"`
                       key to specify the weapon name.
     - runs: int, number of independent simulation runs per iteration
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     target_ac = 70
 
-    # Example weapons_config similar to ab_sweetspot.py
+    # Example weapons_config
     weapons_config = {
         # "Scythe___5APR_71AB": {
         #     "TARGET_AC": target_ac,
