@@ -91,8 +91,8 @@ def build_character_settings(cfg):
                 persistence_type=persist_type,
             ), xs=12, md=12),
             dbc.Tooltip(
-                "Enable dual-wielding to access off-hand attacks and feat configuration. "
-                "When enabled, configure Two-Weapon Fighting, Ambidexterity, and Improved TWF feats.",
+                "Enable dual-wielding to access off-hand attacks feat configuration. "
+                "When enabled, configure Two-Weapon Fighting, Ambidexterity, and Improved Two-Weapon Fighting feats.",
                 target='dual-wield-switch',
                 placement='left',
                 delay={'show': tooltip_delay},
@@ -118,7 +118,7 @@ def build_character_settings(cfg):
             ), xs=6, md=6),
             dbc.Tooltip(
                 "Used to determine dual-wield penalties based on weapon size. "
-                "Smaller weapons relative to character size reduce penalties (light weapon bonus).",
+                "Smaller weapons relative to character size reduce penalties (light weapon).",
                 target='toon-size-dropdown',
                 placement='right',
                 delay={'show': tooltip_delay},
@@ -136,7 +136,7 @@ def build_character_settings(cfg):
             ), xs=12, md=12),
             dbc.Tooltip(
                 "Reduces dual-wield penalties from -6/-10 to -4/-8 (primary/off-hand). "
-                "This feat is essential for effective dual-wielding.",
+                "With light weapon off-hand, achieves -2/-6 penalties.",
                 target='two-weapon-fighting-switch',
                 placement='left',
                 delay={'show': tooltip_delay},
@@ -154,7 +154,7 @@ def build_character_settings(cfg):
             ), xs=12, md=12),
             dbc.Tooltip(
                 "Reduces off-hand penalty by 4. Combined with TWF, brings penalties to -4/-4. "
-                "With light weapon bonus, achieves optimal -2/-2 penalties.",
+                "With light weapon off-hand, achieves optimal -2/-2 penalties.",
                 target='ambidexterity-switch',
                 placement='left',
                 delay={'show': tooltip_delay},
