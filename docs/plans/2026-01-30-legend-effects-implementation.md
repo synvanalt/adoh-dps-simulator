@@ -196,10 +196,10 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 ---
 
-## Task 3: Create SimpleDamageEffect Base Class
+## Task 3: Create BurstDamageEffect Base Class
 
 **Files:**
-- Create: `simulator/legendary_effects/simple_damage_effect.py`
+- Create: `simulator/legendary_effects/burst_damage_effect.py`
 - Test: `tests/simulator/test_legendary_effects.py`
 
 **Step 1: Write failing test**
@@ -207,9 +207,9 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 Add to `tests/simulator/test_legendary_effects.py`:
 
 ```python
-def test_simple_damage_effect_rolls_damage():
-    """Test that SimpleDamageEffect rolls damage correctly."""
-    from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+def test_burst_damage_effect_rolls_damage():
+    """Test that BurstDamageEffect rolls damage correctly."""
+    from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
     from simulator.stats_collector import StatsCollector
     from simulator.attack_simulator import AttackSimulator
     from simulator.weapon import Weapon
@@ -220,11 +220,11 @@ def test_simple_damage_effect_rolls_damage():
     attack_sim = AttackSimulator(weapon, cfg)
     stats = StatsCollector()
 
-    effect = SimpleDamageEffect()
+    effect = BurstDamageEffect()
     legend_dict = {
         'proc': 0.05,
         'acid': [[4, 6, 0]],  # 4d6 acid
-        'pure': [[4, 6, 0]]   # 4d6 pure
+        'pure': [[4, 6, 0]]  # 4d6 pure
     }
 
     burst, persistent = effect.apply(legend_dict, stats, 1, attack_sim)
@@ -240,12 +240,12 @@ def test_simple_damage_effect_rolls_damage():
     assert persistent == {}
 
 
-def test_simple_damage_effect_skips_proc_and_effect_keys():
-    """Test that SimpleDamageEffect ignores proc and effect keys."""
-    from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+def test_burst_damage_effect_skips_proc_and_effect_keys():
+    """Test that BurstDamageEffect ignores proc and effect keys."""
+    from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
     from simulator.stats_collector import StatsCollector
 
-    effect = SimpleDamageEffect()
+    effect = BurstDamageEffect()
     legend_dict = {
         'proc': 0.05,
         'effect': 'some_effect',
@@ -262,22 +262,22 @@ def test_simple_damage_effect_skips_proc_and_effect_keys():
 
 **Step 2: Run tests to verify they fail**
 
-Run: `pytest tests/simulator/test_legendary_effects.py::test_simple_damage_effect_rolls_damage -v`
-Run: `pytest tests/simulator/test_legendary_effects.py::test_simple_damage_effect_skips_proc_and_effect_keys -v`
+Run: `pytest tests/simulator/test_legendary_effects.py::test_burst_damage_effect_rolls_damage -v`
+Run: `pytest tests/simulator/test_legendary_effects.py::test_burst_damage_effect_skips_proc_and_effect_keys -v`
 
 Expected: FAIL with ModuleNotFoundError
 
-**Step 3: Create SimpleDamageEffect**
+**Step 3: Create BurstDamageEffect**
 
-Create `simulator/legendary_effects/simple_damage_effect.py`:
+Create `simulator/legendary_effects/burst_damage_effect.py`:
 
 ```python
-"""Simple damage effect for legendary weapons without special mechanics."""
+"""Burst damage effect for legendary weapons without special mechanics."""
 
 from simulator.legendary_effects.base import LegendaryEffect
 
 
-class SimpleDamageEffect(LegendaryEffect):
+class BurstDamageEffect(LegendaryEffect):
     """Base class for legendary effects that only add burst damage.
 
     This is used by most legendary weapons (30+ weapons) that just add
@@ -290,14 +290,14 @@ class SimpleDamageEffect(LegendaryEffect):
 
         Args:
             legend_dict: Dict with damage types as keys, lists of [dice, sides, flat] as values
-            stats_collector: StatsCollector (unused for simple damage)
-            crit_multiplier: Critical multiplier (unused for simple damage)
+            stats_collector: StatsCollector (unused for burst damage)
+            crit_multiplier: Critical multiplier (unused for burst damage)
             attack_sim: AttackSimulator for rolling damage dice
 
         Returns:
             (burst_effects, persistent_effects)
             - burst: {'damage_sums': {type: rolled_value}}
-            - persistent: {} (no persistent effects for simple damage)
+            - persistent: {} (no persistent effects for burst damage)
         """
         damage_sums = {}
 
@@ -323,16 +323,16 @@ class SimpleDamageEffect(LegendaryEffect):
 
 **Step 4: Run tests to verify they pass**
 
-Run: `pytest tests/simulator/test_legendary_effects.py::test_simple_damage_effect_rolls_damage -v`
-Run: `pytest tests/simulator/test_legendary_effects.py::test_simple_damage_effect_skips_proc_and_effect_keys -v`
+Run: `pytest tests/simulator/test_legendary_effects.py::test_burst_damage_effect_rolls_damage -v`
+Run: `pytest tests/simulator/test_legendary_effects.py::test_burst_damage_effect_skips_proc_and_effect_keys -v`
 
 Expected: All PASS
 
 **Step 5: Commit**
 
 ```bash
-git add simulator/legendary_effects/simple_damage_effect.py tests/simulator/test_legendary_effects.py
-git commit -m "feat: add SimpleDamageEffect base class for damage-only legendaries
+git add simulator/legendary_effects/burst_damage_effect.py tests/simulator/test_legendary_effects.py
+git commit -m "feat: add BurstDamageEffect base class for damage-only legendaries
 
 - Base class for 30+ legendary weapons with no special mechanics
 - Returns burst damage only, no persistent effects
@@ -376,7 +376,7 @@ def test_perfect_strike_effect_adds_ab_bonus():
 
     burst, persistent = effect.apply(legend_dict, stats, 1, attack_sim)
 
-    # Should have burst damage (from parent SimpleDamageEffect)
+    # Should have burst damage (from parent BurstDamageEffect)
     assert 'damage_sums' in burst
     assert 'pure' in burst['damage_sums']
 
@@ -398,10 +398,10 @@ Create `simulator/legendary_effects/perfect_strike_effect.py`:
 ```python
 """Perfect Strike legendary effect (+2 AB bonus)."""
 
-from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
 
 
-class PerfectStrikeEffect(SimpleDamageEffect):
+class PerfectStrikeEffect(BurstDamageEffect):
     """Perfect Strike: Burst damage + persistent +2 AB bonus.
 
     Used by legendary weapons that grant +2 AB bonus during the
@@ -413,12 +413,12 @@ class PerfectStrikeEffect(SimpleDamageEffect):
 
         Returns:
             (burst_effects, persistent_effects)
-            - burst: damage from parent SimpleDamageEffect
+            - burst: damage from parent BurstDamageEffect
             - persistent: {'ab_bonus': 2}
         """
         # Get standard burst damage from parent
         burst, persistent = super().apply(legend_dict, stats_collector,
-                                         crit_multiplier, attack_sim)
+                                          crit_multiplier, attack_sim)
 
         # Add persistent AB bonus
         persistent['ab_bonus'] = 2
@@ -438,7 +438,7 @@ Expected: PASS
 git add simulator/legendary_effects/perfect_strike_effect.py tests/simulator/test_legendary_effects.py
 git commit -m "feat: add PerfectStrikeEffect for +2 AB legendary bonus
 
-- Extends SimpleDamageEffect with +2 AB bonus
+- Extends BurstDamageEffect with +2 AB bonus
 - AB bonus persists during legendary window (5 rounds)
 - Used by Darts and Kukri_Crow
 
@@ -497,10 +497,10 @@ Create `simulator/legendary_effects/sunder_effect.py`:
 ```python
 """Sunder legendary effect (-2 AC reduction)."""
 
-from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
 
 
-class SunderEffect(SimpleDamageEffect):
+class SunderEffect(BurstDamageEffect):
     """Sunder: Burst damage + persistent -2 AC reduction.
 
     Used by legendary weapons that reduce target AC by 2 during the
@@ -512,12 +512,12 @@ class SunderEffect(SimpleDamageEffect):
 
         Returns:
             (burst_effects, persistent_effects)
-            - burst: damage from parent SimpleDamageEffect
+            - burst: damage from parent BurstDamageEffect
             - persistent: {'ac_reduction': -2}
         """
         # Get standard burst damage from parent
         burst, persistent = super().apply(legend_dict, stats_collector,
-                                         crit_multiplier, attack_sim)
+                                          crit_multiplier, attack_sim)
 
         # Add persistent AC reduction
         persistent['ac_reduction'] = -2
@@ -537,7 +537,7 @@ Expected: PASS
 git add simulator/legendary_effects/sunder_effect.py tests/simulator/test_legendary_effects.py
 git commit -m "feat: add SunderEffect for -2 AC legendary reduction
 
-- Extends SimpleDamageEffect with -2 AC reduction
+- Extends BurstDamageEffect with -2 AC reduction
 - AC reduction persists during legendary window (5 rounds)
 - Used by Light Flail and Greatsword_Legion
 
@@ -617,10 +617,10 @@ Create `simulator/legendary_effects/inconsequence_effect.py`:
 """Inconsequence legendary effect (random Pure/Sonic/nothing)."""
 
 import random
-from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
 
 
-class InconsequenceEffect(SimpleDamageEffect):
+class InconsequenceEffect(BurstDamageEffect):
     """Inconsequence: Random damage effect.
 
     25% chance: 4d6 Pure damage
@@ -803,10 +803,10 @@ Modify `simulator/legendary_effects/crushing_blow_effect.py`:
 ```python
 """Club_Stone (Crushing Blow) legendary effect implementation."""
 
-from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
 
 
-class CrushingBlowEffect(SimpleDamageEffect):
+class CrushingBlowEffect(BurstDamageEffect):
     """Crushing Blow: Burst damage + persistent -5% physical immunity.
 
     Reduces target's physical immunity by 5% during the legendary
@@ -818,12 +818,12 @@ class CrushingBlowEffect(SimpleDamageEffect):
 
         Returns:
             (burst_effects, persistent_effects)
-            - burst: damage from parent SimpleDamageEffect
+            - burst: damage from parent BurstDamageEffect
             - persistent: {'immunity_factors': {'physical': -0.05}}
         """
         # Get standard burst damage from parent
         burst, persistent = super().apply(legend_dict, stats_collector,
-                                         crit_multiplier, attack_sim)
+                                          crit_multiplier, attack_sim)
 
         # Add persistent immunity reduction
         persistent['immunity_factors'] = {'physical': -0.05}
@@ -846,7 +846,7 @@ git commit -m "refactor: update HeavyFlail and CrushingBlow to new interface
 
 - Update to return (burst, persistent) tuple
 - HeavyFlail returns only persistent common_damage (no burst)
-- CrushingBlow extends SimpleDamageEffect with immunity factor
+- CrushingBlow extends BurstDamageEffect with immunity factor
 - Update tests for new interface
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
@@ -869,7 +869,7 @@ Modify `simulator/legendary_effects/__init__.py`:
 
 from simulator.legendary_effects.base import LegendaryEffect
 from simulator.legendary_effects.registry import LegendaryEffectRegistry
-from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
 from simulator.legendary_effects.perfect_strike_effect import PerfectStrikeEffect
 from simulator.legendary_effects.sunder_effect import SunderEffect
 from simulator.legendary_effects.inconsequence_effect import InconsequenceEffect
@@ -879,7 +879,7 @@ from simulator.legendary_effects.crushing_blow_effect import CrushingBlowEffect
 __all__ = [
     'LegendaryEffect',
     'LegendaryEffectRegistry',
-    'SimpleDamageEffect',
+    'BurstDamageEffect',
     'PerfectStrikeEffect',
     'SunderEffect',
     'InconsequenceEffect',
@@ -942,7 +942,7 @@ class LegendaryEffectRegistry:
 
     def _register_default_effects(self):
         """Register all default legendary effects."""
-        from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+        from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
         from simulator.legendary_effects.perfect_strike_effect import PerfectStrikeEffect
         from simulator.legendary_effects.sunder_effect import SunderEffect
         from simulator.legendary_effects.inconsequence_effect import InconsequenceEffect
@@ -960,10 +960,10 @@ class LegendaryEffectRegistry:
         self.register('Heavy Flail', HeavyFlailEffect())
         self.register('Club_Stone', CrushingBlowEffect())
 
-        # Simple damage-only effects (shared instance for efficiency)
-        simple = SimpleDamageEffect()
+        # Burst damage-only effects (shared instance for efficiency)
+        burst = BurstDamageEffect()
 
-        simple_damage_weapons = [
+        burst_damage_weapons = [
             'Halberd', 'Spear', 'Trident_Fire', 'Trident_Ice',
             'Dire Mace', 'Double Axe',
             'Heavy Crossbow', 'Light Crossbow',
@@ -976,8 +976,8 @@ class LegendaryEffectRegistry:
             'Handaxe_Ichor', 'Light Hammer', 'Mace', 'Whip'
         ]
 
-        for weapon in simple_damage_weapons:
-            self.register(weapon, simple)
+        for weapon in burst_damage_weapons:
+            self.register(weapon, burst)
 
     def register(self, weapon_name: str, effect: LegendaryEffect):
         """Register a legendary effect for a weapon.
@@ -1013,7 +1013,7 @@ git add simulator/legendary_effects/registry.py simulator/legendary_effects/__in
 git commit -m "feat: register all legendary weapons in effect registry
 
 - Add all special mechanics effects (Perfect Strike, Sunder, etc.)
-- Register 29 weapons with SimpleDamageEffect
+- Register 29 weapons with BurstDamageEffect
 - Export all effect classes from __init__.py
 - Add test to verify all legendary weapons have effects
 
@@ -1333,7 +1333,7 @@ git commit --allow-empty -m "chore: legendary effects cleanup complete - all tes
 - Fixed critical bug in common_damage format handling
 - Refactored to registry-only architecture (no backward compatibility)
 - Implemented two-phase effect system (burst vs persistent)
-- Created 4 new effect classes (SimpleDamage, PerfectStrike, Sunder, Inconsequence)
+- Created 4 new effect classes (BurstDamage, PerfectStrike, Sunder, Inconsequence)
 - Updated 2 existing effects (HeavyFlail, CrushingBlow)
 - Registered all 36+ legendary weapons
 - All 425+ tests pass

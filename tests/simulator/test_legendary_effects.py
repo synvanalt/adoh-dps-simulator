@@ -144,9 +144,9 @@ def test_base_interface_returns_two_tuple():
     assert isinstance(persistent, dict)
 
 
-def test_simple_damage_effect_rolls_damage():
-    """Test that SimpleDamageEffect rolls damage correctly."""
-    from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+def test_burst_damage_effect_rolls_damage():
+    """Test that BurstDamageEffect rolls damage correctly."""
+    from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
     from simulator.stats_collector import StatsCollector
     from simulator.attack_simulator import AttackSimulator
     from simulator.weapon import Weapon
@@ -157,7 +157,7 @@ def test_simple_damage_effect_rolls_damage():
     attack_sim = AttackSimulator(weapon, cfg)
     stats = StatsCollector()
 
-    effect = SimpleDamageEffect()
+    effect = BurstDamageEffect()
     legend_dict = {
         'proc': 0.05,
         'acid': [[4, 6, 0]],  # 4d6 acid
@@ -177,9 +177,9 @@ def test_simple_damage_effect_rolls_damage():
     assert persistent == {}
 
 
-def test_simple_damage_effect_skips_proc_and_effect_keys():
-    """Test that SimpleDamageEffect ignores proc and effect keys."""
-    from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+def test_burst_damage_effect_skips_proc_and_effect_keys():
+    """Test that BurstDamageEffect ignores proc and effect keys."""
+    from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
     from simulator.stats_collector import StatsCollector
     from simulator.attack_simulator import AttackSimulator
     from simulator.weapon import Weapon
@@ -189,7 +189,7 @@ def test_simple_damage_effect_skips_proc_and_effect_keys():
     weapon = Weapon('Spear', cfg)
     attack_sim = AttackSimulator(weapon, cfg)
 
-    effect = SimpleDamageEffect()
+    effect = BurstDamageEffect()
     legend_dict = {
         'proc': 0.05,
         'effect': 'some_effect',
@@ -225,7 +225,7 @@ def test_perfect_strike_effect_adds_ab_bonus():
 
     burst, persistent = effect.apply(legend_dict, stats, 1, attack_sim)
 
-    # Should have burst damage (from parent SimpleDamageEffect)
+    # Should have burst damage (from parent BurstDamageEffect)
     assert 'damage_sums' in burst
     assert 'pure' in burst['damage_sums']
 

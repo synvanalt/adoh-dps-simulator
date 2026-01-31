@@ -14,7 +14,7 @@ class LegendaryEffectRegistry:
 
     def _register_default_effects(self):
         """Register all default legendary effects."""
-        from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+        from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
         from simulator.legendary_effects.perfect_strike_effect import PerfectStrikeEffect
         from simulator.legendary_effects.sunder_effect import SunderEffect
         from simulator.legendary_effects.inconsequence_effect import InconsequenceEffect
@@ -32,10 +32,10 @@ class LegendaryEffectRegistry:
         self.register('Heavy Flail', HeavyFlailEffect())
         self.register('Club_Stone', CrushingBlowEffect())
 
-        # Simple damage-only effects (shared instance for efficiency)
-        simple = SimpleDamageEffect()
+        # Burst damage-only effects (shared instance for efficiency)
+        burst = BurstDamageEffect()
 
-        simple_damage_weapons = [
+        burst_damage_weapons = [
             'Halberd', 'Spear', 'Trident_Fire', 'Trident_Ice',
             'Dire Mace', 'Double Axe',
             'Heavy Crossbow', 'Light Crossbow',
@@ -48,8 +48,8 @@ class LegendaryEffectRegistry:
             'Handaxe_Ichor', 'Light Hammer', 'Mace', 'Whip'
         ]
 
-        for weapon in simple_damage_weapons:
-            self.register(weapon, simple)
+        for weapon in burst_damage_weapons:
+            self.register(weapon, burst)
 
     def register(self, weapon_name: str, effect: LegendaryEffect):
         """Register a legendary effect for a weapon.

@@ -1,9 +1,9 @@
-"""Simple damage effect for legendary weapons without special mechanics."""
+"""Burst damage effect for legendary weapons without special mechanics."""
 
 from simulator.legendary_effects.base import LegendaryEffect
 
 
-class SimpleDamageEffect(LegendaryEffect):
+class BurstDamageEffect(LegendaryEffect):
     """Base class for legendary effects that only add burst damage.
 
     This is used by most legendary weapons (30+ weapons) that just add
@@ -16,14 +16,14 @@ class SimpleDamageEffect(LegendaryEffect):
 
         Args:
             legend_dict: Dict with damage types as keys, lists of [dice, sides, flat] as values
-            stats_collector: StatsCollector (unused for simple damage)
-            crit_multiplier: Critical multiplier (unused for simple damage)
+            stats_collector: StatsCollector (unused for burst damage)
+            crit_multiplier: Critical multiplier (unused for burst damage)
             attack_sim: AttackSimulator for rolling damage dice
 
         Returns:
             (burst_effects, persistent_effects)
             - burst: {'damage_sums': {type: rolled_value}}
-            - persistent: {} (no persistent effects for simple damage)
+            - persistent: {} (no persistent effects for burst damage)
         """
         damage_sums = {}
 

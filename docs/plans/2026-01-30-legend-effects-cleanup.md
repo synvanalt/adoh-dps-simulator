@@ -70,12 +70,12 @@ class LegendaryEffect(ABC):
 
 ## Effect Class Implementations
 
-### SimpleDamageEffect (Base Class)
+### BurstDamageEffect (Base Class)
 
 Most legendary weapons (30+ weapons) use this - just adds burst damage, no special mechanics.
 
 ```python
-class SimpleDamageEffect(LegendaryEffect):
+class BurstDamageEffect(LegendaryEffect):
     """Base class for legendary effects that only add damage."""
 
     def apply(self, legend_dict, stats_collector, crit_multiplier, attack_sim):
@@ -105,7 +105,7 @@ class SimpleDamageEffect(LegendaryEffect):
 Adds burst damage + persistent +2 AB bonus.
 
 ```python
-class PerfectStrikeEffect(SimpleDamageEffect):
+class PerfectStrikeEffect(BurstDamageEffect):
     """Perfect Strike: +2 AB bonus during legendary window."""
 
     def apply(self, legend_dict, stats_collector, crit_multiplier, attack_sim):
@@ -122,7 +122,7 @@ class PerfectStrikeEffect(SimpleDamageEffect):
 Adds burst damage + persistent -2 AC reduction.
 
 ```python
-class SunderEffect(SimpleDamageEffect):
+class SunderEffect(BurstDamageEffect):
     """Sunder: -2 AC reduction during legendary window."""
 
     def apply(self, legend_dict, stats_collector, crit_multiplier, attack_sim):
@@ -139,7 +139,7 @@ class SunderEffect(SimpleDamageEffect):
 Random damage: 25% Pure, 25% Sonic, 50% nothing.
 
 ```python
-class InconsequenceEffect(SimpleDamageEffect):
+class InconsequenceEffect(BurstDamageEffect):
     """Inconsequence: Random Pure/Sonic damage or nothing."""
 
     def apply(self, legend_dict, stats_collector, crit_multiplier, attack_sim):
@@ -199,7 +199,7 @@ class HeavyFlailEffect(LegendaryEffect):
 Adds burst damage + persistent -5% physical immunity.
 
 ```python
-class CrushingBlowEffect(SimpleDamageEffect):
+class CrushingBlowEffect(BurstDamageEffect):
     """Crushing Blow: -5% physical immunity during legendary window."""
 
     def apply(self, legend_dict, stats_collector, crit_multiplier, attack_sim):
@@ -336,8 +336,8 @@ def _register_default_effects(self):
     self.register('Heavy Flail', HeavyFlailEffect())
     self.register('Club_Stone', CrushingBlowEffect())
 
-    # Simple damage-only (shared instance for efficiency)
-    simple = SimpleDamageEffect()
+    # Burst damage-only (shared instance for efficiency)
+    burst = BurstDamageEffect()
     for weapon in ['Halberd', 'Spear', 'Trident_Fire', 'Trident_Ice',
                   'Dire Mace', 'Double Axe', 'Heavy Crossbow', 'Light Crossbow',
                   'Longbow_FireDragon', 'Longbow_FireCeles',
@@ -347,7 +347,7 @@ def _register_default_effects(self):
                   'Longsword', 'Rapier_Stinger', 'Rapier_Touch',
                   'Warhammer_Mjolnir', 'Club_Fish', 'Dagger_FW',
                   'Handaxe_Ichor', 'Light Hammer', 'Mace', 'Whip']:
-        self.register(weapon, simple)
+        self.register(weapon, burst)
 ```
 
 ### 4. Base Interface: legendary_effects/base.py
@@ -394,7 +394,7 @@ class LegendaryEffect(ABC):
 
 ### Add New Tests
 
-1. `test_simple_damage_effect()` - Verify burst damage only
+1. `test_burst_damage_effect()` - Verify burst damage only
 2. `test_perfect_strike_ab_bonus()` - Verify +2 AB persists
 3. `test_sunder_ac_reduction()` - Verify -2 AC persists
 4. `test_inconsequence_random()` - Verify 25/25/50 split
@@ -418,7 +418,7 @@ Run `scripts/benchmark_detailed.py` - should complete without errors for all wea
 7. `tests/simulator/test_legendary_effects.py` - Update tests
 
 **Created:**
-8. `simulator/legendary_effects/simple_damage_effect.py`
+8. `simulator/legendary_effects/burst_damage_effect.py`
 9. `simulator/legendary_effects/perfect_strike_effect.py`
 10. `simulator/legendary_effects/sunder_effect.py`
 11. `simulator/legendary_effects/inconsequence_effect.py`
@@ -442,7 +442,7 @@ Run `scripts/benchmark_detailed.py` - should complete without errors for all wea
 
 **Backward Compatibility:** Not maintained - moving to registry-only
 
-**Performance Impact:** Negligible (shared SimpleDamageEffect instance)
+**Performance Impact:** Negligible (shared BurstDamageEffect instance)
 
 ---
 

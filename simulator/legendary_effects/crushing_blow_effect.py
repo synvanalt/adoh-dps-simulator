@@ -1,9 +1,9 @@
 """Club_Stone (Crushing Blow) legendary effect implementation."""
 
-from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
 
 
-class CrushingBlowEffect(SimpleDamageEffect):
+class CrushingBlowEffect(BurstDamageEffect):
     """Crushing Blow: Burst damage + persistent -5% physical immunity.
 
     Reduces target's physical immunity by 5% during the legendary
@@ -15,7 +15,7 @@ class CrushingBlowEffect(SimpleDamageEffect):
 
         Returns:
             (burst_effects, persistent_effects)
-            - burst: damage from parent SimpleDamageEffect
+            - burst: damage from parent BurstDamageEffect
             - persistent: {'immunity_factors': {'physical': -0.05}}
         """
         # Get standard burst damage from parent

@@ -4,6 +4,7 @@ from simulator.stats_collector import StatsCollector
 from simulator.legend_effect import LegendEffect
 from simulator.config import Config
 from simulator.damage_roll import DamageRoll
+from simulator.constants import PHYSICAL_DAMAGE_TYPES
 from copy import deepcopy
 from collections import deque, defaultdict
 import statistics
@@ -128,7 +129,7 @@ class DamageSimulator:
                     # Regular damage entries, e.g., 'fire': DamageRoll or [dice, sides] or 'slashing': [dice, sides, flat]
                     else:
                         dmg_entry = self._convert_to_dmg_list(val)
-                        if key in ['slashing', 'piercing', 'bludgeoning']:
+                        if key in PHYSICAL_DAMAGE_TYPES:
                             self.dmg_dict.setdefault('physical', []).append(dmg_entry)  # Aggregate all physical damage types under 'physical'
                         else:
                             self.dmg_dict.setdefault(key, []).append(dmg_entry)

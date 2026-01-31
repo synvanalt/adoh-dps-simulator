@@ -1,9 +1,9 @@
 """Perfect Strike legendary effect (+2 AB bonus)."""
 
-from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
 
 
-class PerfectStrikeEffect(SimpleDamageEffect):
+class PerfectStrikeEffect(BurstDamageEffect):
     """Perfect Strike: Burst damage + persistent +2 AB bonus.
 
     Used by legendary weapons that grant +2 AB bonus during the
@@ -15,7 +15,7 @@ class PerfectStrikeEffect(SimpleDamageEffect):
 
         Returns:
             (burst_effects, persistent_effects)
-            - burst: damage from parent SimpleDamageEffect
+            - burst: damage from parent BurstDamageEffect
             - persistent: {'ab_bonus': 2}
         """
         # Get standard burst damage from parent

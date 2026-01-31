@@ -1,9 +1,9 @@
 """Sunder legendary effect (-2 AC reduction)."""
 
-from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
 
 
-class SunderEffect(SimpleDamageEffect):
+class SunderEffect(BurstDamageEffect):
     """Sunder: Burst damage + persistent -2 AC reduction.
 
     Used by legendary weapons that reduce target AC by 2 during the
@@ -15,7 +15,7 @@ class SunderEffect(SimpleDamageEffect):
 
         Returns:
             (burst_effects, persistent_effects)
-            - burst: damage from parent SimpleDamageEffect
+            - burst: damage from parent BurstDamageEffect
             - persistent: {'ac_reduction': -2}
         """
         # Get standard burst damage from parent

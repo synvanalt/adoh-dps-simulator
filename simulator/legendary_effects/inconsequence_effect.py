@@ -1,10 +1,10 @@
 """Inconsequence legendary effect (random Pure/Sonic/nothing)."""
 
 import random
-from simulator.legendary_effects.simple_damage_effect import SimpleDamageEffect
+from simulator.legendary_effects.burst_damage_effect import BurstDamageEffect
 
 
-class InconsequenceEffect(SimpleDamageEffect):
+class InconsequenceEffect(BurstDamageEffect):
     """Inconsequence: Random damage effect.
 
     25% chance: 4d6 Pure damage
