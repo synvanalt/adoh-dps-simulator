@@ -16,6 +16,12 @@ class DamageRoll:
     def from_list(cls, dmg_list: List[int]) -> 'DamageRoll':
         """Create DamageRoll from legacy [dice, sides] or [dice, sides, flat] format.
 
+        Used for boundary conversion when reading from:
+        - weapons_db.py purple weapon properties (source of truth)
+        - Config.ADDITIONAL_DAMAGE (user input from UI)
+        - Legacy test fixtures
+        - Any external data sources using list format
+
         Args:
             dmg_list: List containing [dice, sides] or [dice, sides, flat]
 
@@ -35,6 +41,12 @@ class DamageRoll:
 
     def to_list(self) -> List[int]:
         """Convert to legacy [dice, sides, flat] format.
+
+        Used for serialization to:
+        - Build state management (save/load)
+        - UI display components
+        - JSON export
+        - Test assertions expecting list format
 
         Returns:
             List containing [dice, sides, flat]
