@@ -31,8 +31,8 @@ class DamageSimulator:
         self.progress_callback = progress_callback
 
         self.dmg_type_names = []    # List of dmg type names, e.g., ['physical', 'acid']
-        self.dmg_dict = {}    # Keys are dmg type names, Values are lists of damage dice, e.g., [[2, 6], [1, 8]]
-        self.dmg_dict_legend = {}
+        self.dmg_dict = {}    # Keys are dmg type names, Values are lists of DamageRoll objects
+        self.dmg_dict_legend = {}  # Keys are dmg type names or 'proc'/'effect', Values are lists of DamageRoll or metadata
         self.collect_damage_from_all_sources()
 
         # Pre-compute damage structures to avoid deep copies in hot loop
@@ -58,23 +58,6 @@ class DamageSimulator:
         self.dps_crit_imm_per_round = []
         self.cumulative_damage_by_type = {}
 
-    def _convert_to_dmg_list(self, dmg_obj):
-        """Convert DamageRoll or list to [dice, sides] or [dice, sides, flat] format.
-
-        Args:
-            dmg_obj: Either a DamageRoll object or a list [dice, sides] or [dice, sides, flat]
-
-        Returns:
-            List in format [dice, sides] or [dice, sides, flat]
-        """
-        if isinstance(dmg_obj, DamageRoll):
-            if dmg_obj.flat == 0:
-                return [dmg_obj.dice, dmg_obj.sides]
-            else:
-                return [dmg_obj.dice, dmg_obj.sides, dmg_obj.flat]
-        else:
-            # Already a list, return as is
-            return dmg_obj
 
     def _setup_dual_wield_tracking(self) -> dict:
         """Set up tracking indices for dual-wield strength bonus halving.
@@ -90,9 +73,18 @@ class DamageSimulator:
             attack_prog_length = len(self.attack_sim.attack_prog)
             offhand_attack_1_idx = attack_prog_length - 2
             offhand_attack_2_idx = attack_prog_length - 1
-            str_dmg = self.weapon.strength_bonus()
-            str_dmg_converted = self._convert_to_dmg_list(str_dmg['physical'])
-            str_idx = self.dmg_dict['physical'].index(str_dmg_converted)
+            str_dmg_roll = self.weapon.strength_bonus()['physical']  # Already a DamageRoll
+
+            # Find the index by comparing DamageRoll objects
+            # The strength bonus should be identifiable by having dice=0, sides=0, and flat > 0
+            str_idx = None
+            for idx, dmg_roll in enumerate(self.dmg_dict['physical']):
+                if dmg_roll.dice == 0 and dmg_roll.sides == 0 and dmg_roll.flat == str_dmg_roll.flat:
+                    str_idx = idx
+                    break
+
+            if str_idx is None:
+                print(f"Warning: Could not find strength damage index in dual-wield setup")
 
             return {
                 'is_dual_wield': True,
@@ -123,12 +115,25 @@ class DamageSimulator:
                                 self.dmg_dict_legend[leg_key] = leg_val  # Store proc and effect directly
                                 continue
                             # leg_val expected to be DamageRoll or [dice, sides] or [dice, sides, flat]
-                            dmg_entry = self._convert_to_dmg_list(leg_val)
+                            if isinstance(leg_val, DamageRoll):
+                                dmg_entry = leg_val
+                            elif isinstance(leg_val, list):
+                                dmg_entry = DamageRoll.from_list(leg_val)
+                            else:
+                                print(f"Warning: Unexpected legendary damage format: {leg_val}")
+                                continue
                             self.dmg_dict_legend.setdefault(leg_key, []).append(dmg_entry)
 
                     # Regular damage entries, e.g., 'fire': DamageRoll or [dice, sides] or 'slashing': [dice, sides, flat]
                     else:
-                        dmg_entry = self._convert_to_dmg_list(val)
+                        if isinstance(val, DamageRoll):
+                            dmg_entry = val
+                        elif isinstance(val, list):
+                            dmg_entry = DamageRoll.from_list(val)
+                        else:
+                            print(f"Warning: Unexpected damage format: {val}")
+                            continue
+
                         if key in PHYSICAL_DAMAGE_TYPES:
                             self.dmg_dict.setdefault('physical', []).append(dmg_entry)  # Aggregate all physical damage types under 'physical'
                         else:
@@ -140,7 +145,13 @@ class DamageSimulator:
                     if isinstance(item, dict):
                         # Handling additional damage entries that are dicts, e.g., {'fire_fw': [1, 4, 10]}
                         dmg_type_key, dmg_nums = next(iter(item.items()))
-                        dmg_entry = self._convert_to_dmg_list(dmg_nums)
+                        if isinstance(dmg_nums, DamageRoll):
+                            dmg_entry = dmg_nums
+                        elif isinstance(dmg_nums, list):
+                            dmg_entry = DamageRoll.from_list(dmg_nums)
+                        else:
+                            print(f"Warning: Unexpected additional damage format: {dmg_nums}")
+                            continue
                         self.dmg_dict.setdefault(dmg_type_key, []).append(dmg_entry)
 
                     else:
