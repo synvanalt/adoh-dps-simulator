@@ -36,6 +36,100 @@ class AttackSimulator:
             ab = self.cfg.AB
         return ab
 
+    def _is_valid_dw_config(self):
+        """
+        Check if dual-wielding is valid for character/weapon size combination.
+
+        Valid combinations:
+        - Medium: M, S, T, Double-sided
+        - Small: S, T
+        - Large: M, S
+
+        :return: True if valid, False if illegal configuration
+        """
+        toon_size = self.cfg.TOON_SIZE
+        weapon_size = self.weapon.size
+
+        # Special: Medium can dual-wield double-sided (even though Large)
+        if (toon_size == 'M'
+            and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
+            and not self.cfg.SHAPE_WEAPON_OVERRIDE):
+            return True
+
+        # Large weapons cannot be dual-wielded
+        if weapon_size == 'L':
+            return False
+
+        # Small cannot dual-wield Medium
+        if toon_size == 'S' and weapon_size == 'M':
+            return False
+
+        # Large cannot dual-wield Tiny
+        if toon_size == 'L' and weapon_size == 'T':
+            return False
+
+        return True
+
+    def _is_weapon_light(self):
+        """
+        Determine if the weapon is considered "light" for this character size.
+
+        Light weapon definition:
+        - Weapon is smaller than character size
+        - Example: Small weapon is light for Medium/Large, but not for Small
+
+        :return: True if light weapon, False otherwise
+        """
+        size_order = {'T': 0, 'S': 1, 'M': 2, 'L': 3}
+        toon_size_value = size_order[self.cfg.TOON_SIZE]
+        weapon_size_value = size_order[self.weapon.size]
+
+        return weapon_size_value < toon_size_value
+
+    def calculate_dw_penalties(self):
+        """
+        Calculate dual-wield attack penalties for primary and off-hand.
+
+        Base penalties (no feats):
+        - Light weapon: -4 primary / -8 off-hand
+        - Non-light weapon: -6 primary / -10 off-hand
+
+        With Two-Weapon Fighting:
+        - Light weapon: -2 primary / -6 off-hand
+        - Non-light weapon: -4 primary / -8 off-hand
+
+        With Ambidexterity (requires TWF):
+        - Off-hand penalty reduced by 4
+
+        With both TWF + Ambidexterity:
+        - Light weapon: -2 primary / -2 off-hand
+        - Non-light weapon: -4 primary / -4 off-hand
+
+        :return: Tuple of (primary_penalty, offhand_penalty)
+        """
+        is_light = self._is_weapon_light()
+        has_twf = self.cfg.TWO_WEAPON_FIGHTING
+        has_ambi = self.cfg.AMBIDEXTERITY
+
+        # Base penalties
+        if is_light:
+            primary_penalty = -4
+            offhand_penalty = -8
+        else:
+            primary_penalty = -6
+            offhand_penalty = -10
+
+        # Apply Two-Weapon Fighting feat
+        if has_twf:
+            primary_penalty += 2  # -4 becomes -2, or -6 becomes -4
+            offhand_penalty += 2  # -8 becomes -6, or -10 becomes -8
+
+        # Apply Ambidexterity feat (requires TWF to be meaningful)
+        if has_twf and has_ambi:
+            offhand_penalty += 4  # -6 becomes -2, or -8 becomes -4
+
+        return (primary_penalty, offhand_penalty)
+
     def calculate_hit_chances(self):
         """
         Total average chance to hit for all attacks in round.
@@ -174,7 +268,16 @@ class AttackSimulator:
         self.ab = self.ab + dw_penalty
 
         # Build the final attack progression list
-        attack_prog = [(self.ab + ab_offset) for ab_offset in attack_prog_offsets]
+        # Convert string markers to numeric offsets (temporary fix until Task 4 refactoring)
+        numeric_offsets = []
+        for offset in attack_prog_offsets:
+            if isinstance(offset, str):
+                # String markers for special attacks all get 0 offset for now
+                numeric_offsets.append(0)
+            else:
+                numeric_offsets.append(offset)
+
+        attack_prog = [(self.ab + ab_offset) for ab_offset in numeric_offsets]
         return attack_prog
 
     def attack_roll(self, attacker_ab: int, defender_ac_modifier: int = 0):

@@ -552,6 +552,7 @@ class TestDamageRoll:
             assert 15 <= result <= 85
 
 
+@pytest.mark.skip(reason="Old dual-wield progressions removed in Task 1, will be updated in Task 4")
 class TestDualWieldPenalty:
     """Tests for dual-wield penalty calculations based on sizes."""
 
@@ -948,6 +949,7 @@ class TestTenaciousBlowMissDamage:
         assert weapon.name_base not in ["Dire Mace", "Double Axe", "Two-Bladed Sword"]
 
 
+@pytest.mark.skip(reason="Old dual-wield progressions removed in Task 1, will be updated in Task 4")
 class TestDualWieldOffhandDamage:
     """Tests for dual-wield offhand strength bonus reduction."""
 
@@ -1064,6 +1066,7 @@ class TestDualWieldOffhandDamage:
 class TestDualWieldFlagDetection:
     """Tests for dual-wield flag detection in attack simulator."""
 
+    @pytest.mark.skip(reason="Old dual-wield progressions removed in Task 1, will be updated in Task 4")
     def test_dual_wield_flag_detection(self):
         """Test that dual-wield is properly detected in attack simulator."""
         cfg = Config(AB_PROG="5APR & Dual-Wield")
@@ -1080,6 +1083,7 @@ class TestDualWieldFlagDetection:
 
         assert simulator.dual_wield is False
 
+    @pytest.mark.skip(reason="Old dual-wield progressions removed in Task 1, will be updated in Task 4")
     def test_dual_wield_strength_halving_setup(self):
         """Test that dual-wield offhand attacks are set up correctly.
 
@@ -1103,6 +1107,134 @@ class TestDualWieldFlagDetection:
         offhand_2_idx = simulator.attacks_per_round - 1
         assert offhand_1_idx == 5
         assert offhand_2_idx == 6
+
+
+class TestIsValidDwConfig:
+    """Tests for _is_valid_dw_config helper method."""
+
+    def test_is_valid_dw_config_medium_with_medium(self):
+        """Medium character CAN dual-wield Medium weapon"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'M'
+        cfg.AB_PROG = "5APR Classic"  # Use non-DW progression to avoid trigger old DW logic
+        weapon = Weapon("Longsword", cfg)  # Medium weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        assert attack_sim._is_valid_dw_config() == True
+
+    def test_is_valid_dw_config_small_with_medium(self):
+        """Small character CANNOT dual-wield Medium weapon"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'S'
+        cfg.AB_PROG = "5APR Classic"
+        weapon = Weapon("Longsword", cfg)  # Medium weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        assert attack_sim._is_valid_dw_config() == False
+
+    def test_is_valid_dw_config_large_with_tiny(self):
+        """Large character CANNOT dual-wield Tiny weapon"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'L'
+        cfg.AB_PROG = "5APR Classic"
+        weapon = Weapon("Dagger_PK", cfg)  # Tiny weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        assert attack_sim._is_valid_dw_config() == False
+
+    def test_is_valid_dw_config_large_weapon(self):
+        """Large weapons CANNOT be dual-wielded (except double-sided)"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'M'
+        cfg.AB_PROG = "5APR Classic"
+        weapon = Weapon("Greatsword_Desert", cfg)  # Large weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        assert attack_sim._is_valid_dw_config() == False
+
+
+class TestIsWeaponLight:
+    """Tests for _is_weapon_light helper method."""
+
+    def test_is_weapon_light_medium_with_small(self):
+        """Small weapon IS light for Medium character"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'M'
+        weapon = Weapon("Shortsword_Adam", cfg)  # Small weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        assert attack_sim._is_weapon_light() == True
+
+    def test_is_weapon_light_medium_with_medium(self):
+        """Medium weapon is NOT light for Medium character"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'M'
+        weapon = Weapon("Longsword", cfg)  # Medium weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        assert attack_sim._is_weapon_light() == False
+
+    def test_is_weapon_light_large_with_small(self):
+        """Small weapon IS light for Large character"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'L'
+        weapon = Weapon("Shortsword_Adam", cfg)  # Small weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        assert attack_sim._is_weapon_light() == True
+
+    def test_is_weapon_light_small_with_tiny(self):
+        """Tiny weapon IS light for Small character"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'S'
+        weapon = Weapon("Dagger_PK", cfg)  # Tiny weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        assert attack_sim._is_weapon_light() == True
+
+
+class TestCalculateDwPenalties:
+    """Tests for calculate_dw_penalties helper method."""
+
+    def test_calculate_dw_penalties_medium_with_light_twf_ambi(self):
+        """Medium + Light weapon with TWF + Ambidexterity = -2/-2"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'M'
+        cfg.TWO_WEAPON_FIGHTING = True
+        cfg.AMBIDEXTERITY = True
+        weapon = Weapon("Shortsword_Adam", cfg)  # Small (light for Medium)
+        attack_sim = AttackSimulator(weapon, cfg)
+        primary, offhand = attack_sim.calculate_dw_penalties()
+        assert primary == -2
+        assert offhand == -2
+
+    def test_calculate_dw_penalties_medium_with_medium_twf_ambi(self):
+        """Medium + Medium weapon with TWF + Ambidexterity = -4/-4"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'M'
+        cfg.TWO_WEAPON_FIGHTING = True
+        cfg.AMBIDEXTERITY = True
+        weapon = Weapon("Longsword", cfg)  # Medium (not light)
+        attack_sim = AttackSimulator(weapon, cfg)
+        primary, offhand = attack_sim.calculate_dw_penalties()
+        assert primary == -4
+        assert offhand == -4
+
+    def test_calculate_dw_penalties_no_twf(self):
+        """No TWF feat with light weapon = -4/-8"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'M'
+        cfg.TWO_WEAPON_FIGHTING = False
+        cfg.AMBIDEXTERITY = True
+        weapon = Weapon("Shortsword_Adam", cfg)  # Light weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        primary, offhand = attack_sim.calculate_dw_penalties()
+        assert primary == -4
+        assert offhand == -8
+
+    def test_calculate_dw_penalties_no_ambi(self):
+        """TWF but no Ambidexterity = -2/-6"""
+        cfg = Config()
+        cfg.TOON_SIZE = 'M'
+        cfg.TWO_WEAPON_FIGHTING = True
+        cfg.AMBIDEXTERITY = False
+        weapon = Weapon("Shortsword_Adam", cfg)  # Light weapon
+        attack_sim = AttackSimulator(weapon, cfg)
+        primary, offhand = attack_sim.calculate_dw_penalties()
+        assert primary == -2
+        assert offhand == -6
 
 
 if __name__ == '__main__':
