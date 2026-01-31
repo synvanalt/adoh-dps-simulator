@@ -110,14 +110,19 @@ class Weapon:
         """
         :return: The flat physical damage added by Strength of the character
         """
-        auto_mighty_throwing_weapons = AUTO_MIGHTY_WEAPONS
-
-        if self.name_base in auto_mighty_throwing_weapons:  # Ranged weapons, but only for auto-mighty throwing weapons
+        # Ranged weapons, but only for auto-mighty throwing weapons
+        if self.name_base in AUTO_MIGHTY_WEAPONS:
             str_dmg = self.cfg.STR_MOD
-        elif self.cfg.COMBAT_TYPE == 'ranged':  # Ranged weapons, excluding auto-mighty throwing weapons
+
+        # Ranged weapons, excluding auto-mighty throwing weapons
+        elif self.cfg.COMBAT_TYPE == 'ranged':
             str_dmg = min(self.cfg.STR_MOD, self.cfg.MIGHTY)
+
+        # Melee weapons
         elif self.cfg.COMBAT_TYPE == 'melee':
             str_dmg = self.cfg.STR_MOD * 2 if self.cfg.TWO_HANDED else self.cfg.STR_MOD
+
+        # Invalid combat type
         else:
             raise ValueError(f"Invalid combat type: {self.cfg.COMBAT_TYPE}. Expected 'melee' or 'ranged'.")
 

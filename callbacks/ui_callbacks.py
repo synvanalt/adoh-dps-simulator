@@ -206,7 +206,7 @@ def register_ui_callbacks(app, cfg):
     # RESET CALLBACKS - Split into domain-specific callbacks for maintainability
     # =========================================================================
 
-    # Callback 1: Reset character settings (16 outputs)
+    # Callback 1: Reset character settings (20 outputs)
     @app.callback(
         [Output('ab-input', 'value', allow_duplicate=True),
          Output('ab-capped-input', 'value', allow_duplicate=True),
@@ -224,14 +224,18 @@ def register_ui_callbacks(app, cfg):
          Output('dev-crit-switch', 'value', allow_duplicate=True),
          Output('shape-weapon-switch', 'value', allow_duplicate=True),
          Output('shape-weapon-dropdown', 'value', allow_duplicate=True),
-         Output('weapon-dropdown', 'value', allow_duplicate=True)],
+         Output('weapon-dropdown', 'value', allow_duplicate=True),
+         Output('dual-wield-switch', 'value', allow_duplicate=True),
+         Output('two-weapon-fighting-switch', 'value', allow_duplicate=True),
+         Output('ambidexterity-switch', 'value', allow_duplicate=True),
+         Output('improved-twf-switch', 'value', allow_duplicate=True)],
         [Input('reset-button', 'n_clicks'),
          Input('sticky-reset-button', 'n_clicks')],
         prevent_initial_call=True
     )
     def reset_character_settings(n1, n2):
         if not (n1 or n2):
-            return [dash.no_update] * 16
+            return [dash.no_update] * 20
         default_cfg = Config()
         return [
             default_cfg.AB,
@@ -251,6 +255,10 @@ def register_ui_callbacks(app, cfg):
             default_cfg.SHAPE_WEAPON_OVERRIDE,
             default_cfg.SHAPE_WEAPON,
             default_cfg.DEFAULT_WEAPONS,
+            False,  # DUAL_WIELD
+            True,   # TWO_WEAPON_FIGHTING
+            True,   # AMBIDEXTERITY
+            True,   # IMPROVED_TWF
         ]
 
     # Callback 2: Reset additional damage (4 ALL pattern outputs)
@@ -450,3 +458,21 @@ def register_ui_callbacks(app, cfg):
     def toggle_damage_limit(show):
         style = {'display': 'flex'} if show else {'display': 'none'}
         return style
+
+
+    # =========================================================================
+    # DUAL-WIELD SHOW/HIDE CALLBACK
+    # =========================================================================
+
+    @app.callback(
+        [
+            Output({'type': 'dw-row', 'name': 'container-row'}, 'style'),
+        ],
+        Input('dual-wield-switch', 'value')
+    )
+    def toggle_dual_wield_section(dual_wield_enabled):
+        """Show/hide dual-wield feat widgets based on master toggle"""
+        if dual_wield_enabled:
+            return [{'display': 'flex'}]
+        else:
+            return [{'display': 'none'}]

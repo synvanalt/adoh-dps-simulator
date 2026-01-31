@@ -11,5 +11,8 @@ __pycache__/
 # Cache - Dash Diskcace
 cache/
 
+# Git worktrees
+.worktrees/
+
 # Other files
 commitlint_guidelines.txt

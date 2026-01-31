@@ -10,7 +10,7 @@ LEGEND_EFFECT_DURATION = 5
 # Weapon type lists
 DOUBLE_SIDED_WEAPONS = ['Dire Mace', 'Double Axe', 'Two-Bladed Sword']
 
-AUTO_MIGHTY_WEAPONS = ['Darts', 'Throwing Axes']
+AUTO_MIGHTY_WEAPONS = ['Darts', 'Throwing Axes', 'Shuriken']
 
 AMMO_BASED_WEAPONS = [
     'Heavy Crossbow',
@@ -22,6 +22,3 @@ AMMO_BASED_WEAPONS = [
 
 # Damage type lists (ordered by game priority)
 PHYSICAL_DAMAGE_TYPES = ['slashing', 'piercing', 'bludgeoning']
-
-# Dual-wield attack progression markers
-DUAL_WIELD_MARKERS = ['dw_hasted', 'dw_flurry', 'dw_bspeed']

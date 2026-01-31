@@ -2,7 +2,7 @@ from copy import deepcopy
 from math import floor
 from simulator.weapon import Weapon
 from simulator.config import Config
-from simulator.constants import DOUBLE_SIDED_WEAPONS
+from simulator.constants import DOUBLE_SIDED_WEAPONS, AUTO_MIGHTY_WEAPONS, AMMO_BASED_WEAPONS
 import random
 
 
@@ -35,6 +35,140 @@ class AttackSimulator:
         else:
             ab = self.cfg.AB
         return ab
+
+    def _is_valid_dw_config(self):
+        """
+        Check if dual-wielding is valid for character/weapon size combination.
+
+        Valid combinations:
+        - Medium: M, S, T, Double-sided
+        - Small: S, T
+        - Large: M, S
+
+        :return: True if valid, False if illegal configuration
+        """
+        toon_size = self.cfg.TOON_SIZE
+        weapon_size = self.weapon.size
+
+        # Special: Medium can dual-wield double-sided (even though Large)
+        if (toon_size == 'M'
+            and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
+            and not self.cfg.SHAPE_WEAPON_OVERRIDE):
+            return True
+
+        # Ranged weapons cannot be dual-wielded
+        if (self.weapon.name_base in AUTO_MIGHTY_WEAPONS or
+                self.weapon.name_base in AMMO_BASED_WEAPONS):
+            return False
+
+        # Large weapons cannot be dual-wielded
+        if weapon_size == 'L':
+            return False
+
+        # Small cannot dual-wield Medium
+        if toon_size == 'S' and weapon_size == 'M':
+            return False
+
+        # Large cannot dual-wield Tiny
+        if toon_size == 'L' and weapon_size == 'T':
+            return False
+
+        return True
+
+    def _is_weapon_light(self):
+        """
+        Determine if the weapon is considered "light" for this character size.
+
+        Light weapon definition:
+        - Weapon is smaller than character size
+        - Example: Small weapon is light for Medium/Large, but not for Small
+
+        :return: True if light weapon, False otherwise
+        """
+        size_order = {'T': 0, 'S': 1, 'M': 2, 'L': 3}
+        toon_size_value = size_order[self.cfg.TOON_SIZE]
+        weapon_size_value = size_order[self.weapon.size]
+
+        return weapon_size_value < toon_size_value
+
+    def calculate_dw_penalties(self):
+        """
+        Calculate dual-wield attack penalties for primary and off-hand.
+
+        Base penalties (no feats):
+        - Light weapon: -4 primary / -8 off-hand
+        - Non-light weapon: -6 primary / -10 off-hand
+
+        With Two-Weapon Fighting:
+        - Light weapon: -2 primary / -6 off-hand
+        - Non-light weapon: -4 primary / -8 off-hand
+
+        With Ambidexterity (requires TWF):
+        - Off-hand penalty reduced by 4
+
+        With both TWF + Ambidexterity:
+        - Light weapon: -2 primary / -2 off-hand
+        - Non-light weapon: -4 primary / -4 off-hand
+
+        :return: Tuple of (primary_penalty, offhand_penalty)
+        """
+        is_light = self._is_weapon_light()
+        has_twf = self.cfg.TWO_WEAPON_FIGHTING
+        has_ambi = self.cfg.AMBIDEXTERITY
+
+        # Base penalties
+        if is_light:
+            primary_penalty = -4
+            offhand_penalty = -8
+        else:
+            primary_penalty = -6
+            offhand_penalty = -10
+
+        # Apply Two-Weapon Fighting feat
+        if has_twf:
+            primary_penalty += 2  # -4 becomes -2, or -6 becomes -4
+            offhand_penalty += 2  # -8 becomes -6, or -10 becomes -8
+
+        # Apply Ambidexterity feat (requires TWF to be meaningful)
+        if has_twf and has_ambi:
+            offhand_penalty += 4  # -6 becomes -2, or -8 becomes -4
+
+        return (primary_penalty, offhand_penalty)
+
+    def _build_simple_progression(self, attack_prog_offsets):
+        """Build attack progression when dual-wield is disabled."""
+        attack_prog = []
+        special_attack_count = 0
+
+        for offset in attack_prog_offsets:
+            if isinstance(offset, str):
+                special_offset = special_attack_count * -5
+                attack_prog.append(self.ab + special_offset)
+                special_attack_count += 1
+            else:
+                attack_prog.append(self.ab + offset)
+
+        return attack_prog
+
+    def _build_dw_progression(self, attack_prog_offsets, primary_penalty, offhand_penalty):
+        """Build attack progression when dual-wield is enabled."""
+        attack_prog = []
+        special_attack_count = 0
+
+        for offset in attack_prog_offsets:
+            if isinstance(offset, str):
+                special_offset = special_attack_count * -5
+                attack_prog.append(self.ab + special_offset)
+                special_attack_count += 1
+            else:
+                attack_prog.append(self.ab + primary_penalty + offset)
+
+        attack_prog.append(self.ab + offhand_penalty)
+
+        if self.cfg.IMPROVED_TWF:
+            attack_prog.append(self.ab + offhand_penalty - 5)
+
+        return attack_prog
 
     def calculate_hit_chances(self):
         """
@@ -108,74 +242,32 @@ class AttackSimulator:
 
     def get_attack_progression(self):
         """
-        Determine the attack progression of the character (list of AB). Takes into account:
-        - attack_prog_offsets: List of attacks AB offsets, e.g., [0, -5, -10, -15, 'dw_hasted', 0, -5]
-        - toon_size: Size of the attacker, in addition to weapon size, it's used to determine Dual-Wield penalty
-        :return: List of ABs (after applying the DW penalty if applicable, e.g., [68, 63, 58, 53, 70, 68, 63])
+        Determine the attack progression of the character (list of AB).
+
+        If dual-wield is disabled: return base progression with markers converted to offsets
+        If dual-wield is enabled: apply penalties and add off-hand attacks
+
+        :return: List of ABs, e.g., [66, 61, 56, 68, 64, 59]
         """
-
         attack_prog_selected = self.cfg.AB_PROG
-        attack_prog_offsets = deepcopy(self.cfg.AB_PROGRESSIONS[attack_prog_selected]) # List of integers, looks like [0, -5, -15, -20, 0]
-        toon_size = self.cfg.TOON_SIZE
-        dw_penalty = 0  # Default no penalty
+        attack_prog_offsets = deepcopy(self.cfg.AB_PROGRESSIONS[attack_prog_selected])
 
-        # Apply dual-wield penalty based on character size and weapon size
-        if 'Dual-Wield' in attack_prog_selected:
-            # Set Dual-Wield flag to True so other methods can use it
-            self.dual_wield = True
+        # Non-dual-wield mode
+        if not self.cfg.DUAL_WIELD:
+            return self._build_simple_progression(attack_prog_offsets)
 
-            # -4 AB penalty cases
-            if ((toon_size == 'M' and self.weapon.size == 'M') or
-                    (toon_size == 'S' and self.weapon.size == 'S')):
-                dw_penalty = -4
+        # Dual-wield mode
+        self.dual_wield = True
 
-            # Special case for Double-Sided weapon
-            elif (toon_size == 'M'
-                  and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
-                  and not self.cfg.SHAPE_WEAPON_OVERRIDE):
-                dw_penalty = -2
+        # Validate configuration
+        if not self._is_valid_dw_config():
+            self.illegal_dual_wield_config = True
+            self.ab = 0
+            return [0] * len(attack_prog_offsets)
 
-            # -2 AB penalty cases
-            elif ((toon_size == 'L' and self.weapon.size in ['M', 'S', 'T']) or
-                  (toon_size == 'M' and self.weapon.size in ['S', 'T']) or
-                  (toon_size == 'S' and self.weapon.size == 'T')):
-                dw_penalty = -2
-
-            # All other combinations, practically rendering this config useless
-            else:
-                self.illegal_dual_wield_config = True  # Cannot Dual-Wield with this toon size and weapon size combination
-                self.ab = 0  # Set AB to 0 to avoid further errors
-                return [0] * len(attack_prog_offsets)  # Return zeroed attack progression to avoid further errors
-
-            # Apply the correct dual-wield AB offsets for additional attacks (Hasted, Flurry of Blows, Blinding Speed)
-            if "dw_hasted" in attack_prog_offsets:
-                hasted_attack_idx = attack_prog_offsets.index("dw_hasted")  # If DW, Haste attack doesn't suffer penalty
-                attack_prog_offsets[hasted_attack_idx] = -1 * dw_penalty
-
-                if ("dw_flurry" in attack_prog_offsets) and ("dw_bspeed" in attack_prog_offsets):
-                    flurry_attack_idx = attack_prog_offsets.index("dw_flurry")  # If DW, Flurry should get -5 after Hasted attack
-                    attack_prog_offsets[flurry_attack_idx] = -1 * dw_penalty - 5
-                    bspeed_attack_idx = attack_prog_offsets.index("dw_bspeed")  # If DW, B.Speed should get -10 after Flurry attack
-                    attack_prog_offsets[bspeed_attack_idx] = -1 * dw_penalty - 10
-
-                elif "dw_flurry" in attack_prog_offsets:
-                    flurry_attack_idx = attack_prog_offsets.index("dw_flurry")  # If DW, Flurry should get -5 after Hasted attack
-                    attack_prog_offsets[flurry_attack_idx] = -1 * dw_penalty - 5
-
-                elif "dw_bspeed" in attack_prog_offsets:
-                    bspeed_attack_idx = attack_prog_offsets.index("dw_bspeed")  # If DW, B.Speed should get -5 after Hasted attack
-                    attack_prog_offsets[bspeed_attack_idx] = -1 * dw_penalty - 5
-
-            # No 'dw_hasted' marker found in attack progression offsets, but Dual-Wield option was selected (error)
-            else:
-                raise ValueError("Dual-Wield attack progression is missing 'dw_hasted' marker.")
-
-        # Apply the dual-wield penalty to the main Attack Bonus
-        self.ab = self.ab + dw_penalty
-
-        # Build the final attack progression list
-        attack_prog = [(self.ab + ab_offset) for ab_offset in attack_prog_offsets]
-        return attack_prog
+        # Calculate penalties and build progression
+        primary_penalty, offhand_penalty = self.calculate_dw_penalties()
+        return self._build_dw_progression(attack_prog_offsets, primary_penalty, offhand_penalty)
 
     def attack_roll(self, attacker_ab: int, defender_ac_modifier: int = 0):
         """

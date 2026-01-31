@@ -35,36 +35,31 @@ class Config:
     AB_CAPPED: int = 70
     AB_PROG: str = "5APR Classic"
     AB_PROGRESSIONS: Dict[str, List[Union[int, str]]] = field(default_factory=lambda: {
-        "4APR Classic":                     [0, -5, -10, 0],
-        "4APR & Blinding Speed":            [0, -5, -10, 0, -5],
-        "4APR & Rapid Shot":                [0, -5, -10, 0, -5],
-        "4APR & R.Shot & B.Speed":          [0, -5, -10, 0, -5, -10],
-        "4APR & Dual-Wield":                [0, -5, -10, "dw_hasted", 0, -5],
-        "4APR & Dual-Wield & B.Speed":      [0, -5, -10, "dw_hasted", "dw_bspeed", 0, -5],
-        "5APR Classic":                     [0, -5, -10, -15, 0],
-        "5APR Shifter":                     [0, -5, -10, 0, -5],
-        "5APR & Blinding Speed":            [0, -5, -10, -15, 0, -5],
-        "5APR & Rapid Shot":                [0, -5, -10, -15, 0, -5],
-        "5APR & R.Shot & B.Speed":          [0, -5, -10, -15, 0, -5, -10],
-        "5APR & Dual-Wield":                [0, -5, -10, -15, "dw_hasted", 0, -5],
-        "5APR & Dual-Wield & B.Speed":      [0, -5, -10, -15, "dw_hasted", "dw_bspeed", 0, -5],
-        "Monk 6APR":                                    [0, -3, -6, -9, -12, 0],
-        "Monk 6APR & Flurry":                           [0, -3, -6, -9, -12, 0, -5],
-        "Monk 6APR & Flurry & B.Speed":                 [0, -3, -6, -9, -12, 0, -5, -10],
-        "Monk 6APR & Dual-Wield":                       [0, -3, -6, -9, -12, "dw_hasted", 0, -5],
-        "Monk 6APR & Dual-Wield & Flurry":              [0, -3, -6, -9, -12, "dw_hasted", "dw_flurry", 0, -5],
-        "Monk 6APR & Dual-Wield & B.Speed":             [0, -3, -6, -9, -12, "dw_hasted", "dw_bspeed", 0, -5],
-        "Monk 6APR & Dual-Wield & Flurry & B.Speed":    [0, -3, -6, -9, -12, "dw_hasted", "dw_flurry", "dw_bspeed", 0, -5],
-        "Monk 7APR":                                    [0, -3, -6, -9, -12, -15, 0],
-        "Monk 7APR & Flurry":                           [0, -3, -6, -9, -12, -15, 0, -5],
-        "Monk 7APR & Flurry & B.Speed":                 [0, -3, -6, -9, -12, -15, 0, -5, -10],
-        "Monk 7APR & Dual-Wield":                       [0, -3, -6, -9, -12, -15, "dw_hasted", 0, -5],
-        "Monk 7APR & Dual-Wield & Flurry":              [0, -3, -6, -9, -12, -15, "dw_hasted", "dw_flurry", 0, -5],
-        "Monk 7APR & Dual-Wield & B.Speed":             [0, -3, -6, -9, -12, -15, "dw_hasted", "dw_bspeed", 0, -5],
-        "Monk 7APR & Dual-Wield & Flurry & B.Speed":    [0, -3, -6, -9, -12, -15, "dw_hasted", "dw_flurry", "dw_bspeed", 0, -5],
+        "4APR Classic":                     [0, -5, -10, "hasted"],
+        "4APR & Blinding Speed":            [0, -5, -10, "hasted", "bspeed"],
+        "4APR & Rapid Shot":                [0, -5, -10, "hasted", "rapid"],
+        "4APR & R.Shot & B.Speed":          [0, -5, -10, "hasted", "rapid", "bspeed"],
+        "5APR Classic":                     [0, -5, -10, -15, "hasted"],
+        "5APR Shifter":                     [0, -5, -10, "hasted", "shifter"],
+        "5APR & Blinding Speed":            [0, -5, -10, -15, "hasted", "bspeed"],
+        "5APR & Rapid Shot":                [0, -5, -10, -15, "hasted", "rapid"],
+        "5APR & R.Shot & B.Speed":          [0, -5, -10, -15, "hasted", "rapid", "bspeed"],
+        "Monk 6APR":                        [0, -3, -6, -9, -12, "hasted"],
+        "Monk 6APR & Flurry":               [0, -3, -6, -9, -12, "hasted", "flurry"],
+        "Monk 6APR & Flurry & B.Speed":     [0, -3, -6, -9, -12, "hasted", "flurry", "bspeed"],
+        "Monk 7APR":                        [0, -3, -6, -9, -12, -15, "hasted"],
+        "Monk 7APR & Flurry":               [0, -3, -6, -9, -12, -15, "hasted", "flurry"],
+        "Monk 7APR & Flurry & B.Speed":     [0, -3, -6, -9, -12, -15, "hasted", "flurry", "bspeed"],
     })
 
     TOON_SIZE: str = "M"        # "S" / "M" / "L"
+
+    # DUAL-WIELD SETTINGS
+    DUAL_WIELD: bool = False
+    TWO_WEAPON_FIGHTING: bool = True
+    AMBIDEXTERITY: bool = True
+    IMPROVED_TWF: bool = True
+
     COMBAT_TYPE: str = "melee"  # "melee" or "ranged"
     MIGHTY: int = 0
     ENHANCEMENT_SET_BONUS: int = 3  # 1/2/3 (for example, +3 for Pure Green Vengeful set)

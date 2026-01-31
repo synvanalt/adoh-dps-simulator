@@ -64,6 +64,10 @@ def register_build_callbacks(app, cfg):
         State('str-mod-input', 'value'),
         State({'type': 'melee-switch', 'name': 'two-handed'}, 'value'),
         State({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value'),
+        State('dual-wield-switch', 'value'),
+        State('two-weapon-fighting-switch', 'value'),
+        State('ambidexterity-switch', 'value'),
+        State('improved-twf-switch', 'value'),
         State('keen-switch', 'value'),
         State('improved-crit-switch', 'value'),
         State('overwhelm-crit-switch', 'value'),
@@ -83,8 +87,9 @@ def register_build_callbacks(app, cfg):
         prevent_initial_call=True
     )
     def switch_build(n_clicks_list, ab, ab_capped, ab_prog, toon_size, combat_type,
-                     mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
-                     improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+                     mighty, enhancement, str_mod, two_handed, weaponmaster,
+                     dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
+                     keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
                      add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name,
                      builds, active_idx, is_loading):
         """Save current build state, then switch to the clicked build and load its config."""
@@ -106,8 +111,9 @@ def register_build_callbacks(app, cfg):
         # Save current build state before switching (including name for debounced input)
         builds = save_current_build_state(
             builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
-            mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
-            improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+            mighty, enhancement, str_mod, two_handed, weaponmaster,
+            dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
+            keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
             add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name, cfg
         )
 
@@ -149,6 +155,10 @@ def register_build_callbacks(app, cfg):
         State('str-mod-input', 'value'),
         State({'type': 'melee-switch', 'name': 'two-handed'}, 'value'),
         State({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value'),
+        State('dual-wield-switch', 'value'),
+        State('two-weapon-fighting-switch', 'value'),
+        State('ambidexterity-switch', 'value'),
+        State('improved-twf-switch', 'value'),
         State('keen-switch', 'value'),
         State('improved-crit-switch', 'value'),
         State('overwhelm-crit-switch', 'value'),
@@ -167,8 +177,9 @@ def register_build_callbacks(app, cfg):
         prevent_initial_call=True
     )
     def add_new_build(n_clicks, ab, ab_capped, ab_prog, toon_size, combat_type,
-                      mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
-                      improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+                      mighty, enhancement, str_mod, two_handed, weaponmaster,
+                      dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
+                      keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
                       add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name,
                       builds, active_idx):
         no_update = dash.no_update
@@ -178,8 +189,9 @@ def register_build_callbacks(app, cfg):
         # Save current build state first (including name for debounced input)
         builds = save_current_build_state(
             builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
-            mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
-            improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+            mighty, enhancement, str_mod, two_handed, weaponmaster,
+            dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
+            keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
             add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name, cfg
         )
 
@@ -212,6 +224,10 @@ def register_build_callbacks(app, cfg):
         State('str-mod-input', 'value'),
         State({'type': 'melee-switch', 'name': 'two-handed'}, 'value'),
         State({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value'),
+        State('dual-wield-switch', 'value'),
+        State('two-weapon-fighting-switch', 'value'),
+        State('ambidexterity-switch', 'value'),
+        State('improved-twf-switch', 'value'),
         State('keen-switch', 'value'),
         State('improved-crit-switch', 'value'),
         State('overwhelm-crit-switch', 'value'),
@@ -230,8 +246,9 @@ def register_build_callbacks(app, cfg):
         prevent_initial_call=True
     )
     def duplicate_build(n_clicks, ab, ab_capped, ab_prog, toon_size, combat_type,
-                        mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
-                        improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+                        mighty, enhancement, str_mod, two_handed, weaponmaster,
+                        dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
+                        keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
                         add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name,
                         builds, active_idx):
         no_update = dash.no_update
@@ -241,8 +258,9 @@ def register_build_callbacks(app, cfg):
         # Save current build state first (so duplicate gets latest changes, including name)
         builds = save_current_build_state(
             builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
-            mighty, enhancement, str_mod, two_handed, weaponmaster, keen,
-            improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
+            mighty, enhancement, str_mod, two_handed, weaponmaster,
+            dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
+            keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
             add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons, build_name, cfg
         )
 
@@ -326,6 +344,10 @@ def register_build_callbacks(app, cfg):
         Output('str-mod-input', 'value', allow_duplicate=True),
         Output({'type': 'melee-switch', 'name': 'two-handed'}, 'value', allow_duplicate=True),
         Output({'type': 'melee-switch', 'name': 'weaponmaster'}, 'value', allow_duplicate=True),
+        Output('dual-wield-switch', 'value', allow_duplicate=True),
+        Output('two-weapon-fighting-switch', 'value', allow_duplicate=True),
+        Output('ambidexterity-switch', 'value', allow_duplicate=True),
+        Output('improved-twf-switch', 'value', allow_duplicate=True),
         Output('keen-switch', 'value', allow_duplicate=True),
         Output('improved-crit-switch', 'value', allow_duplicate=True),
         Output('overwhelm-crit-switch', 'value', allow_duplicate=True),
@@ -390,7 +412,8 @@ def register_build_callbacks(app, cfg):
 
 def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, toon_size,
                               combat_type, mighty, enhancement, str_mod, two_handed,
-                              weaponmaster, keen, improved_crit, overwhelm_crit,
+                              weaponmaster, dual_wield, two_weapon_fighting,
+                              ambidexterity, improved_twf, keen, improved_crit, overwhelm_crit,
                               dev_crit, shape_override, shape_weapon,
                               add_dmg_states, add_dmg1, add_dmg2, add_dmg3, weapons,
                               build_name, cfg):
@@ -427,6 +450,10 @@ def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, toon_si
         'STR_MOD': str_mod,
         'TWO_HANDED': two_handed,
         'WEAPONMASTER': weaponmaster,
+        'DUAL_WIELD': dual_wield,
+        'TWO_WEAPON_FIGHTING': two_weapon_fighting,
+        'AMBIDEXTERITY': ambidexterity,
+        'IMPROVED_TWF': improved_twf,
         'KEEN': keen,
         'IMPROVED_CRIT': improved_crit,
         'OVERWHELM_CRIT': overwhelm_crit,

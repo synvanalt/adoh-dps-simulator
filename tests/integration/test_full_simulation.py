@@ -40,7 +40,11 @@ def test_simulation_with_dual_wield():
     """Test simulation with dual-wield setup."""
     cfg = Config()
     cfg.ROUNDS = 1000
-    cfg.AB_PROG = "5APR & Dual-Wield"
+    cfg.AB_PROG = "5APR Classic"
+    cfg.DUAL_WIELD = True
+    cfg.TWO_WEAPON_FIGHTING = True
+    cfg.AMBIDEXTERITY = True
+    cfg.IMPROVED_TWF = True
     cfg.TOON_SIZE = "M"
     cfg.AB = 68
     cfg.TARGET_AC = 65
@@ -50,6 +54,27 @@ def test_simulation_with_dual_wield():
 
     assert sim.attack_sim.dual_wield is True
     assert len(results['attack_prog']) > 5  # Should have offhand attacks
+
+
+def test_simulation_dual_wield_no_feats():
+    """Test dual-wield with no feats produces higher penalties."""
+    cfg = Config()
+    cfg.ROUNDS = 1000
+    cfg.AB_PROG = "5APR Classic"
+    cfg.DUAL_WIELD = True
+    cfg.TWO_WEAPON_FIGHTING = False
+    cfg.AMBIDEXTERITY = False
+    cfg.IMPROVED_TWF = False
+    cfg.TOON_SIZE = "M"
+    cfg.AB = 68
+    cfg.TARGET_AC = 65
+
+    sim = DamageSimulator('Longsword', cfg)
+    results = sim.simulate_dps()
+
+    # Should have lower DPS due to -6/-10 penalties and only 1 off-hand attack
+    assert results['dps_crits'] > 0  # But still produces damage
+    assert sim.attack_sim.dual_wield is True
 
 
 def test_simulation_with_additional_damage():
@@ -85,7 +110,8 @@ def test_simulation_convergence():
 def test_illegal_dual_wield_returns_zero():
     """Test that illegal dual-wield config returns zero results."""
     cfg = Config()
-    cfg.AB_PROG = "5APR & Dual-Wield"
+    cfg.AB_PROG = "5APR Classic"
+    cfg.DUAL_WIELD = True
     cfg.TOON_SIZE = "S"  # Small
 
     sim = DamageSimulator('Greataxe', cfg)  # Large weapon
