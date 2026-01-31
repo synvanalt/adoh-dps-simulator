@@ -130,7 +130,7 @@ class TestSaveCurrentBuildState:
 
         result = save_current_build_state(
             builds, 0, ab, 20, 'Classic', 'M', 'Melee',
-            0, 3, str_mod, False, False, keen,
+            0, 3, str_mod, False, False, False, False, False, False, keen,
             False, False, False, False, 'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
         )
@@ -149,7 +149,7 @@ class TestSaveCurrentBuildState:
 
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             add_dmg_states, add_dmg1, add_dmg2, add_dmg3, ['Spear'], 'Build 1', cfg
         )
@@ -167,7 +167,7 @@ class TestSaveCurrentBuildState:
 
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             [], [], [], [], weapons, 'Build 1', cfg
         )
@@ -180,7 +180,7 @@ class TestSaveCurrentBuildState:
 
         result = save_current_build_state(
             builds, 99, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
         )
@@ -193,7 +193,7 @@ class TestSaveCurrentBuildState:
         """Test that None builds is handled."""
         result = save_current_build_state(
             None, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
         )
@@ -207,7 +207,7 @@ class TestSaveCurrentBuildState:
 
         result = save_current_build_state(
             builds, 0, 99, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
         )
@@ -459,7 +459,7 @@ class TestBuildDataIntegrity:
         # Save state with additional damage
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             [True] * 20, [2] * 20, [6] * 20, [5] * 20, ['Spear'], 'Build 1', cfg
         )
@@ -491,7 +491,7 @@ class TestBuildEdgeCases:
         """Test handling of empty builds list."""
         result = save_current_build_state(
             [], 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
         )
@@ -502,7 +502,7 @@ class TestBuildEdgeCases:
         builds = copy.deepcopy(sample_builds)
         result = save_current_build_state(
             builds, -1, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
         )
@@ -538,7 +538,7 @@ class TestBuildEdgeCases:
 
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             [], [], [], [], ['Spear'], new_name, cfg
         )
@@ -553,7 +553,7 @@ class TestBuildEdgeCases:
 
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False,
+            0, 3, 8, False, False, False, False, False, False, False,
             False, False, False, False, 'Longsword',
             [], [], [], [], ['Spear'], None, cfg
         )
