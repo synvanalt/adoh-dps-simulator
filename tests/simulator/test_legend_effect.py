@@ -106,55 +106,6 @@ class TestLegendProc:
             result = legend_effect.legend_proc(1.0)
             assert result is True
 
-    @pytest.mark.skip(reason="Old behavior - legend_proc no longer has side effects")
-    def test_legend_proc_increments_stats(self):
-        """Test that legend proc increments stats.legend_procs."""
-        cfg = Config()
-        weapon = Weapon("Scimitar", cfg)
-        attack_sim = AttackSimulator(weapon, cfg)
-        stats = StatsCollector()
-        legend_effect = LegendEffect(stats, weapon, attack_sim)
-
-        initial_count = stats.legend_procs
-        legend_effect.legend_proc(1.0)  # Should trigger
-
-        assert stats.legend_procs == initial_count + 1
-
-    @pytest.mark.skip(reason="Old behavior - legend_proc no longer has side effects")
-    def test_legend_proc_sets_attacks_left(self):
-        """Test that successful proc sets legend_attacks_left."""
-        cfg = Config()
-        weapon = Weapon("Scimitar", cfg)
-        attack_sim = AttackSimulator(weapon, cfg)
-        stats = StatsCollector()
-        legend_effect = LegendEffect(stats, weapon, attack_sim)
-
-        legend_effect.legend_proc(1.0)  # Guaranteed trigger
-
-        expected_attacks = attack_sim.attacks_per_round * legend_effect.legend_effect_duration
-        assert legend_effect.legend_attacks_left == expected_attacks
-
-    @pytest.mark.skip(reason="Old behavior - testing implementation details that changed")
-    def test_legend_proc_with_probability_range(self):
-        """Test legend proc with various probability values."""
-        cfg = Config()
-        weapon = Weapon("Scimitar", cfg)
-        attack_sim = AttackSimulator(weapon, cfg)
-        stats = StatsCollector()
-
-        # Test various probabilities
-        for prob in [0.1, 0.25, 0.5, 0.75, 0.9]:
-            legend_effect = LegendEffect(stats, weapon, attack_sim)
-            results = []
-            for _ in range(100):
-                result = legend_effect.legend_proc(prob)
-                results.append(result)
-
-            # Should have roughly the expected number of triggers
-            trigger_count = sum(results)
-            expected = prob * 100
-            # Allow 50% variance due to randomness (empirical testing shows this is needed)
-            assert abs(trigger_count - expected) < expected * 0.5
 
     def test_legend_proc_returns_boolean(self):
         """Test that legend_proc always returns a boolean."""
@@ -477,41 +428,11 @@ class TestLegendDurationTracking:
             # Should decrement when proc didn't trigger but attacks_left > 0
             assert legend_effect.legend_attacks_left < 10
 
-    @pytest.mark.skip(reason="Old behavior - attacks_left calculation changed")
-    def test_legend_duration_calculation(self):
-        """Test duration calculation based on attacks per round."""
-        cfg = Config()
-        weapon = Weapon("Scimitar", cfg)
-        attack_sim = AttackSimulator(weapon, cfg)
-        stats = StatsCollector()
-        legend_effect = LegendEffect(stats, weapon, attack_sim)
-
-        # Trigger legend proc
-        legend_effect.legend_proc(1.0)  # Guaranteed trigger
-
-        expected = attack_sim.attacks_per_round * legend_effect.legend_effect_duration
-        assert legend_effect.legend_attacks_left == expected
 
 
 class TestLegendEffectIntegration:
     """Integration tests for legend effects with different configurations."""
 
-    @pytest.mark.skip(reason="Old behavior - attacks_left calculation changed")
-    def test_legend_effect_with_different_attack_progressions(self):
-        """Test legend effect with various attack progressions."""
-        cfg = Config()
-
-        for ab_prog in ["5APR Classic", "4APR Classic", "Monk 7APR"]:
-            cfg.AB_PROG = ab_prog
-            weapon = Weapon("Scimitar", cfg)
-            attack_sim = AttackSimulator(weapon, cfg)
-            stats = StatsCollector()
-
-            legend_effect = LegendEffect(stats, weapon, attack_sim)
-            legend_effect.legend_proc(1.0)
-
-            expected = attack_sim.attacks_per_round * 5
-            assert legend_effect.legend_attacks_left == expected
 
     def test_legend_effect_state_persistence(self):
         """Test that legend effect state persists across calls."""
@@ -636,18 +557,6 @@ class TestLegendEffectEdgeCases:
         ab = legend_effect.ab_bonus
         assert ab == 2
 
-    @pytest.mark.skip(reason="Old behavior - attacks_left calculation changed")
-    def test_zero_attacks_per_round(self):
-        """Test edge case with very few attacks per round."""
-        cfg = Config()
-        weapon = Weapon("Scimitar", cfg)
-        attack_sim = AttackSimulator(weapon, cfg)
-        stats = StatsCollector()
-        legend_effect = LegendEffect(stats, weapon, attack_sim)
-
-        # Even with few attacks, duration calculation should work
-        legend_effect.legend_proc(1.0)
-        assert legend_effect.legend_attacks_left > 0
 
 
 if __name__ == '__main__':
