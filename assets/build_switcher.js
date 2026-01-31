@@ -64,7 +64,9 @@ function _get_no_update_return(keys_count) {
     return [
         no_upd, // active-idx
         no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd,
-        no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd,
+        no_upd, no_upd, // two-handed, weaponmaster
+        no_upd, no_upd, no_upd, no_upd, // dual-wield settings (4 new fields)
+        no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, // keen through shape_weapon
         Array(keys_count).fill(no_upd), // switches
         Array(keys_count).fill(no_upd), // input1
         Array(keys_count).fill(no_upd), // input2
@@ -119,6 +121,10 @@ window.dash_clientside.build_switching.switch_build = function(n_clicks_list, bu
         cfg.STR_MOD,
         cfg.TWO_HANDED,
         cfg.WEAPONMASTER,
+        cfg.DUAL_WIELD,
+        cfg.TWO_WEAPON_FIGHTING,
+        cfg.AMBIDEXTERITY,
+        cfg.IMPROVED_TWF,
         cfg.KEEN,
         cfg.IMPROVED_CRIT,
         cfg.OVERWHELM_CRIT,
@@ -143,7 +149,9 @@ window.dash_clientside.build_switching.load_from_buffer = function(config, is_lo
         const len = additional_dmg_keys.length;
         return [
             no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd,
-            no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd,
+            no_upd, no_upd, // two-handed, weaponmaster
+            no_upd, no_upd, no_upd, no_upd, // dual-wield settings (4 new fields)
+            no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, // keen through shape_weapon
             Array(len).fill(no_upd),
             Array(len).fill(no_upd),
             Array(len).fill(no_upd),
@@ -166,6 +174,10 @@ window.dash_clientside.build_switching.load_from_buffer = function(config, is_lo
         cfg.STR_MOD,
         cfg.TWO_HANDED,
         cfg.WEAPONMASTER,
+        cfg.DUAL_WIELD,
+        cfg.TWO_WEAPON_FIGHTING,
+        cfg.AMBIDEXTERITY,
+        cfg.IMPROVED_TWF,
         cfg.KEEN,
         cfg.IMPROVED_CRIT,
         cfg.OVERWHELM_CRIT,
