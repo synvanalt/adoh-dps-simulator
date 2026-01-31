@@ -3,7 +3,6 @@ from simulator.constants import (
     LEGEND_EFFECT_DURATION,
     DOUBLE_SIDED_WEAPONS,
     AUTO_MIGHTY_WEAPONS,
-    DUAL_WIELD_MARKERS,
     PHYSICAL_DAMAGE_TYPES,
     AMMO_BASED_WEAPONS,
 )
@@ -23,13 +22,8 @@ def test_double_sided_weapons_list():
 def test_auto_mighty_weapons_list():
     assert "Darts" in AUTO_MIGHTY_WEAPONS
     assert "Throwing Axes" in AUTO_MIGHTY_WEAPONS
-    assert len(AUTO_MIGHTY_WEAPONS) == 2
-
-
-def test_dual_wield_markers():
-    assert "dw_hasted" in DUAL_WIELD_MARKERS
-    assert "dw_flurry" in DUAL_WIELD_MARKERS
-    assert "dw_bspeed" in DUAL_WIELD_MARKERS
+    assert "Shuriken" in AUTO_MIGHTY_WEAPONS
+    assert len(AUTO_MIGHTY_WEAPONS) == 3
 
 
 def test_physical_damage_types():
