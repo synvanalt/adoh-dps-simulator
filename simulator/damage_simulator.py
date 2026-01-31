@@ -304,14 +304,15 @@ class DamageSimulator:
                                 flat=math.floor(str_roll.flat / 2)
                             )
 
-                    dmg_sneak = dmg_dict.pop('sneak', [])                                                # Remove the 'Sneak Attack' dmg from crit multiplication
-                    dmg_sneak_max = max(dmg_sneak, key=lambda sublist: sublist[0], default=None)         # Find the highest 'sneak' dmg, can't stack Sneak Attacks
-
-                    dmg_death = dmg_dict.pop('death', [])                                           # Remove the 'Death Attack' dmg from crit multiplication
-                    dmg_death_max = max(dmg_death, key=lambda sublist: sublist[0], default=None)    # Find the highest 'death' dmg, can't stack Death Attacks
-
                     def get_max_dmg(dmg_roll: DamageRoll) -> int:
+                        """Calculate maximum possible damage from a DamageRoll."""
                         return dmg_roll.dice * dmg_roll.sides + dmg_roll.flat
+
+                    dmg_sneak = dmg_dict.pop('sneak', [])                                      # Remove the 'Sneak Attack' dmg from crit multiplication
+                    dmg_sneak_max = max(dmg_sneak, key=get_max_dmg, default=None)              # Find the highest 'sneak' dmg, can't stack Sneak Attacks
+
+                    dmg_death = dmg_dict.pop('death', [])                                      # Remove the 'Death Attack' dmg from crit multiplication
+                    dmg_death_max = max(dmg_death, key=get_max_dmg, default=None)              # Find the highest 'death' dmg, can't stack Death Attacks
 
                     dmg_massive = dmg_dict.pop('massive', [])                          # Remove the 'Massive Critical' dmg from crit multiplication
                     dmg_massive_max = max(dmg_massive, key=get_max_dmg, default=None)  # Find the highest 'massive' dmg, can't stack Massive Criticals
