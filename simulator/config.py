@@ -52,9 +52,8 @@ class Config:
         "Monk 7APR & Flurry & B.Speed":     [0, -3, -6, -9, -12, -15, "hasted", "flurry", "bspeed"],
     })
 
-    TOON_SIZE: str = "M"        # "S" / "M" / "L"
-
     # DUAL-WIELD SETTINGS
+    CHARACTER_SIZE: str = "M"        # "S" / "M" / "L"
     DUAL_WIELD: bool = False
     TWO_WEAPON_FIGHTING: bool = True
     AMBIDEXTERITY: bool = True

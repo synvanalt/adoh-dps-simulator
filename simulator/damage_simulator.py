@@ -255,7 +255,7 @@ class DamageSimulator:
             total_round_dmg = 0
             total_round_dmg_crit_imm = 0
 
-            if self.attack_sim.illegal_dual_wield_config:  # Cannot Dual-Wield with this toon size and weapon size combination
+            if self.attack_sim.illegal_dual_wield_config:  # Cannot Dual-Wield with this character size and weapon size combination
                 break
 
 
@@ -430,7 +430,7 @@ class DamageSimulator:
         dph_crit_imm = stats['dph_crit_imm']
 
         warning_dupe = f">>> WARNING: Duplicate weapon damage bonus detected! Using higher damage values where applicable. <<<\n\n" if self.weapon.weapon_damage_stack_warning else ""
-        error_illegal_dw = f">>> ERROR: Character size '{self.cfg.TOON_SIZE}' cannot dual-wield '{self.weapon.name_base}'. Simulation skipped. <<<\n\n" if self.attack_sim.illegal_dual_wield_config else ""
+        error_illegal_dw = f">>> ERROR: Character size '{self.cfg.CHARACTER_SIZE}' cannot dual-wield '{self.weapon.name_base}'. Simulation skipped. <<<\n\n" if self.attack_sim.illegal_dual_wield_config else ""
         summary = (
             f"{warning_dupe}{error_illegal_dw}"
             f"AB: {self.attack_sim.attack_prog} | Weapon: {self.weapon.name_purple} | Crit: {self.weapon.crit_threat}-20/x{self.weapon.crit_multiplier} | "

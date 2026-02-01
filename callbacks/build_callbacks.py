@@ -57,7 +57,7 @@ def register_build_callbacks(app, cfg):
         State('ab-input', 'value'),
         State('ab-capped-input', 'value'),
         State('ab-prog-dropdown', 'value'),
-        State('toon-size-dropdown', 'value'),
+        State('character-size-dropdown', 'value'),
         State('combat-type-dropdown', 'value'),
         State('mighty-input', 'value'),
         State('enhancement-set-bonus-dropdown', 'value'),
@@ -86,7 +86,7 @@ def register_build_callbacks(app, cfg):
         State('build-loading', 'data'),
         prevent_initial_call=True
     )
-    def switch_build(n_clicks_list, ab, ab_capped, ab_prog, toon_size, combat_type,
+    def switch_build(n_clicks_list, ab, ab_capped, ab_prog, character_size, combat_type,
                      mighty, enhancement, str_mod, two_handed, weaponmaster,
                      dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
                      keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
@@ -110,7 +110,7 @@ def register_build_callbacks(app, cfg):
 
         # Save current build state before switching (including name for debounced input)
         builds = save_current_build_state(
-            builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
+            builds, active_idx, ab, ab_capped, ab_prog, character_size, combat_type,
             mighty, enhancement, str_mod, two_handed, weaponmaster,
             dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
             keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
@@ -148,7 +148,7 @@ def register_build_callbacks(app, cfg):
         State('ab-input', 'value'),
         State('ab-capped-input', 'value'),
         State('ab-prog-dropdown', 'value'),
-        State('toon-size-dropdown', 'value'),
+        State('character-size-dropdown', 'value'),
         State('combat-type-dropdown', 'value'),
         State('mighty-input', 'value'),
         State('enhancement-set-bonus-dropdown', 'value'),
@@ -176,7 +176,7 @@ def register_build_callbacks(app, cfg):
         State('active-build-index', 'data'),
         prevent_initial_call=True
     )
-    def add_new_build(n_clicks, ab, ab_capped, ab_prog, toon_size, combat_type,
+    def add_new_build(n_clicks, ab, ab_capped, ab_prog, character_size, combat_type,
                       mighty, enhancement, str_mod, two_handed, weaponmaster,
                       dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
                       keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
@@ -188,7 +188,7 @@ def register_build_callbacks(app, cfg):
 
         # Save current build state first (including name for debounced input)
         builds = save_current_build_state(
-            builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
+            builds, active_idx, ab, ab_capped, ab_prog, character_size, combat_type,
             mighty, enhancement, str_mod, two_handed, weaponmaster,
             dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
             keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
@@ -217,7 +217,7 @@ def register_build_callbacks(app, cfg):
         State('ab-input', 'value'),
         State('ab-capped-input', 'value'),
         State('ab-prog-dropdown', 'value'),
-        State('toon-size-dropdown', 'value'),
+        State('character-size-dropdown', 'value'),
         State('combat-type-dropdown', 'value'),
         State('mighty-input', 'value'),
         State('enhancement-set-bonus-dropdown', 'value'),
@@ -245,7 +245,7 @@ def register_build_callbacks(app, cfg):
         State('active-build-index', 'data'),
         prevent_initial_call=True
     )
-    def duplicate_build(n_clicks, ab, ab_capped, ab_prog, toon_size, combat_type,
+    def duplicate_build(n_clicks, ab, ab_capped, ab_prog, character_size, combat_type,
                         mighty, enhancement, str_mod, two_handed, weaponmaster,
                         dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
                         keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
@@ -257,7 +257,7 @@ def register_build_callbacks(app, cfg):
 
         # Save current build state first (so duplicate gets latest changes, including name)
         builds = save_current_build_state(
-            builds, active_idx, ab, ab_capped, ab_prog, toon_size, combat_type,
+            builds, active_idx, ab, ab_capped, ab_prog, character_size, combat_type,
             mighty, enhancement, str_mod, two_handed, weaponmaster,
             dual_wield, two_weapon_fighting, ambidexterity, improved_twf,
             keen, improved_crit, overwhelm_crit, dev_crit, shape_override, shape_weapon,
@@ -337,7 +337,7 @@ def register_build_callbacks(app, cfg):
         Output('ab-input', 'value', allow_duplicate=True),
         Output('ab-capped-input', 'value', allow_duplicate=True),
         Output('ab-prog-dropdown', 'value', allow_duplicate=True),
-        Output('toon-size-dropdown', 'value', allow_duplicate=True),
+        Output('character-size-dropdown', 'value', allow_duplicate=True),
         Output('combat-type-dropdown', 'value', allow_duplicate=True),
         Output('mighty-input', 'value', allow_duplicate=True),
         Output('enhancement-set-bonus-dropdown', 'value', allow_duplicate=True),
@@ -410,7 +410,7 @@ def register_build_callbacks(app, cfg):
         return dash.no_update
 
 
-def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, toon_size,
+def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, character_size,
                               combat_type, mighty, enhancement, str_mod, two_handed,
                               weaponmaster, dual_wield, two_weapon_fighting,
                               ambidexterity, improved_twf, keen, improved_crit, overwhelm_crit,
@@ -443,17 +443,17 @@ def save_current_build_state(builds, active_idx, ab, ab_capped, ab_prog, toon_si
         'AB': ab,
         'AB_CAPPED': ab_capped,
         'AB_PROG': ab_prog,
-        'TOON_SIZE': toon_size,
+        'DUAL_WIELD': dual_wield,
+        'CHARACTER_SIZE': character_size,
+        'TWO_WEAPON_FIGHTING': two_weapon_fighting,
+        'AMBIDEXTERITY': ambidexterity,
+        'IMPROVED_TWF': improved_twf,
         'COMBAT_TYPE': combat_type,
         'MIGHTY': mighty,
         'ENHANCEMENT_SET_BONUS': int(enhancement) if enhancement else 3,
         'STR_MOD': str_mod,
         'TWO_HANDED': two_handed,
         'WEAPONMASTER': weaponmaster,
-        'DUAL_WIELD': dual_wield,
-        'TWO_WEAPON_FIGHTING': two_weapon_fighting,
-        'AMBIDEXTERITY': ambidexterity,
-        'IMPROVED_TWF': improved_twf,
         'KEEN': keen,
         'IMPROVED_CRIT': improved_crit,
         'OVERWHELM_CRIT': overwhelm_crit,

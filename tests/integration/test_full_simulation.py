@@ -45,7 +45,7 @@ def test_simulation_with_dual_wield():
     cfg.TWO_WEAPON_FIGHTING = True
     cfg.AMBIDEXTERITY = True
     cfg.IMPROVED_TWF = True
-    cfg.TOON_SIZE = "M"
+    cfg.CHARACTER_SIZE = "M"
     cfg.AB = 68
     cfg.TARGET_AC = 65
 
@@ -65,7 +65,7 @@ def test_simulation_dual_wield_no_feats():
     cfg.TWO_WEAPON_FIGHTING = False
     cfg.AMBIDEXTERITY = False
     cfg.IMPROVED_TWF = False
-    cfg.TOON_SIZE = "M"
+    cfg.CHARACTER_SIZE = "M"
     cfg.AB = 68
     cfg.TARGET_AC = 65
 
@@ -112,7 +112,7 @@ def test_illegal_dual_wield_returns_zero():
     cfg = Config()
     cfg.AB_PROG = "5APR Classic"
     cfg.DUAL_WIELD = True
-    cfg.TOON_SIZE = "S"  # Small
+    cfg.CHARACTER_SIZE = "S"  # Small
 
     sim = DamageSimulator('Greataxe', cfg)  # Large weapon
     results = sim.simulate_dps()

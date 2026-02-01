@@ -68,7 +68,7 @@ class TestGetDefaultBuildConfig:
         """Test that config contains all required keys."""
         config = get_default_build_config()
         required_keys = [
-            'AB', 'AB_CAPPED', 'AB_PROG', 'TOON_SIZE', 'COMBAT_TYPE',
+            'AB', 'AB_CAPPED', 'AB_PROG', 'CHARACTER_SIZE', 'COMBAT_TYPE',
             'MIGHTY', 'ENHANCEMENT_SET_BONUS', 'STR_MOD', 'TWO_HANDED',
             'WEAPONMASTER', 'KEEN', 'IMPROVED_CRIT', 'OVERWHELM_CRIT',
             'DEV_CRIT', 'SHAPE_WEAPON_OVERRIDE', 'SHAPE_WEAPON',

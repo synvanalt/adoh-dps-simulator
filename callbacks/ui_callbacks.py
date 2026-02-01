@@ -202,16 +202,14 @@ def register_ui_callbacks(app, cfg):
         )
 
 
-    # =========================================================================
     # RESET CALLBACKS - Split into domain-specific callbacks for maintainability
-    # =========================================================================
 
     # Callback 1: Reset character settings (20 outputs)
     @app.callback(
         [Output('ab-input', 'value', allow_duplicate=True),
          Output('ab-capped-input', 'value', allow_duplicate=True),
          Output('ab-prog-dropdown', 'value', allow_duplicate=True),
-         Output('toon-size-dropdown', 'value', allow_duplicate=True),
+         Output('character-size-dropdown', 'value', allow_duplicate=True),
          Output('combat-type-dropdown', 'value', allow_duplicate=True),
          Output('mighty-input', 'value', allow_duplicate=True),
          Output('enhancement-set-bonus-dropdown', 'value', allow_duplicate=True),
@@ -241,7 +239,7 @@ def register_ui_callbacks(app, cfg):
             default_cfg.AB,
             default_cfg.AB_CAPPED,
             default_cfg.AB_PROG,
-            default_cfg.TOON_SIZE,
+            default_cfg.CHARACTER_SIZE,
             default_cfg.COMBAT_TYPE,
             default_cfg.MIGHTY,
             default_cfg.ENHANCEMENT_SET_BONUS,
@@ -255,10 +253,10 @@ def register_ui_callbacks(app, cfg):
             default_cfg.SHAPE_WEAPON_OVERRIDE,
             default_cfg.SHAPE_WEAPON,
             default_cfg.DEFAULT_WEAPONS,
-            False,  # DUAL_WIELD
-            True,   # TWO_WEAPON_FIGHTING
-            True,   # AMBIDEXTERITY
-            True,   # IMPROVED_TWF
+            default_cfg.DUAL_WIELD,
+            default_cfg.TWO_WEAPON_FIGHTING,
+            default_cfg.AMBIDEXTERITY,
+            default_cfg.IMPROVED_TWF,
         ]
 
     # Callback 2: Reset additional damage (4 ALL pattern outputs)
@@ -341,8 +339,8 @@ def register_ui_callbacks(app, cfg):
             default_cfg.__dict__,
             create_default_builds(),
             0,
-            True,  # Open the toast
-            False,  # Set build-loading to False to hide spinner
+            True,   # Open the toast
+            False,  # Set build-loading False to hide spinner
         ]
 
 
@@ -424,17 +422,17 @@ def register_ui_callbacks(app, cfg):
         n = len(ctx.outputs_list[0])  # number of matching melee rows
         if combat_type == 'ranged':
             return (
-                [False] * n,  # Turn OFF all melee switches
-                20,  # Set mighty to 20
-                [True] * n,  # Disable all melee switches
-                False  # Enable mighty input
+                [False] * n,    # Turn OFF all melee switches
+                20,             # Set mighty to 20
+                [True] * n,     # Disable all melee switches
+                False           # Enable mighty input
             )
         elif combat_type == 'melee':
             return (
-                [dash.no_update] * n,  # Don't update the melee switches
-                0,  # Set mighty to 0
-                [False] * n,  # Enable all melee switches
-                True  # Disable mighty input
+                [dash.no_update] * n,   # Don't update the melee switches
+                0,                      # Set mighty to 0
+                [False] * n,            # Enable all melee switches
+                True                    # Disable mighty input
             )
         else:
             return dash.no_update
@@ -445,9 +443,11 @@ def register_ui_callbacks(app, cfg):
         Output('shape-weapon-dropdown', 'style'),
         Input('shape-weapon-switch', 'value'),
     )
-    def toggle_shape_weapon(show):
-        style = {'display': 'flex'} if show else {'display': 'none'}
-        return style
+    def toggle_shape_weapon(shape_weapon_enabled):
+        if shape_weapon_enabled:
+            return {'display': 'flex'}
+        else:
+            return {'display': 'none'}
 
 
     # Callback: toggle damage limit visibility
@@ -455,24 +455,21 @@ def register_ui_callbacks(app, cfg):
         Output('damage-limit-input', 'style'),
         Input('damage-limit-switch', 'value'),
     )
-    def toggle_damage_limit(show):
-        style = {'display': 'flex'} if show else {'display': 'none'}
-        return style
+    def toggle_damage_limit(dmg_limit_enabled):
+        if dmg_limit_enabled:
+            return {'display': 'flex'}
+        else:
+            return {'display': 'none'}
 
 
-    # =========================================================================
-    # DUAL-WIELD SHOW/HIDE CALLBACK
-    # =========================================================================
-
+    # Callback: Dual-wield panel visibility
     @app.callback(
-        [
-            Output({'type': 'dw-row', 'name': 'container-row'}, 'style'),
-        ],
-        Input('dual-wield-switch', 'value')
+        Output({'type': 'dw-row', 'name': 'container-row'}, 'style'),
+        Input('dual-wield-switch', 'value'),
     )
     def toggle_dual_wield_section(dual_wield_enabled):
         """Show/hide dual-wield feat widgets based on master toggle"""
         if dual_wield_enabled:
-            return [{'display': 'flex'}]
+            return {'display': 'flex'}
         else:
-            return [{'display': 'none'}]
+            return {'display': 'none'}

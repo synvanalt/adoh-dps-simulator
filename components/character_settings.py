@@ -106,23 +106,23 @@ def build_character_settings(cfg):
                 dbc.Row([
                     dbc.Col(dbc.Label(
                         'Character Size:',
-                        html_for='toon-size-dropdown',
+                        html_for='character-size-dropdown',
                     ), xs=6, md=6),
                     dbc.Col(dbc.Select(
-                        id='toon-size-dropdown',
+                        id='character-size-dropdown',
                         options=[
                             {'label': 'Small', 'value': 'S'},
                             {'label': 'Medium', 'value': 'M'},
                             {'label': 'Large', 'value': 'L'}
                         ],
-                        value=cfg.TOON_SIZE,
+                        value=cfg.CHARACTER_SIZE,
                         persistence=True,
                         persistence_type=persist_type,
                     ), xs=6, md=6),
                     dbc.Tooltip(
                         "Used to determine dual-wield penalties based on weapon size. "
                         "Smaller weapons relative to character size reduce penalties (light weapon).",
-                        target='toon-size-dropdown',
+                        target='character-size-dropdown',
                         placement='right',
                         delay={'show': tooltip_delay},
                     ),
@@ -182,7 +182,7 @@ def build_character_settings(cfg):
                     ),
                 ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'improved-twf'}),
             ]),
-        ], className='border border-dotted rounded p-3 mb-3', id={'type': 'dw-row', 'name': 'container-row'}, ),
+        ], className='border border-dotted rounded p-3 mb-3', id={'type': 'dw-row', 'name': 'container-row'}, style={'display': 'none'}),
 
         # Combat Settings
         dbc.Row([
