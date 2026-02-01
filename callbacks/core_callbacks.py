@@ -336,7 +336,7 @@ def register_core_callbacks(app, cfg):
                 striped=True,
                 class_name='table-responsive mb-4',
             )
-        ], style={'overflow-x': 'auto'})
+        ], style={'overflowX': 'auto'})
 
         # Hide loading overlay when results update completes
         return comparative_table, html.Div(detailed_results), {'display': 'none'}
@@ -350,7 +350,7 @@ def register_core_callbacks(app, cfg):
                 # Attack Stats, Hit and Crit rates per attack
                 dbc.Row([
                     dbc.Col([
-                        html.Pre(results["summary"], className='border rounded p-3 bg-dark-subtle', style={'overflow-x': 'auto'}),
+                        html.Pre(results["summary"], className='border rounded p-3 bg-dark-subtle', style={'overflowX': 'auto'}),
                     ], class_name='mb-4'),
                 ]),
                 dbc.Row([
@@ -372,7 +372,7 @@ def register_core_callbacks(app, cfg):
                                              html.Td(f'{results["legend_proc_rate_theoretical"]:.1f}%')]),
                                 ])
                             ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
-                        ], style={'overflow-x': 'auto'})
+                        ], style={'overflowX': 'auto'})
                     ], xs=12, md=4, class_name='mb-4'),
 
                     # Hit Rate per Attack - full width on mobile, 4 cols on desktop
@@ -389,7 +389,7 @@ def register_core_callbacks(app, cfg):
                                     ]) for i in range(len(results["hits_per_attack"]))
                                 ])
                             ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
-                        ], style={'overflow-x': 'auto'})
+                        ], style={'overflowX': 'auto'})
                     ], xs=12, md=4, class_name='mb-4'),
 
                     # Crit Rate per Attack - full width on mobile, 4 cols on desktop
@@ -406,7 +406,7 @@ def register_core_callbacks(app, cfg):
                                     ]) for i in range(len(results["crits_per_attack"]))
                                 ])
                             ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
-                        ], style={'overflow-x': 'auto'})
+                        ], style={'overflowX': 'auto'})
                     ], xs=12, md=4, class_name='mb-4')
                 ], class_name='gx-4', style={'alignItems': 'flex-start'})  # Add horizontal spacing between columns
             ])
