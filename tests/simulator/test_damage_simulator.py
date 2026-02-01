@@ -1249,7 +1249,7 @@ class TestInternalMethods:
         cfg.AB_PROG = "5APR Classic"
         cfg.DUAL_WIELD = True
         cfg.IMPROVED_TWF = True
-        cfg.TOON_SIZE = "M"
+        cfg.CHARACTER_SIZE = "M"
         sim = DamageSimulator('Longsword', cfg)
 
         result = sim._setup_dual_wield_tracking()

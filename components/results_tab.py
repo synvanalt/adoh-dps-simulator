@@ -20,7 +20,7 @@ def build_results_tab():
                         title="Configure average DPS weight (Crit Allowed vs. Crit Immune)",
                     ),
                 ], style={'display': 'flex', 'alignItems': 'center'}, className='mb-4'),
-            ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between', 'flex-wrap': 'wrap'}),
+            ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between', 'flexWrap': 'wrap'}),
 
             # Main comparative table
             html.Div(id='comparative-table', className='mb-4'),

@@ -47,11 +47,11 @@ class AttackSimulator:
 
         :return: True if valid, False if illegal configuration
         """
-        toon_size = self.cfg.TOON_SIZE
+        character_size = self.cfg.CHARACTER_SIZE
         weapon_size = self.weapon.size
 
         # Special: Medium can dual-wield double-sided (even though Large)
-        if (toon_size == 'M'
+        if (character_size == 'M'
             and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
             and not self.cfg.SHAPE_WEAPON_OVERRIDE):
             return True
@@ -66,11 +66,11 @@ class AttackSimulator:
             return False
 
         # Small cannot dual-wield Medium
-        if toon_size == 'S' and weapon_size == 'M':
+        if character_size == 'S' and weapon_size == 'M':
             return False
 
         # Large cannot dual-wield Tiny
-        if toon_size == 'L' and weapon_size == 'T':
+        if character_size == 'L' and weapon_size == 'T':
             return False
 
         return True
@@ -86,10 +86,10 @@ class AttackSimulator:
         :return: True if light weapon, False otherwise
         """
         size_order = {'T': 0, 'S': 1, 'M': 2, 'L': 3}
-        toon_size_value = size_order[self.cfg.TOON_SIZE]
+        character_size_value = size_order[self.cfg.CHARACTER_SIZE]
         weapon_size_value = size_order[self.weapon.size]
 
-        return weapon_size_value < toon_size_value
+        return weapon_size_value < character_size_value
 
     def calculate_dw_penalties(self):
         """

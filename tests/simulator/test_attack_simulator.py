@@ -557,7 +557,7 @@ class TestDualWieldPenalty:
 
     def test_medium_character_medium_weapon_penalty(self):
         """Test DW penalty for Medium character with Medium weapon."""
-        cfg = Config(AB=50, TOON_SIZE='M', AB_PROG="4APR Classic")
+        cfg = Config(AB=50, CHARACTER_SIZE='M', AB_PROG="4APR Classic")
         cfg.DUAL_WIELD = True
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
@@ -571,7 +571,7 @@ class TestDualWieldPenalty:
 
     def test_small_character_small_weapon_penalty(self):
         """Test DW penalty for Small character with Small weapon."""
-        cfg = Config(AB=50, TOON_SIZE='S', AB_PROG="4APR Classic")
+        cfg = Config(AB=50, CHARACTER_SIZE='S', AB_PROG="4APR Classic")
         cfg.DUAL_WIELD = True
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
@@ -584,7 +584,7 @@ class TestDualWieldPenalty:
 
     def test_large_character_medium_weapon_penalty(self):
         """Test DW penalty for Large character with Medium weapon."""
-        cfg = Config(AB=50, TOON_SIZE='L', AB_PROG="4APR Classic")
+        cfg = Config(AB=50, CHARACTER_SIZE='L', AB_PROG="4APR Classic")
         cfg.DUAL_WIELD = True
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
@@ -597,7 +597,7 @@ class TestDualWieldPenalty:
 
     def test_medium_character_small_weapon_penalty(self):
         """Test DW penalty for Medium character with Small weapon."""
-        cfg = Config(AB=50, TOON_SIZE='M', AB_PROG="4APR Classic")
+        cfg = Config(AB=50, CHARACTER_SIZE='M', AB_PROG="4APR Classic")
         cfg.DUAL_WIELD = True
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
@@ -610,7 +610,7 @@ class TestDualWieldPenalty:
 
     def test_incompatible_size_combination(self):
         """Test DW penalty with incompatible size combination."""
-        cfg = Config(AB=50, TOON_SIZE='S', AB_PROG="4APR Classic")
+        cfg = Config(AB=50, CHARACTER_SIZE='S', AB_PROG="4APR Classic")
         cfg.DUAL_WIELD = True
         weapon = Weapon("Halberd", cfg)  # Large weapon
         simulator = AttackSimulator(weapon, cfg)
@@ -632,7 +632,7 @@ class TestDualWieldPenalty:
         - Offhand attacks: [50 + (-4), 50 + (-4) - 5] = [46, 41]
         - Final: [46, 41, 36, 50, 46, 41]
         """
-        cfg = Config(AB=50, TOON_SIZE='M', AB_PROG="4APR Classic")
+        cfg = Config(AB=50, CHARACTER_SIZE='M', AB_PROG="4APR Classic")
         cfg.DUAL_WIELD = True
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
@@ -989,7 +989,7 @@ class TestDualWieldOffhandDamage:
 
     def test_dual_wield_monk_progression_structure(self):
         """Test Monk dual-wield progression has correct structure."""
-        cfg = Config(AB_PROG="Monk 7APR", TOON_SIZE='M')
+        cfg = Config(AB_PROG="Monk 7APR", CHARACTER_SIZE='M')
         cfg.DUAL_WIELD = True
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
@@ -1054,7 +1054,7 @@ class TestDualWieldOffhandDamage:
         """Test that dual-wield penalty is correctly applied to base AB."""
         cfg = Config(
             AB=50,
-            TOON_SIZE='M',
+            CHARACTER_SIZE='M',
             AB_PROG="4APR Classic"
         )
         cfg.DUAL_WIELD = True
@@ -1078,7 +1078,7 @@ class TestDualWieldOffhandDamage:
         cfg = Config(
             AB=60,
             AB_PROG="Monk 7APR & Flurry",
-            TOON_SIZE='M'
+            CHARACTER_SIZE='M'
         )
         cfg.DUAL_WIELD = True
         cfg.TWO_WEAPON_FIGHTING = True
@@ -1159,7 +1159,7 @@ class TestIsValidDwConfig:
     def test_is_valid_dw_config_medium_with_medium(self):
         """Medium character CAN dual-wield Medium weapon"""
         cfg = Config()
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         cfg.AB_PROG = "5APR Classic"  # Use non-DW progression to avoid trigger old DW logic
         weapon = Weapon("Longsword", cfg)  # Medium weapon
         attack_sim = AttackSimulator(weapon, cfg)
@@ -1168,7 +1168,7 @@ class TestIsValidDwConfig:
     def test_is_valid_dw_config_small_with_medium(self):
         """Small character CANNOT dual-wield Medium weapon"""
         cfg = Config()
-        cfg.TOON_SIZE = 'S'
+        cfg.CHARACTER_SIZE = 'S'
         cfg.AB_PROG = "5APR Classic"
         weapon = Weapon("Longsword", cfg)  # Medium weapon
         attack_sim = AttackSimulator(weapon, cfg)
@@ -1177,7 +1177,7 @@ class TestIsValidDwConfig:
     def test_is_valid_dw_config_large_with_tiny(self):
         """Large character CANNOT dual-wield Tiny weapon"""
         cfg = Config()
-        cfg.TOON_SIZE = 'L'
+        cfg.CHARACTER_SIZE = 'L'
         cfg.AB_PROG = "5APR Classic"
         weapon = Weapon("Dagger_PK", cfg)  # Tiny weapon
         attack_sim = AttackSimulator(weapon, cfg)
@@ -1186,7 +1186,7 @@ class TestIsValidDwConfig:
     def test_is_valid_dw_config_large_weapon(self):
         """Large weapons CANNOT be dual-wielded (except double-sided)"""
         cfg = Config()
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         cfg.AB_PROG = "5APR Classic"
         weapon = Weapon("Greatsword_Desert", cfg)  # Large weapon
         attack_sim = AttackSimulator(weapon, cfg)
@@ -1199,7 +1199,7 @@ class TestIsWeaponLight:
     def test_is_weapon_light_medium_with_small(self):
         """Small weapon IS light for Medium character"""
         cfg = Config()
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         weapon = Weapon("Shortsword_Adam", cfg)  # Small weapon
         attack_sim = AttackSimulator(weapon, cfg)
         assert attack_sim._is_weapon_light() == True
@@ -1207,7 +1207,7 @@ class TestIsWeaponLight:
     def test_is_weapon_light_medium_with_medium(self):
         """Medium weapon is NOT light for Medium character"""
         cfg = Config()
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         weapon = Weapon("Longsword", cfg)  # Medium weapon
         attack_sim = AttackSimulator(weapon, cfg)
         assert attack_sim._is_weapon_light() == False
@@ -1215,7 +1215,7 @@ class TestIsWeaponLight:
     def test_is_weapon_light_large_with_small(self):
         """Small weapon IS light for Large character"""
         cfg = Config()
-        cfg.TOON_SIZE = 'L'
+        cfg.CHARACTER_SIZE = 'L'
         weapon = Weapon("Shortsword_Adam", cfg)  # Small weapon
         attack_sim = AttackSimulator(weapon, cfg)
         assert attack_sim._is_weapon_light() == True
@@ -1223,7 +1223,7 @@ class TestIsWeaponLight:
     def test_is_weapon_light_small_with_tiny(self):
         """Tiny weapon IS light for Small character"""
         cfg = Config()
-        cfg.TOON_SIZE = 'S'
+        cfg.CHARACTER_SIZE = 'S'
         weapon = Weapon("Dagger_PK", cfg)  # Tiny weapon
         attack_sim = AttackSimulator(weapon, cfg)
         assert attack_sim._is_weapon_light() == True
@@ -1235,7 +1235,7 @@ class TestCalculateDwPenalties:
     def test_calculate_dw_penalties_medium_with_light_twf_ambi(self):
         """Medium + Light weapon with TWF + Ambidexterity = -2/-2"""
         cfg = Config()
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
         weapon = Weapon("Shortsword_Adam", cfg)  # Small (light for Medium)
@@ -1247,7 +1247,7 @@ class TestCalculateDwPenalties:
     def test_calculate_dw_penalties_medium_with_medium_twf_ambi(self):
         """Medium + Medium weapon with TWF + Ambidexterity = -4/-4"""
         cfg = Config()
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
         weapon = Weapon("Longsword", cfg)  # Medium (not light)
@@ -1259,7 +1259,7 @@ class TestCalculateDwPenalties:
     def test_calculate_dw_penalties_no_twf(self):
         """No TWF feat with light weapon = -4/-8"""
         cfg = Config()
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         cfg.TWO_WEAPON_FIGHTING = False
         cfg.AMBIDEXTERITY = True
         weapon = Weapon("Shortsword_Adam", cfg)  # Light weapon
@@ -1271,7 +1271,7 @@ class TestCalculateDwPenalties:
     def test_calculate_dw_penalties_no_ambi(self):
         """TWF but no Ambidexterity = -2/-6"""
         cfg = Config()
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = False
         weapon = Weapon("Shortsword_Adam", cfg)  # Light weapon
@@ -1324,7 +1324,7 @@ class TestBuildDwProgression:
         cfg.DUAL_WIELD = True
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         cfg.IMPROVED_TWF = True
         weapon = Weapon("Shortsword_Adam", cfg)
         attack_sim = AttackSimulator(weapon, cfg)
@@ -1345,7 +1345,7 @@ class TestBuildDwProgression:
         cfg.DUAL_WIELD = True
         cfg.IMPROVED_TWF = False
         cfg.TWO_WEAPON_FIGHTING = True
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         weapon = Weapon("Scimitar", cfg)
         attack_sim = AttackSimulator(weapon, cfg)
 
@@ -1385,7 +1385,7 @@ class TestGetAttackProgressionIntegration:
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
         cfg.IMPROVED_TWF = True
-        cfg.TOON_SIZE = 'M'
+        cfg.CHARACTER_SIZE = 'M'
         weapon = Weapon("Shortsword_Adam", cfg)
         attack_sim = AttackSimulator(weapon, cfg)
 
@@ -1400,7 +1400,7 @@ class TestGetAttackProgressionIntegration:
         cfg.AB = 68
         cfg.AB_PROG = "4APR Classic"
         cfg.DUAL_WIELD = True
-        cfg.TOON_SIZE = 'S'
+        cfg.CHARACTER_SIZE = 'S'
         weapon = Weapon("Spear", cfg)
         attack_sim = AttackSimulator(weapon, cfg)
 

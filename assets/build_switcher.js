@@ -4,7 +4,7 @@
  */
 
 window.dash_clientside = window.dash_clientside || {};
-window.dash_clientside.build_switching = window.dash_clientside.build_switching || {};
+window.dash_clientside.clientside = window.dash_clientside.clientside || {};
 
 // --- HELPERS ---
 
@@ -79,7 +79,7 @@ function _get_no_update_return(keys_count) {
 
 // --- MAIN FUNCTIONS ---
 
-window.dash_clientside.build_switching.switch_build = function(n_clicks_list, builds, active_idx, is_loading, additional_dmg_keys) {
+window.dash_clientside.clientside.switch_build = function(n_clicks_list, builds, active_idx, is_loading, additional_dmg_keys) {
     const triggered = window.dash_clientside.callback_context.triggered;
 
     // Fail-fast checks
@@ -114,17 +114,17 @@ window.dash_clientside.build_switching.switch_build = function(n_clicks_list, bu
         cfg.AB,
         cfg.AB_CAPPED,
         cfg.AB_PROG,
-        cfg.TOON_SIZE,
+        cfg.DUAL_WIELD,
+        cfg.CHARACTER_SIZE,
+        cfg.TWO_WEAPON_FIGHTING,
+        cfg.AMBIDEXTERITY,
+        cfg.IMPROVED_TWF,
         cfg.COMBAT_TYPE,
         cfg.MIGHTY,
         cfg.ENHANCEMENT_SET_BONUS,
         cfg.STR_MOD,
         cfg.TWO_HANDED,
         cfg.WEAPONMASTER,
-        cfg.DUAL_WIELD,
-        cfg.TWO_WEAPON_FIGHTING,
-        cfg.AMBIDEXTERITY,
-        cfg.IMPROVED_TWF,
         cfg.KEEN,
         cfg.IMPROVED_CRIT,
         cfg.OVERWHELM_CRIT,
@@ -141,7 +141,7 @@ window.dash_clientside.build_switching.switch_build = function(n_clicks_list, bu
     ];
 };
 
-window.dash_clientside.build_switching.load_from_buffer = function(config, is_loading, additional_dmg_keys) {
+window.dash_clientside.clientside.load_from_buffer = function(config, is_loading, additional_dmg_keys) {
     const no_upd = window.dash_clientside.no_update;
 
     if (!is_loading || !config || !config.config) {
@@ -167,17 +167,17 @@ window.dash_clientside.build_switching.load_from_buffer = function(config, is_lo
         cfg.AB,
         cfg.AB_CAPPED,
         cfg.AB_PROG,
-        cfg.TOON_SIZE,
+        cfg.DUAL_WIELD,
+        cfg.CHARACTER_SIZE,
+        cfg.TWO_WEAPON_FIGHTING,
+        cfg.AMBIDEXTERITY,
+        cfg.IMPROVED_TWF,
         cfg.COMBAT_TYPE,
         cfg.MIGHTY,
         cfg.ENHANCEMENT_SET_BONUS,
         cfg.STR_MOD,
         cfg.TWO_HANDED,
         cfg.WEAPONMASTER,
-        cfg.DUAL_WIELD,
-        cfg.TWO_WEAPON_FIGHTING,
-        cfg.AMBIDEXTERITY,
-        cfg.IMPROVED_TWF,
         cfg.KEEN,
         cfg.IMPROVED_CRIT,
         cfg.OVERWHELM_CRIT,

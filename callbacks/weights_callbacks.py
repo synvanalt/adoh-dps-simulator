@@ -8,7 +8,7 @@ def register_weights_callbacks(app):
     # Clientside callback: Immediately show spinner when weights apply button is clicked
     app.clientside_callback(
         ClientsideFunction(
-            namespace='build_switching',
+            namespace='clientside',
             function_name='show_spinner_on_weights_apply'
         ),
         Output('loading-overlay', 'style', allow_duplicate=True),

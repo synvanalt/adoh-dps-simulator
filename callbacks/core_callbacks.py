@@ -82,7 +82,7 @@ def register_core_callbacks(app, cfg):
             State('ab-input', 'value'),
             State('ab-capped-input', 'value'),
             State('ab-prog-dropdown', 'value'),
-            State('toon-size-dropdown', 'value'),
+            State('character-size-dropdown', 'value'),
             State('combat-type-dropdown', 'value'),
             State('mighty-input', 'value'),
             State('enhancement-set-bonus-dropdown', 'value'),
@@ -136,7 +136,7 @@ def register_core_callbacks(app, cfg):
         prevent_initial_call=True
     )
     def run_simulation(set_progress, _, __, ___, current_cfg, builds, active_build_idx,
-                       ab, ab_capped, ab_prog, toon_size, combat_type, mighty, enhancement_set_bonus,
+                       ab, ab_capped, ab_prog, character_size, combat_type, mighty, enhancement_set_bonus,
                        str_mod, two_handed, weaponmaster, dual_wield, two_weapon_fighting,
                        ambidexterity, improved_twf, keen, improved_crit, overwhelm_crit,
                        dev_crit, shape_weapon_override, shape_weapon,
@@ -173,17 +173,17 @@ def register_core_callbacks(app, cfg):
             'AB': ab,
             'AB_CAPPED': ab_capped,
             'AB_PROG': ab_prog,
-            'TOON_SIZE': toon_size,
+            'DUAL_WIELD': dual_wield,
+            'CHARACTER_SIZE': character_size,
+            'TWO_WEAPON_FIGHTING': two_weapon_fighting,
+            'AMBIDEXTERITY': ambidexterity,
+            'IMPROVED_TWF': improved_twf,
             'COMBAT_TYPE': combat_type,
             'MIGHTY': mighty,
             'ENHANCEMENT_SET_BONUS': int(enhancement_set_bonus) if enhancement_set_bonus else 3,
             'STR_MOD': str_mod,
             'TWO_HANDED': two_handed,
             'WEAPONMASTER': weaponmaster,
-            'DUAL_WIELD': dual_wield,
-            'TWO_WEAPON_FIGHTING': two_weapon_fighting,
-            'AMBIDEXTERITY': ambidexterity,
-            'IMPROVED_TWF': improved_twf,
             'KEEN': keen,
             'IMPROVED_CRIT': improved_crit,
             'OVERWHELM_CRIT': overwhelm_crit,
@@ -336,7 +336,7 @@ def register_core_callbacks(app, cfg):
                 striped=True,
                 class_name='table-responsive mb-4',
             )
-        ], style={'overflow-x': 'auto'})
+        ], style={'overflowX': 'auto'})
 
         # Hide loading overlay when results update completes
         return comparative_table, html.Div(detailed_results), {'display': 'none'}
@@ -350,7 +350,7 @@ def register_core_callbacks(app, cfg):
                 # Attack Stats, Hit and Crit rates per attack
                 dbc.Row([
                     dbc.Col([
-                        html.Pre(results["summary"], className='border rounded p-3 bg-dark-subtle', style={'overflow-x': 'auto'}),
+                        html.Pre(results["summary"], className='border rounded p-3 bg-dark-subtle', style={'overflowX': 'auto'}),
                     ], class_name='mb-4'),
                 ]),
                 dbc.Row([
@@ -372,7 +372,7 @@ def register_core_callbacks(app, cfg):
                                              html.Td(f'{results["legend_proc_rate_theoretical"]:.1f}%')]),
                                 ])
                             ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
-                        ], style={'overflow-x': 'auto'})
+                        ], style={'overflowX': 'auto'})
                     ], xs=12, md=4, class_name='mb-4'),
 
                     # Hit Rate per Attack - full width on mobile, 4 cols on desktop
@@ -389,7 +389,7 @@ def register_core_callbacks(app, cfg):
                                     ]) for i in range(len(results["hits_per_attack"]))
                                 ])
                             ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
-                        ], style={'overflow-x': 'auto'})
+                        ], style={'overflowX': 'auto'})
                     ], xs=12, md=4, class_name='mb-4'),
 
                     # Crit Rate per Attack - full width on mobile, 4 cols on desktop
@@ -406,7 +406,7 @@ def register_core_callbacks(app, cfg):
                                     ]) for i in range(len(results["crits_per_attack"]))
                                 ])
                             ], bordered=True, hover=True, striped=True, size='sm', class_name='table-responsive')
-                        ], style={'overflow-x': 'auto'})
+                        ], style={'overflowX': 'auto'})
                     ], xs=12, md=4, class_name='mb-4')
                 ], class_name='gx-4', style={'alignItems': 'flex-start'})  # Add horizontal spacing between columns
             ])
