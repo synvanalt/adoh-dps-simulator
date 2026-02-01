@@ -22,17 +22,6 @@ def register_ui_callbacks(app, cfg):
         prevent_initial_call=True
     )
 
-    # Clientside callback: toggle additional damage inputs visibility
-    app.clientside_callback(
-        ClientsideFunction(
-            namespace='clientside',
-            function_name='toggle_additional_damage'
-        ),
-        Output({'type': 'add-dmg-row', 'name': MATCH}, 'style'),
-        Input({'type': 'add-dmg-switch', 'name': MATCH}, 'value'),
-    )
-
-
     # Callback: update reference information
     # Shows weapons from ALL builds (deduplicated) in the Reference Info tab
     @app.callback(
@@ -439,6 +428,17 @@ def register_ui_callbacks(app, cfg):
             return dash.no_update
 
 
+    # Clientside callback: Dual-wield panel visibility
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_dual_wield_section'
+        ),
+        Output('dual-wield-collapse', 'is_open'),  # Changed Target
+        Input('dual-wield-switch', 'value'),
+    )
+
+
     # Clientside callback: toggle shape weapon visibility
     app.clientside_callback(
         ClientsideFunction(
@@ -450,6 +450,17 @@ def register_ui_callbacks(app, cfg):
     )
 
 
+    # Clientside callback: toggle additional damage inputs visibility
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_additional_damage'
+        ),
+        Output({'type': 'add-dmg-row', 'name': MATCH}, 'style'),
+        Input({'type': 'add-dmg-switch', 'name': MATCH}, 'value'),
+    )
+
+
     # Clientside callback: toggle damage limit visibility
     app.clientside_callback(
         ClientsideFunction(
@@ -458,15 +469,4 @@ def register_ui_callbacks(app, cfg):
         ),
         Output('damage-limit-input', 'style'),
         Input('damage-limit-switch', 'value'),
-    )
-
-
-    # Clientside callback: Dual-wield panel visibility
-    app.clientside_callback(
-        ClientsideFunction(
-            namespace='clientside',
-            function_name='toggle_dual_wield_section'
-        ),
-        Output({'type': 'dw-row', 'name': 'container-row'}, 'style'),
-        Input('dual-wield-switch', 'value'),
     )
