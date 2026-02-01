@@ -100,89 +100,93 @@ def build_character_settings(cfg):
         ], class_name='switcher'),
 
         # Dual-Wield Settings (shown only when dual-wield enabled)
-        dbc.Row([
-            dbc.Col([
-                # Character Size (shown only when dual-wield enabled)
-                dbc.Row([
-                    dbc.Col(dbc.Label(
-                        'Character Size:',
-                        html_for='character-size-dropdown',
-                    ), xs=6, md=6),
-                    dbc.Col(dbc.Select(
-                        id='character-size-dropdown',
-                        options=[
-                            {'label': 'Small', 'value': 'S'},
-                            {'label': 'Medium', 'value': 'M'},
-                            {'label': 'Large', 'value': 'L'}
-                        ],
-                        value=cfg.CHARACTER_SIZE,
-                        persistence=True,
-                        persistence_type=persist_type,
-                    ), xs=6, md=6),
-                    dbc.Tooltip(
-                        "Used to determine dual-wield penalties based on weapon size. "
-                        "Smaller weapons relative to character size reduce penalties (light weapon).",
-                        target='character-size-dropdown',
-                        placement='right',
-                        delay={'show': tooltip_delay},
-                    ),
-                ], class_name='add-dmg-row', id={'type': 'dw-row', 'name': 'character-size'}),
+        dbc.Collapse(
+            dbc.Row([
+                dbc.Col([
+                    # Character Size (shown only when dual-wield enabled)
+                    dbc.Row([
+                        dbc.Col(dbc.Label(
+                            'Character Size:',
+                            html_for='character-size-dropdown',
+                        ), xs=6, md=6),
+                        dbc.Col(dbc.Select(
+                            id='character-size-dropdown',
+                            options=[
+                                {'label': 'Small', 'value': 'S'},
+                                {'label': 'Medium', 'value': 'M'},
+                                {'label': 'Large', 'value': 'L'}
+                            ],
+                            value=cfg.CHARACTER_SIZE,
+                            persistence=True,
+                            persistence_type=persist_type,
+                        ), xs=6, md=6),
+                        dbc.Tooltip(
+                            "Used to determine dual-wield penalties based on weapon size. "
+                            "Smaller weapons relative to character size reduce penalties (light weapon).",
+                            target='character-size-dropdown',
+                            placement='right',
+                            delay={'show': tooltip_delay},
+                        ),
+                    ], class_name='add-dmg-row', id={'type': 'dw-row', 'name': 'character-size'}),
 
-                # Two-Weapon Fighting feat
-                dbc.Row([
-                    dbc.Col(dbc.Switch(
-                        id='two-weapon-fighting-switch',
-                        label='Two-Weapon Fighting',
-                        value=cfg.TWO_WEAPON_FIGHTING,
-                        persistence=True,
-                        persistence_type=persist_type,
-                    ), xs=12, md=12),
-                    dbc.Tooltip(
-                        "Reduces dual-wield penalties from -6/-10 to -4/-8 (primary/off-hand). "
-                        "With light weapon off-hand, achieves -2/-6 penalties.",
-                        target='two-weapon-fighting-switch',
-                        placement='left',
-                        delay={'show': tooltip_delay},
-                    ),
-                ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'two-weapon-fighting'}),
+                    # Two-Weapon Fighting feat
+                    dbc.Row([
+                        dbc.Col(dbc.Switch(
+                            id='two-weapon-fighting-switch',
+                            label='Two-Weapon Fighting',
+                            value=cfg.TWO_WEAPON_FIGHTING,
+                            persistence=True,
+                            persistence_type=persist_type,
+                        ), xs=12, md=12),
+                        dbc.Tooltip(
+                            "Reduces dual-wield penalties from -6/-10 to -4/-8 (primary/off-hand). "
+                            "With light weapon off-hand, achieves -2/-6 penalties.",
+                            target='two-weapon-fighting-switch',
+                            placement='left',
+                            delay={'show': tooltip_delay},
+                        ),
+                    ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'two-weapon-fighting'}),
 
-                # Ambidexterity feat
-                dbc.Row([
-                    dbc.Col(dbc.Switch(
-                        id='ambidexterity-switch',
-                        label='Ambidexterity',
-                        value=cfg.AMBIDEXTERITY,
-                        persistence=True,
-                        persistence_type=persist_type,
-                    ), xs=12, md=12),
-                    dbc.Tooltip(
-                        "Reduces off-hand penalty by 4. Combined with TWF, brings penalties to -4/-4. "
-                        "With light weapon off-hand, achieves optimal -2/-2 penalties.",
-                        target='ambidexterity-switch',
-                        placement='left',
-                        delay={'show': tooltip_delay},
-                    ),
-                ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'ambidexterity'}),
+                    # Ambidexterity feat
+                    dbc.Row([
+                        dbc.Col(dbc.Switch(
+                            id='ambidexterity-switch',
+                            label='Ambidexterity',
+                            value=cfg.AMBIDEXTERITY,
+                            persistence=True,
+                            persistence_type=persist_type,
+                        ), xs=12, md=12),
+                        dbc.Tooltip(
+                            "Reduces off-hand penalty by 4. Combined with TWF, brings penalties to -4/-4. "
+                            "With light weapon off-hand, achieves optimal -2/-2 penalties.",
+                            target='ambidexterity-switch',
+                            placement='left',
+                            delay={'show': tooltip_delay},
+                        ),
+                    ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'ambidexterity'}),
 
-                # Improved Two-Weapon Fighting feat
-                dbc.Row([
-                    dbc.Col(dbc.Switch(
-                        id='improved-twf-switch',
-                        label='Improved Two-Weapon Fighting',
-                        value=cfg.IMPROVED_TWF,
-                        persistence=True,
-                        persistence_type=persist_type,
-                    ), xs=12, md=12),
-                    dbc.Tooltip(
-                        "Grants a second off-hand attack at -5 penalty. "
-                        "Without this feat, you only get one off-hand attack per round.",
-                        target='improved-twf-switch',
-                        placement='left',
-                        delay={'show': tooltip_delay},
-                    ),
-                ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'improved-twf'}),
-            ]),
-        ], className='border border-dotted rounded p-3 mb-3', id={'type': 'dw-row', 'name': 'container-row'}, style={'display': 'none'}),
+                    # Improved Two-Weapon Fighting feat
+                    dbc.Row([
+                        dbc.Col(dbc.Switch(
+                            id='improved-twf-switch',
+                            label='Improved Two-Weapon Fighting',
+                            value=cfg.IMPROVED_TWF,
+                            persistence=True,
+                            persistence_type=persist_type,
+                        ), xs=12, md=12),
+                        dbc.Tooltip(
+                            "Grants a second off-hand attack at -5 penalty. "
+                            "Without this feat, you only get one off-hand attack per round.",
+                            target='improved-twf-switch',
+                            placement='left',
+                            delay={'show': tooltip_delay},
+                        ),
+                    ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'improved-twf'}),
+                ]),
+            ], class_name='border border-dotted rounded p-3 mb-3'),
+            id='dual-wield-collapse',
+            is_open=cfg.DUAL_WIELD,
+        ),
 
         # Combat Settings
         dbc.Row([
@@ -421,6 +425,6 @@ def build_character_settings(cfg):
                 persistence=True,
                 persistence_type=persist_type,
             ), xs=12, md=12),
-        ], className='mt-3 mb-3'),
+        ], class_name='mt-3 mb-3'),
 
     ], xs=12, md=6, class_name='col-left')

@@ -22,17 +22,6 @@ def register_ui_callbacks(app, cfg):
         prevent_initial_call=True
     )
 
-    # Clientside callback: toggle additional damage inputs visibility
-    app.clientside_callback(
-        ClientsideFunction(
-            namespace='clientside',
-            function_name='toggle_additional_damage'
-        ),
-        Output({'type': 'add-dmg-row', 'name': MATCH}, 'style'),
-        Input({'type': 'add-dmg-switch', 'name': MATCH}, 'value'),
-    )
-
-
     # Callback: update reference information
     # Shows weapons from ALL builds (deduplicated) in the Reference Info tab
     @app.callback(
@@ -210,7 +199,11 @@ def register_ui_callbacks(app, cfg):
         [Output('ab-input', 'value', allow_duplicate=True),
          Output('ab-capped-input', 'value', allow_duplicate=True),
          Output('ab-prog-dropdown', 'value', allow_duplicate=True),
+         Output('dual-wield-switch', 'value', allow_duplicate=True),
          Output('character-size-dropdown', 'value', allow_duplicate=True),
+         Output('two-weapon-fighting-switch', 'value', allow_duplicate=True),
+         Output('ambidexterity-switch', 'value', allow_duplicate=True),
+         Output('improved-twf-switch', 'value', allow_duplicate=True),
          Output('combat-type-dropdown', 'value', allow_duplicate=True),
          Output('mighty-input', 'value', allow_duplicate=True),
          Output('enhancement-set-bonus-dropdown', 'value', allow_duplicate=True),
@@ -223,11 +216,7 @@ def register_ui_callbacks(app, cfg):
          Output('dev-crit-switch', 'value', allow_duplicate=True),
          Output('shape-weapon-switch', 'value', allow_duplicate=True),
          Output('shape-weapon-dropdown', 'value', allow_duplicate=True),
-         Output('weapon-dropdown', 'value', allow_duplicate=True),
-         Output('dual-wield-switch', 'value', allow_duplicate=True),
-         Output('two-weapon-fighting-switch', 'value', allow_duplicate=True),
-         Output('ambidexterity-switch', 'value', allow_duplicate=True),
-         Output('improved-twf-switch', 'value', allow_duplicate=True)],
+         Output('weapon-dropdown', 'value', allow_duplicate=True)],
         [Input('reset-button', 'n_clicks'),
          Input('sticky-reset-button', 'n_clicks')],
         prevent_initial_call=True
@@ -240,7 +229,11 @@ def register_ui_callbacks(app, cfg):
             default_cfg.AB,
             default_cfg.AB_CAPPED,
             default_cfg.AB_PROG,
+            default_cfg.DUAL_WIELD,
             default_cfg.CHARACTER_SIZE,
+            default_cfg.TWO_WEAPON_FIGHTING,
+            default_cfg.AMBIDEXTERITY,
+            default_cfg.IMPROVED_TWF,
             default_cfg.COMBAT_TYPE,
             default_cfg.MIGHTY,
             default_cfg.ENHANCEMENT_SET_BONUS,
@@ -254,10 +247,6 @@ def register_ui_callbacks(app, cfg):
             default_cfg.SHAPE_WEAPON_OVERRIDE,
             default_cfg.SHAPE_WEAPON,
             default_cfg.DEFAULT_WEAPONS,
-            default_cfg.DUAL_WIELD,
-            default_cfg.TWO_WEAPON_FIGHTING,
-            default_cfg.AMBIDEXTERITY,
-            default_cfg.IMPROVED_TWF,
         ]
 
     # Callback 2: Reset additional damage (4 ALL pattern outputs)
@@ -374,6 +363,7 @@ def register_ui_callbacks(app, cfg):
     # Callback: toggle target immunities inputs
     @app.callback(
         Output({'type': 'immunity-input', 'name': ALL}, 'value'),
+        Output({'type': 'immunity-input', 'name': ALL}, 'disabled'),
         Output('immunities-store', 'data'),
         Input('target-immunities-switch', 'value'),
         State('config-store', 'data'),
@@ -388,25 +378,42 @@ def register_ui_callbacks(app, cfg):
         # Ensure store dict exists
         immunities_store = immunities_store or {}
 
+        # Switch ON → load values from store or config-store
         if apply_immunities:
             # Prefer the most recent user values saved in immunities-store
             if any(name in immunities_store for name in names):
-                return [round(immunities_store.get(name, 0) * 100) for name in names], immunities_store
+                return (
+                    [round(immunities_store.get(name, 0) * 100) for name in names],
+                    [False] * n,        # Enable all inputs
+                    immunities_store    # Return existing store unchanged
+                )
 
             # Fallback to config-store values (fractions -> percentages)
             if cfg_store and "TARGET_IMMUNITIES" in cfg_store:
-                return [round(cfg_store["TARGET_IMMUNITIES"].get(name, 0) * 100) for name in names], immunities_store
+                return (
+                    [round(cfg_store["TARGET_IMMUNITIES"].get(name, 0) * 100) for name in names],
+                    [False] * n,        # Enable all inputs
+                    immunities_store    # Return existing store unchanged
+                )
 
             # Final fallback: zeros
-            return [0] * n, immunities_store
+            return (
+                [0] * n,            # Set all inputs to 0
+                [False] * n,        # Enable all inputs
+                immunities_store    # Return existing store unchanged
+            )
 
+        # Switch OFF → save current values to immunities-store before setting to 0
         else:
-            # Switch off → save current values to immunities-store before setting to 0
             updated_store = {
                 name: (val or 0) / 100  # Convert percentages back to fractions
                 for name, val in zip(names, current_input_values)
             }
-            return [0] * n, updated_store
+            return (
+                [0] * n,        # Set all inputs to 0
+                [True] * n,     # Disable all inputs
+                updated_store   # Save current values to store
+            )
 
 
     # Callback: toggle melee/ranged dependent params OFF and disabled
@@ -439,6 +446,17 @@ def register_ui_callbacks(app, cfg):
             return dash.no_update
 
 
+    # Clientside callback: Dual-wield panel visibility
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_dual_wield_section'
+        ),
+        Output('dual-wield-collapse', 'is_open'),  # Changed Target
+        Input('dual-wield-switch', 'value'),
+    )
+
+
     # Clientside callback: toggle shape weapon visibility
     app.clientside_callback(
         ClientsideFunction(
@@ -450,6 +468,17 @@ def register_ui_callbacks(app, cfg):
     )
 
 
+    # Clientside callback: toggle additional damage inputs visibility
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_additional_damage'
+        ),
+        Output({'type': 'add-dmg-row', 'name': MATCH}, 'style'),
+        Input({'type': 'add-dmg-switch', 'name': MATCH}, 'value'),
+    )
+
+
     # Clientside callback: toggle damage limit visibility
     app.clientside_callback(
         ClientsideFunction(
@@ -458,15 +487,4 @@ def register_ui_callbacks(app, cfg):
         ),
         Output('damage-limit-input', 'style'),
         Input('damage-limit-switch', 'value'),
-    )
-
-
-    # Clientside callback: Dual-wield panel visibility
-    app.clientside_callback(
-        ClientsideFunction(
-            namespace='clientside',
-            function_name='toggle_dual_wield_section'
-        ),
-        Output({'type': 'dw-row', 'name': 'container-row'}, 'style'),
-        Input('dual-wield-switch', 'value'),
     )
