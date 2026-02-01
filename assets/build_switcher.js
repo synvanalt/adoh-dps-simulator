@@ -63,17 +63,18 @@ function _get_no_update_return(keys_count) {
     // Note: Array(n).fill(x) is extremely fast in modern JS
     return [
         no_upd, // active-idx
-        no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd,
-        no_upd, no_upd, // two-handed, weaponmaster
-        no_upd, no_upd, no_upd, no_upd, // dual-wield settings (4 new fields)
-        no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, // keen through shape_weapon
+        no_upd, no_upd, no_upd,         // ab, ab_capped, ab_prog
+        no_upd, no_upd, no_upd, no_upd, no_upd, // dual-wield settings (5 fields)
+        no_upd, no_upd, no_upd, no_upd, // combat_type, mighty, enhancement_set_bonus, str_mod
+        no_upd, no_upd, no_upd, no_upd, // two-handed, weaponmaster, keen, improved_crit
+        no_upd, no_upd, no_upd, no_upd, // overwhelm_crit, dev_crit, shape_weapon_override, shape_weapon
         Array(keys_count).fill(no_upd), // switches
         Array(keys_count).fill(no_upd), // input1
         Array(keys_count).fill(no_upd), // input2
         Array(keys_count).fill(no_upd), // input3
-        no_upd, // weapons
-        no_upd, // name
-        no_upd  // loading
+        no_upd, // weapons dropdown
+        no_upd, // build name
+        no_upd  // build loading
     ];
 }
 
@@ -148,15 +149,18 @@ window.dash_clientside.clientside.load_from_buffer = function(config, is_loading
         // Return structure matches Output count, minus active_index
         const len = additional_dmg_keys.length;
         return [
-            no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, no_upd,
-            no_upd, no_upd, // two-handed, weaponmaster
-            no_upd, no_upd, no_upd, no_upd, // dual-wield settings (4 new fields)
-            no_upd, no_upd, no_upd, no_upd, no_upd, no_upd, // keen through shape_weapon
-            Array(len).fill(no_upd),
-            Array(len).fill(no_upd),
-            Array(len).fill(no_upd),
-            Array(len).fill(no_upd),
-            no_upd, no_upd, no_upd
+            no_upd, no_upd, no_upd,         // ab, ab_capped, ab_prog
+            no_upd, no_upd, no_upd, no_upd, no_upd, // dual-wield settings (5 fields)
+            no_upd, no_upd, no_upd, no_upd, // combat_type, mighty, enhancement_set_bonus, str_mod
+            no_upd, no_upd, no_upd, no_upd, // two-handed, weaponmaster, keen, improved_crit
+            no_upd, no_upd, no_upd, no_upd, // overwhelm_crit, dev_crit, shape_weapon_override, shape_weapon
+            Array(len).fill(no_upd), // switches
+            Array(len).fill(no_upd), // input1
+            Array(len).fill(no_upd), // input2
+            Array(len).fill(no_upd), // input3
+            no_upd, // weapons dropdown
+            no_upd, // build name
+            no_upd  // build loading
         ];
     }
 
