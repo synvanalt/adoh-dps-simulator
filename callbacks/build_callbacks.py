@@ -35,7 +35,7 @@ def register_build_callbacks(app, cfg):
     # Clientside callback: Immediately show spinner when build tab is clicked
     app.clientside_callback(
         ClientsideFunction(
-            namespace='build_switching',
+            namespace='clientside',
             function_name='show_spinner_on_tab_click'
         ),
         Output('loading-overlay', 'style', allow_duplicate=True),
@@ -127,7 +127,7 @@ def register_build_callbacks(app, cfg):
     # Clientside callback: Immediately show spinner when CRUD buttons are clicked
     app.clientside_callback(
         ClientsideFunction(
-            namespace='build_switching',
+            namespace='clientside',
             function_name='show_spinner_on_button_click'
         ),
         Output('loading-overlay', 'style', allow_duplicate=True),
@@ -331,7 +331,7 @@ def register_build_callbacks(app, cfg):
     # Clientside: Update UI from buffer (instant, no server round-trip)
     app.clientside_callback(
         ClientsideFunction(
-            namespace='build_switching',
+            namespace='clientside',
             function_name='load_from_buffer'
         ),
         Output('ab-input', 'value', allow_duplicate=True),

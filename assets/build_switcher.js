@@ -4,7 +4,7 @@
  */
 
 window.dash_clientside = window.dash_clientside || {};
-window.dash_clientside.build_switching = window.dash_clientside.build_switching || {};
+window.dash_clientside.clientside = window.dash_clientside.clientside || {};
 
 // --- HELPERS ---
 
@@ -79,7 +79,7 @@ function _get_no_update_return(keys_count) {
 
 // --- MAIN FUNCTIONS ---
 
-window.dash_clientside.build_switching.switch_build = function(n_clicks_list, builds, active_idx, is_loading, additional_dmg_keys) {
+window.dash_clientside.clientside.switch_build = function(n_clicks_list, builds, active_idx, is_loading, additional_dmg_keys) {
     const triggered = window.dash_clientside.callback_context.triggered;
 
     // Fail-fast checks
@@ -141,7 +141,7 @@ window.dash_clientside.build_switching.switch_build = function(n_clicks_list, bu
     ];
 };
 
-window.dash_clientside.build_switching.load_from_buffer = function(config, is_loading, additional_dmg_keys) {
+window.dash_clientside.clientside.load_from_buffer = function(config, is_loading, additional_dmg_keys) {
     const no_upd = window.dash_clientside.no_update;
 
     if (!is_loading || !config || !config.config) {

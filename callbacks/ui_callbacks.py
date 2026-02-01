@@ -13,7 +13,7 @@ def register_ui_callbacks(app, cfg):
     # Clientside callback: Immediately show spinner when reset buttons are clicked
     app.clientside_callback(
         ClientsideFunction(
-            namespace='build_switching',
+            namespace='clientside',
             function_name='show_spinner_on_reset_click'
         ),
         Output('loading-overlay', 'style', allow_duplicate=True),
@@ -22,14 +22,15 @@ def register_ui_callbacks(app, cfg):
         prevent_initial_call=True
     )
 
-    # Callback: toggle additional damage inputs visibility
-    @app.callback(
+    # Clientside callback: toggle additional damage inputs visibility
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_additional_damage'
+        ),
         Output({'type': 'add-dmg-row', 'name': MATCH}, 'style'),
         Input({'type': 'add-dmg-switch', 'name': MATCH}, 'value'),
     )
-    def toggle_additional_damage(show):
-        style = {'display': 'flex'} if show else {'display': 'none'}
-        return style
 
 
     # Callback: update reference information
@@ -438,38 +439,34 @@ def register_ui_callbacks(app, cfg):
             return dash.no_update
 
 
-    # Callback: toggle shape weapon visibility
-    @app.callback(
+    # Clientside callback: toggle shape weapon visibility
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_shape_weapon'
+        ),
         Output('shape-weapon-dropdown', 'style'),
         Input('shape-weapon-switch', 'value'),
     )
-    def toggle_shape_weapon(shape_weapon_enabled):
-        if shape_weapon_enabled:
-            return {'display': 'flex'}
-        else:
-            return {'display': 'none'}
 
 
-    # Callback: toggle damage limit visibility
-    @app.callback(
+    # Clientside callback: toggle damage limit visibility
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_damage_limit'
+        ),
         Output('damage-limit-input', 'style'),
         Input('damage-limit-switch', 'value'),
     )
-    def toggle_damage_limit(dmg_limit_enabled):
-        if dmg_limit_enabled:
-            return {'display': 'flex'}
-        else:
-            return {'display': 'none'}
 
 
-    # Callback: Dual-wield panel visibility
-    @app.callback(
+    # Clientside callback: Dual-wield panel visibility
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_dual_wield_section'
+        ),
         Output({'type': 'dw-row', 'name': 'container-row'}, 'style'),
         Input('dual-wield-switch', 'value'),
     )
-    def toggle_dual_wield_section(dual_wield_enabled):
-        """Show/hide dual-wield feat widgets based on master toggle"""
-        if dual_wield_enabled:
-            return {'display': 'flex'}
-        else:
-            return {'display': 'none'}

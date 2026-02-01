@@ -2,7 +2,7 @@
  * Clientside callbacks for spinners during long operations
  */
 window.dash_clientside = window.dash_clientside || {};
-window.dash_clientside.build_switching = window.dash_clientside.build_switching || {};
+window.dash_clientside.clientside = window.dash_clientside.clientside || {};
 
 // Centralized spinner style to ensure consistency across all triggers
 const spinner_style = {
@@ -19,25 +19,25 @@ const spinner_style = {
     'alignItems': 'center',
 };
 
-window.dash_clientside.build_switching.show_spinner_on_button_click = function(add, dup, del) {
+window.dash_clientside.clientside.show_spinner_on_button_click = function(add, dup, del) {
     const triggered = window.dash_clientside.callback_context.triggered;
     if (!triggered || triggered.length === 0) return window.dash_clientside.no_update;
     return spinner_style;
 };
 
-window.dash_clientside.build_switching.show_spinner_on_reset_click = function(reset, sticky) {
+window.dash_clientside.clientside.show_spinner_on_reset_click = function(reset, sticky) {
     const triggered = window.dash_clientside.callback_context.triggered;
     if (!triggered || triggered.length === 0) return window.dash_clientside.no_update;
     return spinner_style;
 };
 
-window.dash_clientside.build_switching.show_spinner_on_weights_apply = function(apply) {
+window.dash_clientside.clientside.show_spinner_on_weights_apply = function(apply) {
     const triggered = window.dash_clientside.callback_context.triggered;
     if (!triggered || triggered.length === 0) return window.dash_clientside.no_update;
     return spinner_style;
 };
 
-window.dash_clientside.build_switching.show_spinner_on_tab_click = function(n_clicks_list, active_idx, is_loading) {
+window.dash_clientside.clientside.show_spinner_on_tab_click = function(n_clicks_list, active_idx, is_loading) {
     const triggered = window.dash_clientside.callback_context.triggered;
     const no_upd = window.dash_clientside.no_update;
 
