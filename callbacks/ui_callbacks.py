@@ -363,6 +363,7 @@ def register_ui_callbacks(app, cfg):
     # Callback: toggle target immunities inputs
     @app.callback(
         Output({'type': 'immunity-input', 'name': ALL}, 'value'),
+        Output({'type': 'immunity-input', 'name': ALL}, 'disabled'),
         Output('immunities-store', 'data'),
         Input('target-immunities-switch', 'value'),
         State('config-store', 'data'),
@@ -377,25 +378,42 @@ def register_ui_callbacks(app, cfg):
         # Ensure store dict exists
         immunities_store = immunities_store or {}
 
+        # Switch ON → load values from store or config-store
         if apply_immunities:
             # Prefer the most recent user values saved in immunities-store
             if any(name in immunities_store for name in names):
-                return [round(immunities_store.get(name, 0) * 100) for name in names], immunities_store
+                return (
+                    [round(immunities_store.get(name, 0) * 100) for name in names],
+                    [False] * n,        # Enable all inputs
+                    immunities_store    # Return existing store unchanged
+                )
 
             # Fallback to config-store values (fractions -> percentages)
             if cfg_store and "TARGET_IMMUNITIES" in cfg_store:
-                return [round(cfg_store["TARGET_IMMUNITIES"].get(name, 0) * 100) for name in names], immunities_store
+                return (
+                    [round(cfg_store["TARGET_IMMUNITIES"].get(name, 0) * 100) for name in names],
+                    [False] * n,        # Enable all inputs
+                    immunities_store    # Return existing store unchanged
+                )
 
             # Final fallback: zeros
-            return [0] * n, immunities_store
+            return (
+                [0] * n,            # Set all inputs to 0
+                [False] * n,        # Enable all inputs
+                immunities_store    # Return existing store unchanged
+            )
 
+        # Switch OFF → save current values to immunities-store before setting to 0
         else:
-            # Switch off → save current values to immunities-store before setting to 0
             updated_store = {
                 name: (val or 0) / 100  # Convert percentages back to fractions
                 for name, val in zip(names, current_input_values)
             }
-            return [0] * n, updated_store
+            return (
+                [0] * n,        # Set all inputs to 0
+                [True] * n,     # Disable all inputs
+                updated_store   # Save current values to store
+            )
 
 
     # Callback: toggle melee/ranged dependent params OFF and disabled
