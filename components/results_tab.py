@@ -9,7 +9,7 @@ def build_results_tab():
     return dbc.Tab(label="Results", tab_id='results', children=[
         dbc.Container([
             html.Div([
-                html.H4("Comparative Results", className='mt-4 mb-4'),
+                html.H4("Comparative Results", className='mt-4 mb-3'),
                 html.Div([
                     dbc.Button("Simulate DPS", id='resimulate-button', color='primary', className='me-3'),
                     dbc.Button(
@@ -23,10 +23,17 @@ def build_results_tab():
             ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between', 'flexWrap': 'wrap'}),
 
             # Main comparative table
-            html.Div(id='comparative-table', className='mb-4'),
+            html.Div(
+                id='comparative-table',
+                className='mb-4',
+                children=html.P("Run simulation to see results", className='text-muted')
+            ),
 
             # Detailed results per weapon
-            html.H4("Detailed Results", className='mt-4 mb-3'),
-            html.Div(id='detailed-results')
+            html.H4("Detailed Results", className='mt-5 mb-3'),
+            html.Div(
+                id='detailed-results',
+                children=html.P("Run simulation to see results", className='text-muted')
+            )
         ], fluid=True, className='border-bottom rounded-bottom border-start border-end p-4 mb-4'),
     ])

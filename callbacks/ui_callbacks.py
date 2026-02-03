@@ -37,7 +37,6 @@ def register_ui_callbacks(app, cfg):
          Input({'type': 'immunity-input', 'name': ALL}, 'value'),
          Input('builds-store', 'data')],
         State('build-loading', 'data'),
-        prevent_initial_call=True
     )
     def update_reference_info(_, __, ___, current_dropdown_weapons, shape_weapon_override, shape_weapon, immunity_values, builds, is_loading):
         # Skip during build loading to prevent callback cascade
