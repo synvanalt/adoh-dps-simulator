@@ -129,8 +129,8 @@ class TestSaveCurrentBuildState:
         keen = True
 
         result = save_current_build_state(
-            builds, 0, ab, 20, 'Classic', 'M', 'Melee',
-            0, 3, str_mod, False, False, False, False, False, False, keen,
+            builds, 0, ab, 20, 'Classic', False, 'M', False, False, False,
+            'Melee', 0, 3, str_mod, False, False, keen,
             False, False, False, False, 'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
         )
