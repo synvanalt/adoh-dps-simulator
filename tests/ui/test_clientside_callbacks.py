@@ -56,7 +56,7 @@ class TestBuildSwitcherCallbacks:
         dash_page.locator("#str-mod-input").fill("25")
 
         # Toggle Keen checkbox
-        keen_checkbox = dash_page.locator("#keen-checkbox")
+        keen_checkbox = dash_page.locator("#keen-switch")
         initial_keen_state = keen_checkbox.is_checked()
         keen_checkbox.click()
 
@@ -70,7 +70,7 @@ class TestBuildSwitcherCallbacks:
         # Verify default values on Build 1
         assert dash_page.locator("#ab-input").input_value() == "68"
         assert dash_page.locator("#str-mod-input").input_value() == "21"
-        assert dash_page.locator("#keen-checkbox").is_checked() == True  # Default is checked
+        assert dash_page.locator("#keen-switch").is_checked() == True  # Default is checked
 
         # Switch back to Build 2
         build_tabs.nth(1).click()
@@ -79,7 +79,7 @@ class TestBuildSwitcherCallbacks:
         # Verify modified values preserved
         assert dash_page.locator("#ab-input").input_value() == "75"
         assert dash_page.locator("#str-mod-input").input_value() == "25"
-        assert dash_page.locator("#keen-checkbox").is_checked() != initial_keen_state
+        assert dash_page.locator("#keen-switch").is_checked() != initial_keen_state
 
     def test_switch_build_no_update_on_same_build(self, dash_page: Page):
         """Test that clicking the active build doesn't trigger updates."""
@@ -104,7 +104,7 @@ class TestBuildSwitcherCallbacks:
         # Verify default values loaded via load_from_buffer
         assert dash_page.locator("#ab-input").input_value() == "68"
         assert dash_page.locator("#str-mod-input").input_value() == "21"
-        assert dash_page.locator("#keen-checkbox").is_checked() == True
+        assert dash_page.locator("#keen-switch").is_checked() == True
 
 
 @pytest.mark.ui

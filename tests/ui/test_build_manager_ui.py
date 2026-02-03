@@ -4,6 +4,7 @@ Tests build tabs, add/delete/duplicate buttons, and build naming.
 """
 import pytest
 from playwright.sync_api import Page, expect
+import re
 
 
 @pytest.mark.ui
@@ -53,13 +54,15 @@ class TestBuildTabsUI:
 
         # Verify it's now active
         first_tab = build_tabs.nth(0)
-        expect(first_tab).to_have_class(/active/)
+        # Check if class contains "active"
+        class_attr = first_tab.get_attribute("class")
+        assert "active" in class_attr, f"Expected 'active' in class, got: {class_attr}"
 
     def test_build_tab_labels_display_correctly(self, dash_page: Page, wait_for_spinner):
         """Test that build tab labels show correct build names."""
         # First build should show "Build 1"
         first_tab = dash_page.locator("button.build-tab-btn").first
-        expect(first_tab).to_contain_text(/Build\s*1/i)
+        expect(first_tab).to_contain_text(re.compile(r"Build\s*1", re.IGNORECASE))
 
         # Add second build
         add_btn = dash_page.locator("#add-build-btn")
@@ -68,7 +71,7 @@ class TestBuildTabsUI:
 
         # Second build should show "Build 2"
         second_tab = dash_page.locator("button.build-tab-btn").nth(1)
-        expect(second_tab).to_contain_text(/Build\s*2/i)
+        expect(second_tab).to_contain_text(re.compile(r"Build\s*2", re.IGNORECASE))
 
 
 @pytest.mark.ui

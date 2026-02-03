@@ -35,7 +35,7 @@ def fill_character_settings(dash_page: Page):
         str_input.fill(str(str_mod))
 
         # Set Keen checkbox
-        keen_checkbox = dash_page.locator("#keen-checkbox")
+        keen_checkbox = dash_page.locator("#keen-switch")
         if keen != keen_checkbox.is_checked():
             keen_checkbox.click()
 
