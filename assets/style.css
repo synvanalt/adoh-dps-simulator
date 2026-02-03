@@ -2,6 +2,26 @@ body {
     overflow-y: scroll;
 }
 
+/* Force tabs to stay in a row and scroll horizontally if they exceed screen width */
+.nav-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    min-width: 100%;
+}
+
+/* Style the Active Tab */
+.nav-tabs .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Hide the tabs horizontal scrollbar on mobile for a cleaner look */
+.nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
 .border-dotted {
     border-style: dotted !important;
 }
@@ -26,20 +46,20 @@ body {
     margin-bottom: 0.5rem;
 }
 
-.add-dmg-row {
-    height: 2.3rem;
+.tight-row {
+    /* height: 2.3rem; */
     display: flex;
     align-items: center;
     margin-bottom: 0rem;
-}
-
-.immunity-row {
 }
 
 .add-dmg-input {
     width: 25%;
     height: 1.6rem;
     padding: 0.375rem 0.25rem;
+}
+
+.immunity-row {
 }
 
 @media screen and (min-width: 768px) { /* Adjust 768px as needed for your desktop breakpoint */
@@ -54,41 +74,41 @@ body {
 
 /* Mobile-specific tweaks: only apply on small screens and preserve desktop layout */
 @media (max-width: 576px) {
-  /* Reduce heavy paddings used on desktop containers */
-  .p-5 {
-    padding: 0.75rem !important;
-  }
+    /* Reduce heavy paddings used on desktop containers */
+    .p-5 {
+        padding: 0.75rem !important;
+    }
 
-  /* Make tab content more compact */
-  .border-bottom.p-4,
-  .border-bottom.p-5 {
-    padding: 0.75rem !important;
-  }
+    /* Make tab content more compact */
+    .border-bottom.p-4,
+    .border-bottom.p-5 {
+        padding: 0.75rem !important;
+    }
 
-  /* Make preformatted text wrap and use smaller font for readability */
-  pre {
-    /* white-space: pre-wrap; */
-    font-size: 0.85rem;
-  }
+    /* Make preformatted text wrap and use smaller font for readability */
+    pre {
+        /* white-space: pre-wrap; */
+        font-size: 0.85rem;
+    }
 
-  /* Ensure inputs and selects take full width and stack neatly */
-  .dbc input, .dbc select, input.form-control, select.form-select {
-    /* width: 100% !important; */
-    box-sizing: border-box;
-  }
+    /* Ensure inputs and selects take full width and stack neatly */
+    .dbc input, .dbc select, input.form-control, select.form-select {
+        /* width: 100% !important; */
+        box-sizing: border-box;
+    }
 
-  /* Tighten margins for cards/tables */
-  .mb-4 { margin-bottom: 0.75rem !important; }
-  .mb-2 { margin-bottom: 0.5rem !important; }
+    /* Tighten margins for cards/tables */
+    .mb-4 { margin-bottom: 0.75rem !important; }
+    .mb-2 { margin-bottom: 0.5rem !important; }
 
-  /* Navbar brand smaller on mobile */
-  .navbar-brand { font-size: 1rem !important; }
+    /* Navbar brand smaller on mobile */
+    .navbar-brand { font-size: 1rem !important; }
 
-  /* Add extra spacing above the Additional Damage header on mobile only */
-  .add-dmg-header {
-    margin-top: 2rem !important;
-    margin-bottom: 0.5rem !important;
-  }
+    /* Add extra spacing above the Additional Damage header on mobile only */
+    .add-dmg-header {
+        margin-top: 2rem !important;
+        margin-bottom: 0.5rem !important;
+    }
 }
 
 /* Keep existing desktop behavior unchanged */

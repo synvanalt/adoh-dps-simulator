@@ -127,7 +127,7 @@ def build_character_settings(cfg):
                             placement='right',
                             delay={'show': tooltip_delay},
                         ),
-                    ], class_name='add-dmg-row', id={'type': 'dw-row', 'name': 'character-size'}),
+                    ], class_name='tight-row', id={'type': 'dw-row', 'name': 'character-size'}),
 
                     # Two-Weapon Fighting feat
                     dbc.Row([
@@ -145,7 +145,7 @@ def build_character_settings(cfg):
                             placement='left',
                             delay={'show': tooltip_delay},
                         ),
-                    ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'two-weapon-fighting'}),
+                    ], class_name='switcher tight-row', id={'type': 'dw-row', 'name': 'two-weapon-fighting'}),
 
                     # Ambidexterity feat
                     dbc.Row([
@@ -163,7 +163,7 @@ def build_character_settings(cfg):
                             placement='left',
                             delay={'show': tooltip_delay},
                         ),
-                    ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'ambidexterity'}),
+                    ], class_name='switcher tight-row', id={'type': 'dw-row', 'name': 'ambidexterity'}),
 
                     # Improved Two-Weapon Fighting feat
                     dbc.Row([
@@ -181,7 +181,7 @@ def build_character_settings(cfg):
                             placement='left',
                             delay={'show': tooltip_delay},
                         ),
-                    ], class_name='switcher add-dmg-row', id={'type': 'dw-row', 'name': 'improved-twf'}),
+                    ], class_name='switcher tight-row', id={'type': 'dw-row', 'name': 'improved-twf'}),
                 ]),
             ], class_name='border border-dotted rounded p-3 mb-3'),
             id='dual-wield-collapse',

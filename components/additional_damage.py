@@ -63,7 +63,7 @@ def build_additional_damage_rows(additional_damage_dict):
                 class_name='add-dmg-input',
                 style=visibility_dice,
             ),
-            html.Span("d", style=visibility_dice),
+            html.Span("d", className='text-muted', style=visibility_dice),
             dbc.Input(
                 id={'type': 'add-dmg-input2', 'name': key},
                 type='number',
@@ -87,7 +87,7 @@ def build_additional_damage_rows(additional_damage_dict):
                 class_name='add-dmg-input',
                 style=visibility_flat,
             ),
-            html.Span(f"{dmg_type_name}", style={'marginLeft': '0.5em'}),
+            html.Span(f"{dmg_type_name}", className='text-muted', style={'marginLeft': '0.5em'}),
             dbc.Tooltip(
                 val[2],     # string, tooltip description
                 target={'type': 'add-dmg-switch', 'name': key},  # must match the component's id
@@ -98,9 +98,9 @@ def build_additional_damage_rows(additional_damage_dict):
 
         # Combined row: switch on left and widgets on right
         combined = dbc.Row([
-            dbc.Col(switch, xs=6, md=6),
-            dbc.Col(widgets, xs=6, md=6),
-        ], class_name='switcher add-dmg-row')
+            dbc.Col(switch, xs=12, md=6),
+            dbc.Col(widgets, xs=12, md=6),
+        ], class_name='switcher tight-row')
         rows.append(combined)
 
     return rows

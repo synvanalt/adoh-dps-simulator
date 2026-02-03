@@ -147,7 +147,7 @@ app.layout = dbc.Container([
             # Tab 4: Reference Information
             build_reference_info_tab(),
 
-        ], style={'padding': '20px 0px 0px 0px'}),
+        ], class_name='nav-tabs', style={'padding': '20px 0px 0px 0px'}),
     ], fluid=True, style={
         'maxWidth': '1200px',
         'margin': 'auto',
