@@ -178,7 +178,10 @@ def wait_for_simulation(dash_page: Page):
         progress_modal = dash_page.locator("#progress-modal")
         expect(progress_modal).not_to_be_visible(timeout=timeout)
 
-        # Wait for results to appear
-        results_tab = dash_page.locator("#results-content")
-        expect(results_tab).to_be_visible(timeout=5000)
+        # Wait for results to appear (comparative table gets updated with results)
+        results_table = dash_page.locator("#comparative-table")
+        expect(results_table).to_be_visible(timeout=5000)
+
+        # Wait for actual results content (not just placeholder text)
+        expect(results_table).not_to_contain_text("Run simulation", timeout=5000)
     return _wait

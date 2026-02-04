@@ -19,9 +19,12 @@ class TestResultsDisplay:
 
     def test_results_content_area_exists(self, dash_page: Page):
         """Test that results content area exists."""
-        results_content = dash_page.locator("#results-content, .results-display")
+        # Check for the actual results elements
+        comparative_table = dash_page.locator("#comparative-table")
+        detailed_results = dash_page.locator("#detailed-results")
 
-        # Results area should exist in DOM
+        # At least one results area should exist in DOM
+        assert comparative_table.count() > 0 or detailed_results.count() > 0
 
     def test_run_simulation_button_visible(self, dash_page: Page):
         """Test that Run Simulation button is visible."""
@@ -56,9 +59,12 @@ class TestResultsAfterSimulation:
 
         wait_for_simulation()
 
-        # Check for DPS display
-        dps_elem = dash_page.locator("#avg-dps-value, text=/DPS/i")
-        expect(dps_elem.first).to_be_visible()
+        # Check for DPS display in the comparative table
+        comparative_table = dash_page.locator("#comparative-table")
+        expect(comparative_table).to_be_visible()
+
+        # Table should contain "DPS" text
+        expect(comparative_table).to_contain_text("DPS", timeout=5000)
 
     def test_dps_value_is_numeric(self, dash_page: Page, wait_for_simulation):
         """Test that displayed DPS is a valid number."""
@@ -67,12 +73,24 @@ class TestResultsAfterSimulation:
 
         wait_for_simulation()
 
-        dps_elem = dash_page.locator("#avg-dps-value")
-        if dps_elem.is_visible():
-            dps_text = dps_elem.inner_text()
-            # Should be able to parse as float
-            dps_value = float(dps_text)
-            assert dps_value > 0, f"DPS should be positive, got {dps_value}"
+        # Get the comparative table
+        comparative_table = dash_page.locator("#comparative-table")
+        expect(comparative_table).to_be_visible()
+
+        # Get the table text and verify it contains numeric values
+        table_text = comparative_table.inner_text()
+
+        # Should contain "DPS" and numeric values
+        assert "DPS" in table_text, "Table should contain DPS column"
+
+        # Look for numeric patterns in the table (e.g., "123.45")
+        import re
+        numbers = re.findall(r'\d+\.?\d*', table_text)
+        assert len(numbers) > 0, "Table should contain numeric values"
+
+        # At least one number should be > 0 (the DPS value)
+        numeric_values = [float(n) for n in numbers if n and float(n) > 0]
+        assert len(numeric_values) > 0, "Should have at least one positive numeric value"
 
     def test_results_show_statistics(self, dash_page: Page, wait_for_simulation):
         """Test that results show statistical information."""
@@ -81,13 +99,14 @@ class TestResultsAfterSimulation:
 
         wait_for_simulation()
 
-        # Should show statistics like std dev, CV, etc.
-        results_area = dash_page.locator("#results-content")
+        # Check that comparative table has statistical data
+        results_table = dash_page.locator("#comparative-table")
+        expect(results_table).to_be_visible()
 
-        if results_area.is_visible():
-            # Look for statistical terms
-            stats_text = results_area.inner_text()
-            # Might include "standard", "deviation", "coefficient", etc.
+        # Look for key metrics like DPS, Hit %, Crit %
+        table_text = results_table.inner_text().lower()
+        # Should contain metrics like "dps" or percentage indicators
+        assert "dps" in table_text or "%" in table_text
 
     def test_hit_rate_displayed(self, dash_page: Page, wait_for_simulation):
         """Test that hit rate is displayed."""
@@ -96,11 +115,12 @@ class TestResultsAfterSimulation:
 
         wait_for_simulation()
 
-        # Look for hit rate
-        hit_rate_elem = dash_page.locator("#hit-rate-value, text=/hit.*rate/i")
+        # Look for hit rate in comparative table
+        comparative_table = dash_page.locator("#comparative-table")
+        expect(comparative_table).to_be_visible()
 
-        if hit_rate_elem.count() > 0:
-            expect(hit_rate_elem.first).to_be_visible()
+        # Table should contain "Hit %" column
+        expect(comparative_table).to_contain_text("Hit", timeout=5000)
 
     def test_crit_rate_displayed(self, dash_page: Page, wait_for_simulation):
         """Test that critical hit rate is displayed."""
@@ -109,11 +129,12 @@ class TestResultsAfterSimulation:
 
         wait_for_simulation()
 
-        # Look for crit rate
-        crit_rate_elem = dash_page.locator("#crit-rate-value, text=/crit.*rate/i")
+        # Look for crit rate in comparative table
+        comparative_table = dash_page.locator("#comparative-table")
+        expect(comparative_table).to_be_visible()
 
-        if crit_rate_elem.count() > 0:
-            expect(crit_rate_elem.first).to_be_visible()
+        # Table should contain "Crit %" column
+        expect(comparative_table).to_contain_text("Crit", timeout=5000)
 
 
 @pytest.mark.ui
@@ -152,7 +173,7 @@ class TestProgressModal:
         expect(progress_modal).to_be_visible(timeout=5000)
 
         # Should have progress bar or percentage
-        progress_indicator = progress_modal.locator("#progress-bar, .progress-bar, text=/%/")
+        progress_indicator = progress_modal.locator("#progress-bar, .progress-bar")
 
         if progress_indicator.count() > 0:
             expect(progress_indicator.first).to_be_visible()
@@ -195,12 +216,18 @@ class TestResultsFormatting:
 
         wait_for_simulation()
 
-        dps_elem = dash_page.locator("#avg-dps-value")
-        if dps_elem.is_visible():
-            dps_text = dps_elem.inner_text()
+        # Get the comparative table
+        comparative_table = dash_page.locator("#comparative-table")
+        expect(comparative_table).to_be_visible()
 
-            # Should have decimal point
-            # e.g., "245.6" not "245"
+        # Get the table text
+        table_text = comparative_table.inner_text()
+
+        # Look for decimal numbers in DPS values
+        import re
+        decimal_numbers = re.findall(r'\d+\.\d+', table_text)
+        # Should have at least some decimal formatted numbers
+        assert len(decimal_numbers) > 0, "Table should contain decimal-formatted values"
 
     def test_percentages_formatted_correctly(self, dash_page: Page, wait_for_simulation):
         """Test that percentages are formatted correctly."""
@@ -247,9 +274,9 @@ class TestResultsLayout:
 
         wait_for_simulation()
 
-        # Results should be organized (cards, tables, etc.)
-        results_area = dash_page.locator("#results-content")
-        expect(results_area).to_be_visible()
+        # Results should be organized (comparative table and detailed results)
+        comparative_table = dash_page.locator("#comparative-table")
+        expect(comparative_table).to_be_visible()
 
     def test_results_responsive_layout(self, dash_page: Page, wait_for_simulation):
         """Test results responsive layout."""
@@ -262,8 +289,8 @@ class TestResultsLayout:
         dash_page.set_viewport_size({"width": 375, "height": 667})
 
         # Results should still be readable
-        results_area = dash_page.locator("#results-content")
-        expect(results_area).to_be_visible()
+        comparative_table = dash_page.locator("#comparative-table")
+        expect(comparative_table).to_be_visible()
 
         # Reset viewport
         dash_page.set_viewport_size({"width": 1280, "height": 720})
@@ -276,8 +303,8 @@ class TestResultsLayout:
         wait_for_simulation()
 
         # Results should not overflow viewport
-        results_area = dash_page.locator("#results-content")
-        expect(results_area).to_be_visible()
+        comparative_table = dash_page.locator("#comparative-table")
+        expect(comparative_table).to_be_visible()
 
 
 @pytest.mark.ui
@@ -293,11 +320,12 @@ class TestErrorHandling:
 
     def test_no_results_before_simulation(self, dash_page: Page):
         """Test that no results shown before running simulation."""
-        # On initial load, results should be empty or show placeholder
+        # On initial load, results should show placeholder text
+        comparative_table = dash_page.locator("#comparative-table")
 
-        results_content = dash_page.locator("#results-content")
+        # Should show "Run simulation to see results" message
+        expect(comparative_table).to_contain_text("Run simulation", timeout=2000)
 
-        # Should either be hidden or show "Run simulation to see results" message
 
     def test_results_persist_between_runs(self, dash_page: Page, wait_for_simulation):
         """Test that new results replace old results."""
@@ -307,11 +335,21 @@ class TestErrorHandling:
 
         wait_for_simulation()
 
-        dps_elem = dash_page.locator("#avg-dps-value")
-        first_dps = dps_elem.inner_text()
+        # Get first results
+        comparative_table = dash_page.locator("#comparative-table")
+        first_results = comparative_table.inner_text()
+
+        # Navigate back to Configuration tab to modify settings
+        config_tab = dash_page.locator('button[id="configuration-tab"]')
+        if config_tab.count() == 0:
+            config_tab = dash_page.locator('a:has-text("Configuration")')
+
+        config_tab.click()
+        dash_page.wait_for_timeout(500)
 
         # Modify config
         ab_input = dash_page.locator("#ab-input")
+        expect(ab_input).to_be_visible(timeout=5000)
         ab_input.fill("50")
         dash_page.keyboard.press("Tab")
         dash_page.wait_for_timeout(500)
@@ -321,5 +359,5 @@ class TestErrorHandling:
         wait_for_simulation()
 
         # DPS should be different (updated)
-        second_dps = dps_elem.inner_text()
-        assert second_dps != first_dps, "Results should update on re-simulation"
+        second_results = comparative_table.inner_text()
+        assert second_results != first_results, "Results should update on re-simulation"
