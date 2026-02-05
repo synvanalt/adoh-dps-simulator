@@ -35,7 +35,12 @@
       "Bash(pip install:*)",
       "Bash(timeout /t:*)",
       "Bash(curl:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(findstr:*)",
+      "Bash(wc:*)",
+      "Bash(do wc -l \"$f\")",
+      "Bash(find:*)",
+      "Bash(tee:*)"
     ]
   },
   "enabledPlugins": {

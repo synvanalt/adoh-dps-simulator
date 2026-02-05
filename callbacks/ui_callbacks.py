@@ -487,3 +487,18 @@ def register_ui_callbacks(app, cfg):
         Output('damage-limit-input', 'style'),
         Input('damage-limit-switch', 'value'),
     )
+
+    # Callback: Toggle About modal
+    @app.callback(
+        Output('about-modal', 'is_open'),
+        Input('about-link', 'n_clicks'),
+        Input('about-close-btn', 'n_clicks'),
+        State('about-modal', 'is_open'),
+        prevent_initial_call=True
+    )
+    def toggle_about_modal(link_clicks, close_clicks, is_open):
+        """Toggle the About modal open/closed state."""
+        if not dash.callback_context.triggered:
+            return dash.no_update
+        return not is_open
+
