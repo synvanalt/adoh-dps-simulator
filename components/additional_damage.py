@@ -94,12 +94,17 @@ def build_additional_damage_rows(additional_damage_dict):
                 placement='left',  # top, bottom, left, right
                 delay={'show': 500},
             ),
-        ], id={'type': 'add-dmg-row', 'name': key}, style={'display': 'none'})
+        ], id={'type': 'add-dmg-row', 'name': key}, style={'display': 'flex', 'alignItems': 'center'})
 
-        # Combined row: switch on left and widgets on right
+        # Combined row: switch on left and widgets (wrapped in Fade) on right
         combined = dbc.Row([
             dbc.Col(switch, xs=12, md=6),
-            dbc.Col(widgets, xs=12, md=6),
+            dbc.Col(dbc.Fade(
+                widgets,
+                id={'type': 'add-dmg-fade', 'name': key},
+                is_in=val[0],
+                appear=False,
+            ), xs=12, md=6),
         ], class_name='switcher tight-row')
         rows.append(combined)
 

@@ -393,13 +393,17 @@ def build_character_settings(cfg):
                 persistence=True,
                 persistence_type=persist_type,
             ), xs=6, md=6),
-            dbc.Col(dbc.Select(
-                id='shape-weapon-dropdown',
-                options=[{"label": key, "value": key} for key in WEAPON_PROPERTIES.keys()],
-                value=cfg.SHAPE_WEAPON,  # default value
-                persistence=True,
-                persistence_type=persist_type,
-                style={'display': 'none'},
+            dbc.Col(dbc.Fade(
+                dbc.Select(
+                    id='shape-weapon-dropdown',
+                    options=[{"label": key, "value": key} for key in WEAPON_PROPERTIES.keys()],
+                    value=cfg.SHAPE_WEAPON,  # default value
+                    persistence=True,
+                    persistence_type=persist_type,
+                ),
+                id='shape-weapon-fade',
+                is_in=cfg.SHAPE_WEAPON_OVERRIDE,
+                appear=False,
             ), xs=6, md=6),
             dbc.Tooltip(
                 "Overwrites base weapon properties with the selected weapon, relevant for shapeshifting only.",
