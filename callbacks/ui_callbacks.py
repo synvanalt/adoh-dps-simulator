@@ -451,7 +451,7 @@ def register_ui_callbacks(app, cfg):
             namespace='clientside',
             function_name='toggle_dual_wield_section'
         ),
-        Output('dual-wield-collapse', 'is_open'),  # Changed Target
+        Output('dual-wield-collapse', 'is_open'),
         Input('dual-wield-switch', 'value'),
     )
 
@@ -462,7 +462,7 @@ def register_ui_callbacks(app, cfg):
             namespace='clientside',
             function_name='toggle_shape_weapon'
         ),
-        Output('shape-weapon-dropdown', 'style'),
+        Output('shape-weapon-fade', 'is_in'),
         Input('shape-weapon-switch', 'value'),
     )
 
@@ -473,7 +473,7 @@ def register_ui_callbacks(app, cfg):
             namespace='clientside',
             function_name='toggle_additional_damage'
         ),
-        Output({'type': 'add-dmg-row', 'name': MATCH}, 'style'),
+        Output({'type': 'add-dmg-fade', 'name': MATCH}, 'is_in'),
         Input({'type': 'add-dmg-switch', 'name': MATCH}, 'value'),
     )
 
@@ -484,7 +484,7 @@ def register_ui_callbacks(app, cfg):
             namespace='clientside',
             function_name='toggle_damage_limit'
         ),
-        Output('damage-limit-input', 'style'),
+        Output('damage-limit-fade', 'is_in'),
         Input('damage-limit-switch', 'value'),
     )
 

@@ -101,15 +101,19 @@ def build_simulation_settings(cfg):
                         persistence=True,
                         persistence_type=persist_type,
                     ), xs=6, md=6),
-                    dbc.Col(dbc.Input(
-                        id='damage-limit-input',
-                        type='number',
-                        value=cfg.DAMAGE_LIMIT,  # default value
-                        step=1,
-                        persistence=True,
-                        persistence_type=persist_type,
-                        debounce=True,
-                        style={'display': 'none'},
+                    dbc.Col(dbc.Fade(
+                        dbc.Input(
+                            id='damage-limit-input',
+                            type='number',
+                            value=cfg.DAMAGE_LIMIT,  # default value
+                            step=1,
+                            persistence=True,
+                            persistence_type=persist_type,
+                            debounce=True,
+                        ),
+                        id='damage-limit-fade',
+                        is_in=cfg.DAMAGE_LIMIT_FLAG,
+                        appear=False,
                     ), xs=6, md=6),
                     dbc.Tooltip(
                         "Simulation will stop when the set damage limit is reached, regardless of convergence.",
