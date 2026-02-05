@@ -73,7 +73,7 @@ def build_about_modal():
                 # Overview Section
                 html.H5("Overview", className="mb-3"),
                 html.P([
-                    "This is a web-based damage-per-second simulator designed for ",
+                    "ADOH DPS Simulator is a web-based damage-per-second simulator designed for ",
                     html.A("A Dawn of Heroes", href="https://www.adawnofheroes.org/", target="_blank"),
                     ", a popular NWN:EE action-RPG server. ",
                     "This tool helps players analyze and optimize their character builds by simulating "

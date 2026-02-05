@@ -40,7 +40,7 @@ def fill_character_settings(dash_page: Page):
             keen_checkbox.click()
 
         # Set Improved Critical checkbox
-        ic_checkbox = dash_page.locator("#improved-crit-checkbox")
+        ic_checkbox = dash_page.locator("#improved-crit-switch")
         if improved_crit != ic_checkbox.is_checked():
             ic_checkbox.click()
 
