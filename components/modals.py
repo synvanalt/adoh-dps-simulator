@@ -62,3 +62,55 @@ def build_sim_error_modal():
         backdrop='static',
         style={"zIndex": 99999},
     )
+
+
+def build_about_modal():
+    """Create About Modal with app overview, features, and user guide."""
+    return dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle("About ADOH DPS Simulator")),
+            dbc.ModalBody([
+                # Overview Section
+                html.H5("Overview", className="mb-3"),
+                html.P([
+                    "This is a web-based damage-per-second simulator designed for ",
+                    html.A("A Dawn of Heroes", href="https://www.adawnofheroes.org/", target="_blank"),
+                    ", a popular NWN:EE action-RPG server. ",
+                    "This tool helps players analyze and optimize their character builds by simulating "
+                    "realistic combat scenarios and providing detailed damage breakdowns."
+                ], className="mb-4"),
+
+                # Features Section
+                html.H5("Features", className="mb-3"),
+                html.Ul([
+                    html.Li([html.Strong("Realistic D20 Simulation: "), "Accurate modeling of attack rolls, hit calculations, and damage aggregation"]),
+                    html.Li([html.Strong("Character Customization: "), "Support for dual-wielding, feats, buffs, and legendary weapon effects"]),
+                    html.Li([html.Strong("Multi-Build Comparison: "), "Compare multiple character configurations side-by-side"]),
+                    html.Li([html.Strong("Data Visualizations: "), "Damage distribution plots and convergence tracking graphs"]),
+                ], className="mb-4"),
+
+                # Quick Start Guide Section
+                html.H5("Quick Start Guide", className="mb-3"),
+                html.Ol([
+                    html.Li([
+                        html.Strong("Configure Your Build: "),
+                        "Set your character stats, select weapons, and adjust target immunities"
+                    ]),
+                    html.Li([
+                        html.Strong("Run Simulation: "),
+                        "The simulator will perform multiple attack rounds until results converge"
+                    ]),
+                    html.Li([
+                        html.Strong("Analyze Results: "),
+                        "View your DPS breakdown, compare builds, and explore damage distributions"
+                    ]),
+                ], className="mb-3"),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="about-close-btn", className="ms-auto")
+            ),
+        ],
+        id="about-modal",
+        size="lg",
+        is_open=False,
+    )
