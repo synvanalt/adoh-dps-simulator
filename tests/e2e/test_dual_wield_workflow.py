@@ -199,6 +199,8 @@ class TestDualWieldSimulation:
 
     def test_dual_wield_simulation_completes(self, dash_page: Page, wait_for_simulation):
         """Test that simulation works with dual-wield enabled."""
+        import re
+
         dw_checkbox = dash_page.locator("#dual-wield-checkbox")
 
         if dw_checkbox.is_visible():
@@ -208,31 +210,41 @@ class TestDualWieldSimulation:
                 dash_page.wait_for_timeout(500)
 
             # Run simulation
-            run_btn = dash_page.locator("#run-simulation-btn")
+            run_btn = dash_page.locator("#sticky-simulate-button")
+            expect(run_btn).to_be_enabled(timeout=5000)
             run_btn.click()
 
             wait_for_simulation()
 
-            # Verify results displayed
-            results_content = dash_page.locator("#results-content")
-            expect(results_content).to_be_visible()
+            # Verify results displayed in comparative table
+            comp_table = dash_page.locator("#comparative-table")
+            expect(comp_table).to_be_visible()
 
             # Verify DPS calculated
-            dps_elem = dash_page.locator("#avg-dps-value")
-            if dps_elem.is_visible():
-                dps = float(dps_elem.inner_text())
-                assert dps > 0, "Dual-wield should produce positive DPS"
+            table_text = comp_table.inner_text()
+            numbers = re.findall(r'\d+\.\d+', table_text)
+            assert len(numbers) > 0, "Expected numeric DPS values in results table"
+            dps = float(numbers[0])
+            assert dps > 0, "Dual-wield should produce positive DPS"
 
     def test_dual_wield_vs_single_wield_dps(self, dash_page: Page, wait_for_simulation, wait_for_spinner):
         """Test DPS difference between single-wield and dual-wield."""
+        import re
+
         # Run single-wield simulation
-        run_btn = dash_page.locator("#run-simulation-btn")
+        run_btn = dash_page.locator("#sticky-simulate-button")
+        expect(run_btn).to_be_visible(timeout=10000)
+        expect(run_btn).to_be_enabled(timeout=5000)
         run_btn.click()
         wait_for_simulation()
 
-        # Get single-wield DPS
-        dps_elem = dash_page.locator("#avg-dps-value")
-        single_dps = float(dps_elem.inner_text())
+        # Get single-wield DPS from comparative table
+        comp_table = dash_page.locator("#comparative-table")
+        expect(comp_table).to_be_visible()
+        table_text = comp_table.inner_text()
+        numbers = re.findall(r'\d+\.\d+', table_text)
+        assert len(numbers) > 0, "Expected numeric DPS values in results table"
+        single_dps = float(numbers[0])  # First number should be DPS
 
         # Enable dual-wield
         dw_checkbox = dash_page.locator("#dual-wield-checkbox")
@@ -249,14 +261,20 @@ class TestDualWieldSimulation:
             if ambidex_checkbox.is_visible() and not ambidex_checkbox.is_checked():
                 ambidex_checkbox.click()
 
-            dash_page.wait_for_timeout(500)
+            dash_page.wait_for_timeout(1000)
+
+            # Wait for run button to be enabled again
+            expect(run_btn).to_be_enabled(timeout=5000)
 
             # Run dual-wield simulation
             run_btn.click()
             wait_for_simulation()
 
-            # Get dual-wield DPS
-            dual_dps = float(dps_elem.inner_text())
+            # Get dual-wield DPS from comparative table
+            table_text = comp_table.inner_text()
+            numbers = re.findall(r'\d+\.\d+', table_text)
+            assert len(numbers) > 0, "Expected numeric DPS values in results table"
+            dual_dps = float(numbers[0])
 
             # Dual-wield should generally give more attacks (higher DPS)
             # But exact comparison depends on many factors

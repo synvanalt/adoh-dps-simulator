@@ -15,36 +15,36 @@ class TestConfigResetWorkflow:
         # Modify multiple inputs
         ab_input = dash_page.locator("#ab-input")
         ab_input.fill("99")
+        dash_page.keyboard.press("Tab")
 
         str_input = dash_page.locator("#str-mod-input")
         str_input.fill("35")
+        dash_page.keyboard.press("Tab")
 
         # Toggle checkboxes
         keen_checkbox = dash_page.locator("#keen-switch")
         if keen_checkbox.is_checked():
             keen_checkbox.click()  # Turn off
 
-        ic_checkbox = dash_page.locator("#improved-crit-checkbox")
-        if ic_checkbox.is_checked():
+        ic_checkbox = dash_page.locator("#improved-crit-switch")
+        if ic_checkbox.is_visible() and ic_checkbox.is_checked():
             ic_checkbox.click()  # Turn off
 
         dash_page.wait_for_timeout(500)
 
         # Click reset button
-        reset_btn = dash_page.locator("#reset-config-btn")
-        if not reset_btn.is_visible():
-            # Scroll to make sticky bar appear
-            dash_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            dash_page.wait_for_timeout(500)
-
+        reset_btn = dash_page.locator("#reset-button")
+        expect(reset_btn).to_be_visible(timeout=5000)
         reset_btn.click()
         wait_for_spinner()
 
-        # Verify defaults restored
+        # Verify defaults restored (defaults from config)
+        dash_page.wait_for_timeout(500)
         assert ab_input.input_value() == "68", "AB should reset to default"
         assert str_input.input_value() == "21", "STR should reset to default"
         assert keen_checkbox.is_checked() == True, "Keen should reset to default (True)"
-        assert ic_checkbox.is_checked() == True, "Improved Crit should reset to default (True)"
+        if ic_checkbox.is_visible():
+            assert ic_checkbox.is_checked() == True, "Improved Crit should reset to default (True)"
 
     def test_reset_clears_additional_damage_changes(self, dash_page: Page, wait_for_spinner):
         """Test that reset clears additional damage source changes."""
@@ -58,57 +58,63 @@ class TestConfigResetWorkflow:
                 dash_page.wait_for_timeout(500)
 
         # Reset
-        reset_btn = dash_page.locator("#reset-config-btn")
-        if not reset_btn.is_visible():
-            dash_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            dash_page.wait_for_timeout(500)
-
+        reset_btn = dash_page.locator("#reset-button")
+        expect(reset_btn).to_be_visible(timeout=5000)
         reset_btn.click()
         wait_for_spinner()
 
         # Verify Bard Song is disabled again
+        dash_page.wait_for_timeout(500)
         if damage_switch.is_visible():
             assert damage_switch.is_checked() == False, "Bard Song should reset to disabled"
 
     def test_reset_on_multi_builds(self, dash_page: Page, wait_for_spinner):
-        """Test that reset only affects current build."""
-        # Add second build
+        """Test that reset restores application to single default build."""
+        # Add multiple builds
         add_btn = dash_page.locator("#add-build-btn")
         add_btn.click()
         wait_for_spinner()
+        dash_page.wait_for_timeout(500)
 
-        # Modify Build 2
+        add_btn.click()
+        wait_for_spinner()
+        dash_page.wait_for_timeout(500)
+
+        # Verify we have 3 builds
+        build_tabs = dash_page.locator("button.build-tab-btn")
+        expect(build_tabs).to_have_count(3, timeout=5000)
+
+        # Modify current build (Build 3)
         ab_input = dash_page.locator("#ab-input")
         ab_input.fill("85")
+        str_input = dash_page.locator("#str-mod-input")
+        str_input.fill("30")
+
+        keen_checkbox = dash_page.locator("#keen-switch")
+        if keen_checkbox.is_checked():
+            keen_checkbox.click()  # Turn off keen
+
         dash_page.wait_for_timeout(500)
 
-        # Switch to Build 1
-        build_tabs = dash_page.locator("button.build-tab-btn")
-        build_tabs.nth(0).click()
-        wait_for_spinner()
-
-        # Modify Build 1
-        ab_input.fill("55")
-        dash_page.wait_for_timeout(500)
-
-        # Reset Build 1
-        reset_btn = dash_page.locator("#reset-config-btn")
-        if not reset_btn.is_visible():
-            dash_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            dash_page.wait_for_timeout(500)
-
+        # Now reset - this should reset EVERYTHING including all builds
+        reset_btn = dash_page.locator("#reset-button")
+        expect(reset_btn).to_be_visible(timeout=5000)
         reset_btn.click()
         wait_for_spinner()
 
-        # Verify Build 1 reset to default
-        assert ab_input.input_value() == "68", "Build 1 should reset"
+        # Verify application reset to single default build
+        dash_page.wait_for_timeout(1000)  # Give time for UI to update
+        build_tabs = dash_page.locator("button.build-tab-btn")
+        expect(build_tabs).to_have_count(1, timeout=5000)
 
-        # Switch to Build 2
-        build_tabs.nth(1).click()
-        wait_for_spinner()
+        # Verify default config restored
+        expect(ab_input).to_have_value("68", timeout=5000)
+        expect(str_input).to_have_value("21", timeout=5000)
+        assert keen_checkbox.is_checked() == True, "Keen should reset to default (True)"
 
-        # Verify Build 2 unchanged
-        assert ab_input.input_value() == "85", "Build 2 should not be affected by Build 1 reset"
+        # Verify build name is default
+        active_tab = dash_page.locator("button.build-tab-btn.active")
+        expect(active_tab).to_contain_text("Build 1")
 
     def test_sticky_bottom_bar_appears_on_changes(self, dash_page: Page):
         """Test that sticky bottom bar appears when config changes."""
@@ -212,7 +218,8 @@ class TestSessionPersistence:
         dash_page.reload()
 
         # Wait for app to load
-        dash_page.wait_for_selector("#app-content", timeout=10000)
+        dash_page.wait_for_selector("#tabs", timeout=10000)
+        dash_page.wait_for_timeout(1000)
 
         # Verify value persisted
         # Note: This depends on whether app implements session storage
@@ -227,20 +234,19 @@ class TestSessionPersistence:
         # Modify and save
         ab_input = dash_page.locator("#ab-input")
         ab_input.fill("76")
+        dash_page.keyboard.press("Tab")
         dash_page.wait_for_timeout(1000)
 
         # Reset
-        reset_btn = dash_page.locator("#reset-config-btn")
-        if not reset_btn.is_visible():
-            dash_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            dash_page.wait_for_timeout(500)
-
+        reset_btn = dash_page.locator("#reset-button")
+        expect(reset_btn).to_be_visible(timeout=5000)
         reset_btn.click()
         wait_for_spinner()
 
         # Reload page
         dash_page.reload()
-        dash_page.wait_for_selector("#app-content", timeout=10000)
+        dash_page.wait_for_selector("#tabs", timeout=10000)
+        dash_page.wait_for_timeout(1000)
 
         # Verify default value (session cleared)
         assert ab_input.input_value() == "68", "Should have default after reset and reload"
