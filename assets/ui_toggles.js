@@ -24,3 +24,9 @@ window.dash_clientside.clientside.toggle_additional_damage = function(isEnabled)
 window.dash_clientside.clientside.toggle_damage_limit = function(isEnabled) {
     return isEnabled;
 };
+
+window.dash_clientside.clientside.toggle_about_modal = function(link_clicks, close_clicks, is_open) {
+    // Toggle the modal state when either button is clicked
+    return !is_open;
+};
+
