@@ -32,12 +32,18 @@ def build_weights_modal():
         dbc.ModalBody([
             dbc.Row([
                 dbc.Col([
-                    dbc.Label("Crit Allowed Weight (%)", className='mb-2'),
-                    dbc.Input(id='weights-crit-allowed-input', type='number', min=0, max=100, value=50),
+                    dbc.Label("Crit Allowed Weight", className='mb-2'),
+                    dbc.InputGroup([
+                        dbc.Input(id='weights-crit-allowed-input', type='number', min=0, max=100, value=50),
+                        dbc.InputGroupText("%")
+                    ]),
                 ], width=6),
                 dbc.Col([
-                    dbc.Label("Crit Immune Weight (%)", className='mb-2'),
-                    dbc.Input(id='weights-crit-immune-display', type='number', value=50, disabled=True),
+                    dbc.Label("Crit Immune Weight", className='mb-2'),
+                    dbc.InputGroup([
+                        dbc.Input(id='weights-crit-immune-display', type='number', value=50, disabled=True),
+                        dbc.InputGroupText("%")
+                    ]),
                 ], width=6),
             ]),
         ]),

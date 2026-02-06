@@ -1,6 +1,6 @@
 # Third-party imports
 import dash
-from dash import Input, Output, ALL, MATCH, State, ctx, ClientsideFunction
+from dash import Input, Output, ALL, MATCH, State, ClientsideFunction
 
 # Local imports
 from simulator.config import Config
@@ -359,10 +359,25 @@ def register_ui_callbacks(app, cfg):
         return dash.no_update
 
 
-    # Callback: toggle target immunities inputs
-    @app.callback(
+    # Clientside callback: instant UI update for immunity inputs when toggling OFF
+    # This provides immediate visual feedback (zeros + disabled) without server roundtrip
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_immunities_inputs'
+        ),
         Output({'type': 'immunity-input', 'name': ALL}, 'value'),
         Output({'type': 'immunity-input', 'name': ALL}, 'disabled'),
+        Input('target-immunities-switch', 'value'),
+        State({'type': 'immunity-input', 'name': ALL}, 'value'),
+    )
+
+    # Server callback: handle immunities store logic and value restoration on switch ON
+    # When OFF: save current values to store (clientside already updated UI)
+    # When ON: restore values from store and enable inputs
+    @app.callback(
+        Output({'type': 'immunity-input', 'name': ALL}, 'value', allow_duplicate=True),
+        Output({'type': 'immunity-input', 'name': ALL}, 'disabled', allow_duplicate=True),
         Output('immunities-store', 'data'),
         Input('target-immunities-switch', 'value'),
         State('config-store', 'data'),
@@ -370,7 +385,7 @@ def register_ui_callbacks(app, cfg):
         State({'type': 'immunity-input', 'name': ALL}, 'value'),
         prevent_initial_call=True
     )
-    def toggle_immunities(apply_immunities, cfg_store, immunities_store, current_input_values):
+    def toggle_immunities_server(apply_immunities, cfg_store, immunities_store, current_input_values):
         names = list(cfg.TARGET_IMMUNITIES.keys())
         n = len(names)
 
@@ -402,47 +417,32 @@ def register_ui_callbacks(app, cfg):
                 immunities_store    # Return existing store unchanged
             )
 
-        # Switch OFF → save current values to immunities-store before setting to 0
+        # Switch OFF → only update store (clientside already set UI to zeros/disabled)
         else:
             updated_store = {
                 name: (val or 0) / 100  # Convert percentages back to fractions
                 for name, val in zip(names, current_input_values)
             }
             return (
-                [0] * n,        # Set all inputs to 0
-                [True] * n,     # Disable all inputs
-                updated_store   # Save current values to store
+                [dash.no_update] * n,   # Clientside already set to 0
+                [dash.no_update] * n,   # Clientside already disabled
+                updated_store           # Save current values to store
             )
 
 
-    # Callback: toggle melee/ranged dependent params OFF and disabled
-    @app.callback(
-        # Output({'type': 'melee-row', 'name': ALL}, 'style'),
+    # Clientside callback: toggle melee/ranged dependent params for instant UI update
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_melee_params'
+        ),
         Output({'type': 'melee-switch', 'name': ALL}, 'value'),
         Output('mighty-input', 'value'),
-        Output({'type': 'melee-switch', 'name': ALL}, 'disabled', allow_duplicate=True),
-        Output('mighty-input', 'disabled', allow_duplicate=True),
+        Output({'type': 'melee-switch', 'name': ALL}, 'disabled'),
+        Output('mighty-input', 'disabled'),
         Input('combat-type-dropdown', 'value'),
-        prevent_initial_call='initial_duplicate'
+        State({'type': 'melee-switch', 'name': ALL}, 'value'),
     )
-    def toggle_melee_params(combat_type):
-        n = len(ctx.outputs_list[0])  # number of matching melee rows
-        if combat_type == 'ranged':
-            return (
-                [False] * n,    # Turn OFF all melee switches
-                20,             # Set mighty to 20
-                [True] * n,     # Disable all melee switches
-                False           # Enable mighty input
-            )
-        elif combat_type == 'melee':
-            return (
-                [dash.no_update] * n,   # Don't update the melee switches
-                0,                      # Set mighty to 0
-                [False] * n,            # Enable all melee switches
-                True                    # Disable mighty input
-            )
-        else:
-            return dash.no_update
 
 
     # Clientside callback: Dual-wield panel visibility
@@ -488,17 +488,16 @@ def register_ui_callbacks(app, cfg):
         Input('damage-limit-switch', 'value'),
     )
 
-    # Callback: Toggle About modal
-    @app.callback(
+    # Clientside callback: Toggle About modal
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_about_modal'
+        ),
         Output('about-modal', 'is_open'),
         Input('about-link', 'n_clicks'),
         Input('about-close-btn', 'n_clicks'),
         State('about-modal', 'is_open'),
         prevent_initial_call=True
     )
-    def toggle_about_modal(link_clicks, close_clicks, is_open):
-        """Toggle the About modal open/closed state."""
-        if not dash.callback_context.triggered:
-            return dash.no_update
-        return not is_open
 

@@ -109,6 +109,26 @@ body {
         margin-top: 2rem !important;
         margin-bottom: 0.5rem !important;
     }
+
+    /* Collapse space for hidden fade wrappers on mobile - prevents empty vertical gaps */
+    /* Use max-height transition for smooth collapse animation */
+    .add-dmg-fade-wrapper.fade {
+        overflow: hidden;
+        max-height: 0;
+        opacity: 1 !important; /* Override Fade's opacity control on mobile */
+        transition: max-height 0.3s ease-out !important;
+    }
+
+    .add-dmg-fade-wrapper.fade.show {
+        max-height: 100px; /* Enough to fit the content */
+        opacity: 1 !important; /* Keep opacity at 1, only animate height */
+        transition: max-height 0.3s ease-in !important;
+    }
+
+    /* Prevent Fade component from transitioning opacity on mobile */
+    .add-dmg-fade-wrapper.fade.collapsing {
+        transition: max-height 0.3s ease-out !important;
+    }
 }
 
 /* Keep existing desktop behavior unchanged */

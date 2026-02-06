@@ -10,26 +10,22 @@ tooltip_delay = 500  # milliseconds
 def build_immunity_inputs(immunities_dict):
     rows = []
     for name, val in immunities_dict.items():
-        imm_label = dbc.Label(
-            name.title() + ":"
-        )
-
-        imm_input = dbc.Input(
-            id={'type': 'immunity-input', 'name': name},
-            type='number',
-            value=val * 100,  # default as percentage
-            step=1,
-            persistence=True,
-            persistence_type=persist_type,
-            debounce=True,
-            style={'height': '1.6em'},
-        )
-
         # Combined row: label on left and widgets on right
         combined = dbc.Row([
-            dbc.Col(imm_label, xs=4, md=4),
-            dbc.Col(imm_input, xs=3, md=3),
-            dbc.Col(html.Span("%"), xs=1, md=1),
+            dbc.Col(dbc.Label(name.title() + ":"), xs=4, md=4),
+            dbc.Col(dbc.InputGroup([
+                dbc.Input(
+                    id={'type': 'immunity-input', 'name': name},
+                    type='number',
+                    value=val * 100,  # default as percentage
+                    step=1,
+                    persistence=True,
+                    persistence_type=persist_type,
+                    debounce=True,
+                    style={'height': '1.6em'},
+                ),
+                dbc.InputGroupText("%", style={'height': '1.6em'})
+            ]), xs=4, md=4),
         ], class_name='immunity-row')
         rows.append(combined)
 
@@ -146,15 +142,17 @@ def build_simulation_settings(cfg):
                         'Relative Change Convergence:',
                         html_for='relative-change-input',
                     ), xs=6, md=6),
-                    dbc.Col(dbc.Input(
-                        id='relative-change-input',
-                        type='number',
-                        value=cfg.CHANGE_THRESHOLD * 100,   # convert to percentage
-                        persistence=True,
-                        persistence_type=persist_type,
-                        debounce=True,
-                    ), xs=5, md=5),
-                    dbc.Col(html.Span("%"), xs=1, md=1),
+                    dbc.Col(dbc.InputGroup([
+                        dbc.Input(
+                            id='relative-change-input',
+                            type='number',
+                            value=cfg.CHANGE_THRESHOLD * 100,   # convert to percentage
+                            persistence=True,
+                            persistence_type=persist_type,
+                            debounce=True,
+                        ),
+                        dbc.InputGroupText("%")
+                    ]), xs=6, md=6),
                     dbc.Tooltip(
                         "Simulation will stop when both convergence criteria are met. "
                         "Relative Change checks the mean DPS fluctuation within a 15 rounds window. "
@@ -171,15 +169,17 @@ def build_simulation_settings(cfg):
                         'Relative STD Convergence:',
                         html_for='relative-std-input',
                     ), xs=6, md=6),
-                    dbc.Col(dbc.Input(
-                        id='relative-std-input',
-                        type='number',
-                        value=cfg.STD_THRESHOLD * 100,  # convert to percentage
-                        persistence=True,
-                        persistence_type=persist_type,
-                        debounce=True,
-                    ), xs=5, md=5),
-                    dbc.Col(html.Span("%"), xs=1, md=1),
+                    dbc.Col(dbc.InputGroup([
+                        dbc.Input(
+                            id='relative-std-input',
+                            type='number',
+                            value=cfg.STD_THRESHOLD * 100,  # convert to percentage
+                            persistence=True,
+                            persistence_type=persist_type,
+                            debounce=True,
+                        ),
+                        dbc.InputGroupText("%")
+                    ]), xs=6, md=6),
                     dbc.Tooltip(
                         "Simulation will stop when both convergence criteria are met. "
                         "Relative STD checks the mean standard deviation relative to the mean within a 15 rounds window. "
@@ -228,7 +228,7 @@ def build_simulation_settings(cfg):
             id='reset-toast',
             header="Reset Successful",
             icon='success',
-            duration=3000,
+            duration=5000,
             is_open=False,
             dismissable=True,
             style={'position': 'fixed', 'top': 10, 'right': 10},

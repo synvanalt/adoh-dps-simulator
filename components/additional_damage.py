@@ -104,6 +104,7 @@ def build_additional_damage_rows(additional_damage_dict):
                 id={'type': 'add-dmg-fade', 'name': key},
                 is_in=val[0],
                 appear=False,
+                class_name='add-dmg-fade-wrapper',
             ), xs=12, md=6),
         ], class_name='switcher tight-row')
         rows.append(combined)

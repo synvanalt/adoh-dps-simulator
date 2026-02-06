@@ -259,7 +259,8 @@ def register_core_callbacks(app, cfg):
     )
     def update_results(results_dict, weights_data):
         if not results_dict:
-            return "Run simulation to see results...", "", {'display': 'none'}
+            no_results_msg = html.P("Run simulation to see results", className='text-muted')
+            return no_results_msg, no_results_msg, {'display': 'none'}
 
         # Get weights from store (default 50/50)
         crit_weight = weights_data.get('crit_allowed', 50) if weights_data else 50
