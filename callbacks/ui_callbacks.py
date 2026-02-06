@@ -1,6 +1,6 @@
 # Third-party imports
 import dash
-from dash import Input, Output, ALL, MATCH, State, ctx, ClientsideFunction
+from dash import Input, Output, ALL, MATCH, State, ClientsideFunction
 
 # Local imports
 from simulator.config import Config
@@ -430,34 +430,19 @@ def register_ui_callbacks(app, cfg):
             )
 
 
-    # Callback: toggle melee/ranged dependent params OFF and disabled
-    @app.callback(
-        # Output({'type': 'melee-row', 'name': ALL}, 'style'),
+    # Clientside callback: toggle melee/ranged dependent params for instant UI update
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_melee_params'
+        ),
         Output({'type': 'melee-switch', 'name': ALL}, 'value'),
         Output('mighty-input', 'value'),
-        Output({'type': 'melee-switch', 'name': ALL}, 'disabled', allow_duplicate=True),
-        Output('mighty-input', 'disabled', allow_duplicate=True),
+        Output({'type': 'melee-switch', 'name': ALL}, 'disabled'),
+        Output('mighty-input', 'disabled'),
         Input('combat-type-dropdown', 'value'),
-        prevent_initial_call='initial_duplicate'
+        State({'type': 'melee-switch', 'name': ALL}, 'value'),
     )
-    def toggle_melee_params(combat_type):
-        n = len(ctx.outputs_list[0])  # number of matching melee rows
-        if combat_type == 'ranged':
-            return (
-                [False] * n,    # Turn OFF all melee switches
-                20,             # Set mighty to 20
-                [True] * n,     # Disable all melee switches
-                False           # Enable mighty input
-            )
-        elif combat_type == 'melee':
-            return (
-                [dash.no_update] * n,   # Don't update the melee switches
-                0,                      # Set mighty to 0
-                [False] * n,            # Enable all melee switches
-                True                    # Disable mighty input
-            )
-        else:
-            return dash.no_update
 
 
     # Clientside callback: Dual-wield panel visibility

@@ -48,6 +48,42 @@ window.dash_clientside.clientside.toggle_immunities_inputs = function(isEnabled,
     }
 };
 
+/**
+ * Clientside callback for instant combat type toggle UI updates.
+ * When ranged: disable melee switches, set to false, set mighty to 20, enable mighty
+ * When melee: enable melee switches, set mighty to 0, disable mighty
+ *
+ * @param {string} combatType - 'melee' or 'ranged'
+ * @param {Array} currentMeleeSwitchValues - Current melee switch values (for array length)
+ * @returns {Array} [meleeSwitchValues, mightyValue, meleeSwitchDisabled, mightyDisabled]
+ */
+window.dash_clientside.clientside.toggle_melee_params = function(combatType, currentMeleeSwitchValues) {
+    const n = currentMeleeSwitchValues.length;
+
+    if (combatType === 'ranged') {
+        return [
+            Array(n).fill(false),  // Turn OFF all melee switches
+            20,                    // Set mighty to 20
+            Array(n).fill(true),   // Disable all melee switches
+            false                  // Enable mighty input
+        ];
+    } else if (combatType === 'melee') {
+        return [
+            Array(n).fill(window.dash_clientside.no_update),  // Don't update melee switches
+            0,                     // Set mighty to 0
+            Array(n).fill(false),  // Enable all melee switches
+            true                   // Disable mighty input
+        ];
+    } else {
+        return [
+            Array(n).fill(window.dash_clientside.no_update),
+            window.dash_clientside.no_update,
+            Array(n).fill(window.dash_clientside.no_update),
+            window.dash_clientside.no_update
+        ];
+    }
+};
+
 window.dash_clientside.clientside.toggle_about_modal = function(link_clicks, close_clicks, is_open) {
     // Toggle the modal state when either button is clicked
     return !is_open;
