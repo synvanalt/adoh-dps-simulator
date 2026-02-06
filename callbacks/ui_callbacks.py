@@ -359,10 +359,25 @@ def register_ui_callbacks(app, cfg):
         return dash.no_update
 
 
-    # Callback: toggle target immunities inputs
-    @app.callback(
+    # Clientside callback: instant UI update for immunity inputs when toggling OFF
+    # This provides immediate visual feedback (zeros + disabled) without server roundtrip
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='toggle_immunities_inputs'
+        ),
         Output({'type': 'immunity-input', 'name': ALL}, 'value'),
         Output({'type': 'immunity-input', 'name': ALL}, 'disabled'),
+        Input('target-immunities-switch', 'value'),
+        State({'type': 'immunity-input', 'name': ALL}, 'value'),
+    )
+
+    # Server callback: handle immunities store logic and value restoration on switch ON
+    # When OFF: save current values to store (clientside already updated UI)
+    # When ON: restore values from store and enable inputs
+    @app.callback(
+        Output({'type': 'immunity-input', 'name': ALL}, 'value', allow_duplicate=True),
+        Output({'type': 'immunity-input', 'name': ALL}, 'disabled', allow_duplicate=True),
         Output('immunities-store', 'data'),
         Input('target-immunities-switch', 'value'),
         State('config-store', 'data'),
@@ -370,7 +385,7 @@ def register_ui_callbacks(app, cfg):
         State({'type': 'immunity-input', 'name': ALL}, 'value'),
         prevent_initial_call=True
     )
-    def toggle_immunities(apply_immunities, cfg_store, immunities_store, current_input_values):
+    def toggle_immunities_server(apply_immunities, cfg_store, immunities_store, current_input_values):
         names = list(cfg.TARGET_IMMUNITIES.keys())
         n = len(names)
 
@@ -402,16 +417,16 @@ def register_ui_callbacks(app, cfg):
                 immunities_store    # Return existing store unchanged
             )
 
-        # Switch OFF → save current values to immunities-store before setting to 0
+        # Switch OFF → only update store (clientside already set UI to zeros/disabled)
         else:
             updated_store = {
                 name: (val or 0) / 100  # Convert percentages back to fractions
                 for name, val in zip(names, current_input_values)
             }
             return (
-                [0] * n,        # Set all inputs to 0
-                [True] * n,     # Disable all inputs
-                updated_store   # Save current values to store
+                [dash.no_update] * n,   # Clientside already set to 0
+                [dash.no_update] * n,   # Clientside already disabled
+                updated_store           # Save current values to store
             )
 
 
