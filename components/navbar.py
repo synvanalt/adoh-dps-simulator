@@ -20,7 +20,7 @@ def build_navbar():
                 ),
                 dbc.Nav(
                     [
-                        dbc.NavItem(dbc.NavLink("About", id="about-link", href="javascript:void(0);", n_clicks=0)),
+                        dbc.NavItem(dbc.NavLink("About", id="about-link", n_clicks=0, style={"cursor": "pointer"})),
                     ],
                     className="ms-auto",
                     navbar=True,
