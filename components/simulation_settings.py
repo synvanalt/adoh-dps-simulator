@@ -228,7 +228,7 @@ def build_simulation_settings(cfg):
             id='reset-toast',
             header="Reset Successful",
             icon='success',
-            duration=3000,
+            duration=5000,
             is_open=False,
             dismissable=True,
             style={'position': 'fixed', 'top': 10, 'right': 10},
