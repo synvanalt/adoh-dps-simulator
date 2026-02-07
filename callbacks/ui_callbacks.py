@@ -364,15 +364,15 @@ def register_ui_callbacks(app, cfg):
             return dash.no_update, dash.no_update
 
 
-    # Callback: show Results as active tab when simulation done
-    @app.callback(
+    # Clientside callback: show Results as active tab when simulation done and scroll to top
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='switch_to_results_tab'
+        ),
         Output('tabs', 'active_tab'),
-        [Input('intermediate-value', 'data')]
+        Input('intermediate-value', 'data'),
     )
-    def switch_to_results(results):
-        if results:
-            return 'results'
-        return dash.no_update
 
 
     # Fully clientside callback for immunity inputs toggle with store persistence

@@ -119,3 +119,21 @@ window.dash_clientside.clientside.toggle_about_modal = function(link_clicks, clo
     return !is_open;
 };
 
+/**
+ * Clientside callback to switch to results tab and scroll to top when simulation completes.
+ * This ensures users start reading results from the top of the page.
+ *
+ * @param {Object} results - The simulation results from intermediate-value store
+ * @returns {string} - The tab id to activate ('results') or no_update
+ */
+window.dash_clientside.clientside.switch_to_results_tab = function(results) {
+    if (results) {
+        // Scroll to top of page after a small delay to ensure tab has switched
+        setTimeout(function() {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }, 50);
+        return 'results';
+    }
+    return window.dash_clientside.no_update;
+};
+

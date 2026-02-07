@@ -255,8 +255,8 @@ def build_character_settings(cfg):
                                         debounce=True,
                                     ), xs=6, md=6),
                                     dbc.Tooltip(
-                                        "Attack Bonus for off-hand weapon. Used for calculating off-hand attack rolls."
-                                        "Same as for main-hand, AB penalties for extra attacks (e.g., Flurry, Blinding Speed) should be included."
+                                        "Attack Bonus for off-hand weapon. Used for calculating off-hand attack rolls. "
+                                        "Same as for main-hand, AB penalties for extra attacks (e.g., Flurry, Blinding Speed) should be included. "
                                         "Dual-wield penalty should NOT be included, as simulator auto-applies it based on weapon/character size.",
                                         target='offhand-ab-input',
                                         placement='right',

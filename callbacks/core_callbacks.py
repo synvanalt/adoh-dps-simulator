@@ -379,7 +379,7 @@ def register_core_callbacks(app, cfg):
                         html.H6('Attack Statistics', className='mb-3'),
                         html.Div([
                             dbc.Table([
-                                html.Thead([html.Tr([html.Th('Statistic'), html.Th('Actual'), html.Th('Theoretical')])]),
+                                html.Thead([html.Tr([html.Th('Statistic'), html.Th('Actual %'), html.Th('Theoretical %')])]),
                                 html.Tbody([
                                     html.Tr([html.Td('Hit Rate'),
                                              html.Td(f'{results["hit_rate_actual"]:.1f}%'),
