@@ -20,5 +20,22 @@ AMMO_BASED_WEAPONS = [
     'Sling'
 ]
 
+# Large-sized weapons (cannot be used as offhand)
+LARGE_WEAPONS = [
+    'Halberd',
+    'Heavy Flail',
+    'Greataxe',
+    'Greatsword',
+    'Scythe',
+    'Spear',
+    'Trident',
+    'Dire Mace',
+    'Double Axe',
+    'Two-Bladed Sword',
+    'Heavy Crossbow',
+    'Longbow',
+    'Quarterstaff',
+]
+
 # Damage type lists (ordered by game priority)
 PHYSICAL_DAMAGE_TYPES = ['slashing', 'piercing', 'bludgeoning']

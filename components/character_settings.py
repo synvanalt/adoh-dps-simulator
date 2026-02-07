@@ -2,6 +2,25 @@ from dash import dcc, html
 import dash_bootstrap_components as dbc
 from typing import Literal
 from weapons_db import WEAPON_PROPERTIES, PURPLE_WEAPONS
+from simulator.constants import LARGE_WEAPONS, DOUBLE_SIDED_WEAPONS, AUTO_MIGHTY_WEAPONS, AMMO_BASED_WEAPONS
+
+
+def _get_offhand_weapon_options():
+    """Get list of weapons valid for offhand selection.
+
+    Excludes: Large weapons, Double-sided weapons, Ranged weapons (auto-mighty and ammo-based)
+    """
+    excluded_base_weapons = set(
+        LARGE_WEAPONS + DOUBLE_SIDED_WEAPONS + AUTO_MIGHTY_WEAPONS + AMMO_BASED_WEAPONS
+    )
+
+    options = []
+    for weapon_name in sorted(PURPLE_WEAPONS.keys()):
+        base_weapon = weapon_name.split('_')[0]
+        if base_weapon in WEAPON_PROPERTIES and base_weapon not in excluded_base_weapons:
+            options.append({'label': weapon_name, 'value': weapon_name})
+
+    return options
 
 
 def build_character_settings(cfg):
@@ -182,6 +201,68 @@ def build_character_settings(cfg):
                             delay={'show': tooltip_delay},
                         ),
                     ], class_name='switcher tight-row', id={'type': 'dw-row', 'name': 'improved-twf'}),
+
+                    # Custom Offhand Weapon: switch and dropdown
+                    dbc.Row([
+                        dbc.Col(dbc.Switch(
+                            id='custom-offhand-weapon-switch',
+                            label='Custom Offhand Weapon',
+                            value=cfg.CUSTOM_OFFHAND_WEAPON,
+                            persistence=True,
+                            persistence_type=persist_type,
+                        ), xs=6, md=6),
+                        dbc.Col(dbc.Fade(
+                            dbc.Select(
+                                id='offhand-weapon-dropdown',
+                                options=_get_offhand_weapon_options(),
+                                value=cfg.OFFHAND_WEAPON,
+                                persistence=True,
+                                persistence_type=persist_type,
+                            ),
+                            id='offhand-weapon-fade',
+                            is_in=cfg.CUSTOM_OFFHAND_WEAPON,
+                            appear=False,
+                        ), xs=6, md=6),
+                        dbc.Tooltip(
+                            "Enable to select a different weapon for your off-hand. "
+                            "When disabled, off-hand uses the same weapon as main-hand.",
+                            target='custom-offhand-weapon-switch',
+                            placement='left',
+                            delay={'show': tooltip_delay},
+                        ),
+                    ], class_name='switcher tight-row', id={'type': 'dw-row', 'name': 'custom-offhand-weapon'}),
+
+                    # Custom Offhand AB: switch and input
+                    dbc.Row([
+                        dbc.Col(dbc.Switch(
+                            id='custom-offhand-ab-switch',
+                            label='Custom Offhand AB',
+                            value=cfg.CUSTOM_OFFHAND_AB,
+                            persistence=True,
+                            persistence_type=persist_type,
+                        ), xs=6, md=6),
+                        dbc.Col(dbc.Fade(
+                            dbc.Input(
+                                id='offhand-ab-input',
+                                type='number',
+                                value=cfg.OFFHAND_AB,
+                                step=1,
+                                persistence=True,
+                                persistence_type=persist_type,
+                                debounce=True,
+                            ),
+                            id='offhand-ab-fade',
+                            is_in=cfg.CUSTOM_OFFHAND_AB,
+                            appear=False,
+                        ), xs=6, md=6),
+                        dbc.Tooltip(
+                            "Enable to set a different Attack Bonus for your off-hand weapon. "
+                            "Useful when off-hand weapon has different enhancement or modifiers.",
+                            target='custom-offhand-ab-switch',
+                            placement='left',
+                            delay={'show': tooltip_delay},
+                        ),
+                    ], class_name='switcher tight-row', id={'type': 'dw-row', 'name': 'custom-offhand-ab'}),
                 ]),
             ], class_name='border border-dotted rounded p-3 mb-3'),
             id='dual-wield-collapse',

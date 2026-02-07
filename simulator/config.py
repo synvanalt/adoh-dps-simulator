@@ -58,6 +58,10 @@ class Config:
     TWO_WEAPON_FIGHTING: bool = True
     AMBIDEXTERITY: bool = True
     IMPROVED_TWF: bool = True
+    CUSTOM_OFFHAND_WEAPON: bool = False
+    OFFHAND_WEAPON: str = "Scimitar"
+    CUSTOM_OFFHAND_AB: bool = False
+    OFFHAND_AB: int = 68  # Default same as AB
 
     COMBAT_TYPE: str = "melee"  # "melee" or "ranged"
     MIGHTY: int = 0

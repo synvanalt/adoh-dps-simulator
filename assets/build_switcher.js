@@ -65,6 +65,7 @@ function _get_no_update_return(keys_count) {
         no_upd, // active-idx
         no_upd, no_upd, no_upd,         // ab, ab_capped, ab_prog
         no_upd, no_upd, no_upd, no_upd, no_upd, // dual-wield settings (5 fields)
+        no_upd, no_upd, no_upd, no_upd, // custom_offhand_weapon, offhand_weapon, custom_offhand_ab, offhand_ab
         no_upd, no_upd, no_upd, no_upd, // combat_type, mighty, enhancement_set_bonus, str_mod
         no_upd, no_upd, no_upd, no_upd, // two-handed, weaponmaster, keen, improved_crit
         no_upd, no_upd, no_upd, no_upd, // overwhelm_crit, dev_crit, shape_weapon_override, shape_weapon
@@ -120,6 +121,10 @@ window.dash_clientside.clientside.switch_build = function(n_clicks_list, builds,
         cfg.TWO_WEAPON_FIGHTING,
         cfg.AMBIDEXTERITY,
         cfg.IMPROVED_TWF,
+        cfg.CUSTOM_OFFHAND_WEAPON || false,
+        cfg.OFFHAND_WEAPON || 'Scimitar',
+        cfg.CUSTOM_OFFHAND_AB || false,
+        cfg.OFFHAND_AB || cfg.AB || 68,
         cfg.COMBAT_TYPE,
         cfg.MIGHTY,
         cfg.ENHANCEMENT_SET_BONUS,
@@ -151,6 +156,7 @@ window.dash_clientside.clientside.load_from_buffer = function(config, is_loading
         return [
             no_upd, no_upd, no_upd,         // ab, ab_capped, ab_prog
             no_upd, no_upd, no_upd, no_upd, no_upd, // dual-wield settings (5 fields)
+            no_upd, no_upd, no_upd, no_upd, // custom_offhand_weapon, offhand_weapon, custom_offhand_ab, offhand_ab
             no_upd, no_upd, no_upd, no_upd, // combat_type, mighty, enhancement_set_bonus, str_mod
             no_upd, no_upd, no_upd, no_upd, // two-handed, weaponmaster, keen, improved_crit
             no_upd, no_upd, no_upd, no_upd, // overwhelm_crit, dev_crit, shape_weapon_override, shape_weapon
@@ -176,6 +182,10 @@ window.dash_clientside.clientside.load_from_buffer = function(config, is_loading
         cfg.TWO_WEAPON_FIGHTING,
         cfg.AMBIDEXTERITY,
         cfg.IMPROVED_TWF,
+        cfg.CUSTOM_OFFHAND_WEAPON || false,
+        cfg.OFFHAND_WEAPON || 'Scimitar',
+        cfg.CUSTOM_OFFHAND_AB || false,
+        cfg.OFFHAND_AB || cfg.AB || 68,
         cfg.COMBAT_TYPE,
         cfg.MIGHTY,
         cfg.ENHANCEMENT_SET_BONUS,

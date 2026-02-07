@@ -7,15 +7,23 @@ import random
 
 
 class AttackSimulator:
-    def __init__(self, weapon_obj: Weapon, config: Config):
+    def __init__(self, weapon_obj: Weapon, config: Config, offhand_weapon_obj: Weapon = None):
         self.cfg = config
         self.weapon = weapon_obj
+        self.offhand_weapon = offhand_weapon_obj  # Custom offhand weapon (can be None)
         self.defender_ac = self.cfg.TARGET_AC
         self.ab_capped = self.cfg.AB_CAPPED
         self.ab = self.calculate_attack_bonus()
 
+        # Calculate offhand AB if custom offhand is enabled
+        self.offhand_ab = self._calculate_offhand_ab()
+        self.offhand_ab_capped = self._calculate_offhand_ab_capped()
+
         self.dual_wield = False                # Flag for Dual-Wield attack progression
         self.valid_dual_wield_config = True    # Flag for valid Dual-Wield configuration
+
+        # Track offhand attack indices for DamageSimulator
+        self.offhand_attack_indices = []
 
         self.attack_prog = self.get_attack_progression()
         self.attacks_per_round = len(self.attack_prog)
@@ -36,46 +44,105 @@ class AttackSimulator:
             ab = self.cfg.AB
         return ab
 
+    def _calculate_offhand_ab(self):
+        """Calculate the offhand AB, similar to mainhand logic."""
+        if not self.cfg.DUAL_WIELD:
+            return self.ab
+
+        # Use custom offhand AB if enabled
+        if self.cfg.CUSTOM_OFFHAND_AB:
+            base_offhand_ab = self.cfg.OFFHAND_AB
+        else:
+            base_offhand_ab = self.cfg.AB
+
+        # Apply enhancement bonus from offhand weapon if custom offhand weapon is enabled
+        if self.cfg.CUSTOM_OFFHAND_WEAPON and self.offhand_weapon:
+            if self.offhand_weapon.purple_props['enhancement'] > 7:
+                offhand_ab = base_offhand_ab + (self.offhand_weapon.purple_props['enhancement'] - 7)
+                offhand_ab = min(offhand_ab, self._calculate_offhand_ab_capped())
+                return offhand_ab
+            elif (self.cfg.DAMAGE_VS_RACE
+                  and self.offhand_weapon.vs_race_key in self.offhand_weapon.purple_props
+                  and 'enhancement' in self.offhand_weapon.purple_props[self.offhand_weapon.vs_race_key]):
+                offhand_ab = base_offhand_ab + (self.offhand_weapon.purple_props[self.offhand_weapon.vs_race_key]['enhancement'] - 7)
+                offhand_ab = min(offhand_ab, self._calculate_offhand_ab_capped())
+                return offhand_ab
+
+        return base_offhand_ab
+
+    def _calculate_offhand_ab_capped(self):
+        """Calculate the offhand AB cap based on mainhand AB cap and custom offhand AB."""
+        if not self.cfg.CUSTOM_OFFHAND_AB:
+            return self.ab_capped
+
+        # OFFHAND_AB_CAPPED = AB_CAPPED - (AB - OFFHAND_AB)
+        return self.ab_capped - (self.cfg.AB - self.cfg.OFFHAND_AB)
+
+    def _get_offhand_weapon_size(self):
+        """Get the size of the offhand weapon."""
+        if self.cfg.CUSTOM_OFFHAND_WEAPON and self.offhand_weapon:
+            return self.offhand_weapon.size
+        return self.weapon.size  # Same as mainhand if no custom offhand
+
     def _is_valid_dw_config(self):
         """
         Check if dual-wielding is valid for character/weapon size combination.
 
         Valid combinations:
-        - Medium: M, S, T, Double-sided
-        - Small: S, T
-        - Large: M, S
+        - Medium: M, S, T, Double-sided (mainhand); M, S, T (offhand)
+        - Small: S, T (both)
+        - Large: L mainhand ONLY if offhand is M or S; M, S mainhand with M, S offhand
 
         :return: True if valid, False if invalid configuration
         """
         character_size = self.cfg.CHARACTER_SIZE
-        weapon_size = self.weapon.size
+        mainhand_size = self.weapon.size
+        offhand_size = self._get_offhand_weapon_size()
 
-        # Special: Medium can dual-wield double-sided (even though Large)
+        # Special: Medium can dual-wield double-sided (even though "Large" sized, they count as light offhand)
         if (character_size == 'M'
             and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
             and not self.cfg.SHAPE_WEAPON_OVERRIDE):
             return True
 
-        # Ranged weapons cannot be dual-wielded
+        # Ranged weapons cannot be dual-wielded (mainhand check)
         if (self.weapon.name_base in AUTO_MIGHTY_WEAPONS or
                 self.weapon.name_base in AMMO_BASED_WEAPONS):
             return False
 
-        # Large weapons cannot be dual-wielded
-        if weapon_size == 'L':
+        # Check offhand weapon if custom
+        if self.cfg.CUSTOM_OFFHAND_WEAPON and self.offhand_weapon:
+            # Offhand cannot be ranged weapon
+            if (self.offhand_weapon.name_base in AUTO_MIGHTY_WEAPONS or
+                    self.offhand_weapon.name_base in AMMO_BASED_WEAPONS):
+                return False
+            # Offhand cannot be Large
+            if offhand_size == 'L':
+                return False
+
+        # Large mainhand: only valid if Large character AND offhand is M or S
+        if mainhand_size == 'L':
+            if character_size == 'L' and offhand_size in ('M', 'S'):
+                return True
             return False
 
-        # Small cannot dual-wield Medium
-        if character_size == 'S' and weapon_size == 'M':
+        # Small cannot dual-wield Medium (mainhand)
+        if character_size == 'S' and mainhand_size == 'M':
+            return False
+
+        # Small cannot dual-wield Medium (offhand)
+        if character_size == 'S' and offhand_size == 'M':
             return False
 
         # Large cannot dual-wield Tiny
-        if character_size == 'L' and weapon_size == 'T':
+        if character_size == 'L' and mainhand_size == 'T':
+            return False
+        if character_size == 'L' and offhand_size == 'T':
             return False
 
         return True
 
-    def _is_weapon_light(self):
+    def _is_weapon_light(self, weapon_size=None):
         """
         Determine if the weapon is considered "light" for this character size.
 
@@ -83,36 +150,43 @@ class AttackSimulator:
         - Weapon is smaller than character size
         - Example: Small weapon is light for Medium/Large, but not for Small
 
+        :param weapon_size: Optional weapon size to check. If None, uses mainhand weapon size.
         :return: True if light weapon, False otherwise
         """
         size_order = {'T': 0, 'S': 1, 'M': 2, 'L': 3}
         character_size_value = size_order[self.cfg.CHARACTER_SIZE]
-        weapon_size_value = size_order[self.weapon.size]
+
+        if weapon_size is None:
+            weapon_size = self.weapon.size
+        weapon_size_value = size_order[weapon_size]
 
         return weapon_size_value < character_size_value
 
     def calculate_dw_penalties(self):
         """
         Calculate dual-wield attack penalties for primary and off-hand.
+        Uses OFFHAND weapon size to determine if offhand is light (game-accurate).
 
         Base penalties (no feats):
-        - Light weapon: -4 primary / -8 off-hand
-        - Non-light weapon: -6 primary / -10 off-hand
+        - Light offhand weapon: -4 primary / -8 off-hand
+        - Non-light offhand weapon: -6 primary / -10 off-hand
 
         With Two-Weapon Fighting:
-        - Light weapon: -2 primary / -6 off-hand
-        - Non-light weapon: -4 primary / -8 off-hand
+        - Light offhand weapon: -2 primary / -6 off-hand
+        - Non-light offhand weapon: -4 primary / -8 off-hand
 
         With Ambidexterity (requires TWF):
         - Off-hand penalty reduced by 4
 
         With both TWF + Ambidexterity:
-        - Light weapon: -2 primary / -2 off-hand
-        - Non-light weapon: -4 primary / -4 off-hand
+        - Light offhand weapon: -2 primary / -2 off-hand
+        - Non-light offhand weapon: -4 primary / -4 off-hand
 
         :return: Tuple of (primary_penalty, offhand_penalty)
         """
-        is_light = self._is_weapon_light()
+        # Use offhand weapon size for penalty calculation (game-accurate)
+        offhand_size = self._get_offhand_weapon_size()
+        is_light = self._is_weapon_light(offhand_size)
         has_twf = self.cfg.TWO_WEAPON_FIGHTING
         has_ambi = self.cfg.AMBIDEXTERITY
 
@@ -133,7 +207,7 @@ class AttackSimulator:
         if has_twf and has_ambi:
             offhand_penalty += 4  # -6 becomes -2, or -8 becomes -4
 
-        return (primary_penalty, offhand_penalty)
+        return primary_penalty, offhand_penalty
 
     def _build_simple_progression(self, attack_prog_offsets):
         """Build attack progression when dual-wield is disabled."""
@@ -163,10 +237,18 @@ class AttackSimulator:
             else:
                 attack_prog.append(self.ab + primary_penalty + offset)
 
-        attack_prog.append(self.ab + offhand_penalty)
+        # Track offhand attack indices
+        offhand_start_idx = len(attack_prog)
+
+        # Use offhand AB for offhand attacks, capped appropriately
+        offhand_ab_effective = min(self.offhand_ab + offhand_penalty, self.offhand_ab_capped)
+        attack_prog.append(offhand_ab_effective)
+        self.offhand_attack_indices.append(offhand_start_idx)
 
         if self.cfg.IMPROVED_TWF:
-            attack_prog.append(self.ab + offhand_penalty - 5)
+            offhand_ab_effective_2 = offhand_ab_effective - 5
+            attack_prog.append(offhand_ab_effective_2)
+            self.offhand_attack_indices.append(offhand_start_idx + 1)
 
         return attack_prog
 
@@ -185,15 +267,27 @@ class AttackSimulator:
         crit_chance_list = []       # Chance to crit-hit defender per attack
         noncrit_chance_list = []    # Chance to non-crit-hit defender per attack, i.e., P(hit) - P(crit-hit)
 
-        # Calculate the chance for -attempting- a critical-hit threat roll:
         threat_range_max = 20
-        threat_roll_chance = (threat_range_max - self.weapon.crit_threat + 1) * 0.05
 
-        for ab in self.attack_prog:
+        # Get offhand crit_threat if custom offhand weapon is enabled
+        offhand_crit_threat = self.weapon.crit_threat  # Default to mainhand
+        if self.cfg.CUSTOM_OFFHAND_WEAPON and self.offhand_weapon:
+            offhand_crit_threat = self.offhand_weapon.crit_threat
+
+        for idx, ab in enumerate(self.attack_prog):
             hit_chance = max(0.05, min(0.95, (21 + ab - self.defender_ac) * 0.05))
             hit_chance_list.append(hit_chance)
 
             threat_hit_chance = max(0.0, min(1.0, (21 + ab - self.defender_ac) * 0.05))
+
+            # Use appropriate crit_threat based on whether this is an offhand attack
+            if idx in self.offhand_attack_indices:
+                crit_threat = offhand_crit_threat
+            else:
+                crit_threat = self.weapon.crit_threat
+
+            # Calculate the chance for -attempting- a critical-hit threat roll:
+            threat_roll_chance = (threat_range_max - crit_threat + 1) * 0.05
 
             # Every roll that is in the threat-range hits the target and qualifies for threat roll attempt:
             if hit_chance >= threat_roll_chance:
@@ -240,6 +334,32 @@ class AttackSimulator:
 
         return legend_proc_rate
 
+    def get_offhand_legend_proc_rate_theoretical(self):
+        """
+        :return: The theoretical chance to trigger a legend proc for offhand weapon
+        """
+        if not self.cfg.CUSTOM_OFFHAND_WEAPON or not self.offhand_weapon:
+            return 0.0
+
+        legend_proc_rate = 0.0
+        purple_props = self.offhand_weapon.purple_props
+        legendary = purple_props.get('legendary') if isinstance(purple_props, dict) else None
+        if legendary:
+            proc = legendary.get('proc')
+            if isinstance(proc, (float, int)):  # Proc is percentage (numeric)
+                legend_proc_rate = float(proc)
+            elif isinstance(proc, str):         # Proc is 'on_crit'
+                # Calculate crit chance for offhand attacks only
+                if self.offhand_attack_indices:
+                    offhand_crit_chances = [self.crit_chance_list[i] for i in self.offhand_attack_indices if i < len(self.crit_chance_list)]
+                    offhand_hit_chances = [self.hit_chance_list[i] for i in self.offhand_attack_indices if i < len(self.hit_chance_list)]
+                    if offhand_hit_chances and sum(offhand_hit_chances) > 0:
+                        legend_proc_rate = sum(offhand_crit_chances) / sum(offhand_hit_chances)
+            else:
+                legend_proc_rate = 0.0
+
+        return legend_proc_rate
+
     def get_attack_progression(self):
         """
         Determine the attack progression of the character (list of AB).
@@ -281,6 +401,36 @@ class AttackSimulator:
             return 'miss', roll
         elif (roll + attacker_ab) >= defender_ac or roll == 20:       # Check if a hit or miss, auto-hit on a natural 20
             if roll >= self.weapon.crit_threat:
+                # Threat roll does not auto-hit if a natural 20 is rolled, nor does it auto-miss if a natural 1 is rolled:
+                threat_roll = random.randint(1, 20)
+                threat_hit = (threat_roll + attacker_ab) >= defender_ac  # Boolean, True if Threat roll succeeds, False otherwise
+                return 'critical_hit' if threat_hit is True else 'hit', roll
+            else:
+                return 'hit', roll
+        else:
+            return 'miss', roll
+
+    def attack_roll_offhand(self, attacker_ab: int, defender_ac_modifier: int = 0):
+        """
+        Attack roll for offhand attacks - uses offhand weapon's crit_threat for threat determination.
+
+        :param attacker_ab: AB of attacker
+        :param defender_ac_modifier: AC modifier of the defender, e.g., -2 for legendary Sunder effect
+        :return: String that specifies: 'miss', 'hit', 'critical_hit', and the d20 roll result
+        """
+        roll = random.randint(1, 20)        # Roll a 1d20
+        defender_ac = self.defender_ac + defender_ac_modifier
+
+        # Get offhand crit_threat
+        if self.cfg.CUSTOM_OFFHAND_WEAPON and self.offhand_weapon:
+            offhand_crit_threat = self.offhand_weapon.crit_threat
+        else:
+            offhand_crit_threat = self.weapon.crit_threat
+
+        if roll == 1:                             # Auto-miss on a natural 1
+            return 'miss', roll
+        elif (roll + attacker_ab) >= defender_ac or roll == 20:       # Check if a hit or miss, auto-hit on a natural 20
+            if roll >= offhand_crit_threat:
                 # Threat roll does not auto-hit if a natural 20 is rolled, nor does it auto-miss if a natural 1 is rolled:
                 threat_roll = random.randint(1, 20)
                 threat_hit = (threat_roll + attacker_ab) >= defender_ac  # Boolean, True if Threat roll succeeds, False otherwise
