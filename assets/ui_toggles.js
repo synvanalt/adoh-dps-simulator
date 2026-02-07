@@ -30,25 +30,51 @@ window.dash_clientside.clientside.toggle_additional_damage = function(isEnabled)
 };
 
 /**
- * Clientside callback for instant immunity inputs UI update when toggling OFF.
- * When switch is OFF: immediately set all inputs to 0 and disable them.
- * When switch is ON: return no_update to let the server callback handle restoration.
+ * Fully clientside callback for immunity inputs toggle with store persistence.
+ * When switch is OFF: save current values to store, set inputs to 0, disable them.
+ * When switch is ON: restore values from store, enable inputs.
  *
  * @param {boolean} isEnabled - The switch value
- * @param {Array} currentValues - Current immunity input values (needed for output length)
- * @returns {Array} [values, disabled] - Arrays for input values and disabled states
+ * @param {Array} currentValues - Current immunity input values
+ * @param {Object} immunityStore - The immunities-store data (fractions)
+ * @param {Object} configStore - The config-store data (contains TARGET_IMMUNITIES as fallback)
+ * @returns {Array} [values, disabled, updatedStore] - Arrays for input values, disabled states, and updated store
  */
-window.dash_clientside.clientside.toggle_immunities_inputs = function(isEnabled, currentValues) {
+window.dash_clientside.clientside.toggle_immunities_inputs = function(isEnabled, currentValues, immunityStore, configStore) {
     const n = currentValues.length;
 
+    // Immunity names in order (matching Python config)
+    const names = ['pure', 'magical', 'positive', 'divine', 'negative', 'sonic', 'acid', 'electrical', 'cold', 'fire', 'physical'];
+
     if (!isEnabled) {
-        // Switch OFF: immediately show zeros and disable inputs
+        // Switch OFF: save current values to store, then show zeros and disable
+        const updatedStore = {};
+        for (let i = 0; i < n; i++) {
+            // Convert percentage to fraction for storage
+            updatedStore[names[i]] = (currentValues[i] || 0) / 100;
+        }
         const zeros = Array(n).fill(0);
         const disabled = Array(n).fill(true);
-        return [zeros, disabled];
+        return [zeros, disabled, updatedStore];
     } else {
-        // Switch ON: let server callback handle value restoration
-        return [Array(n).fill(window.dash_clientside.no_update), Array(n).fill(window.dash_clientside.no_update)];
+        // Switch ON: restore values from store or config, enable inputs
+        immunityStore = immunityStore || {};
+
+        const restoredValues = [];
+        for (let i = 0; i < n; i++) {
+            const name = names[i];
+            // Priority: immunities-store > config-store > default 0
+            if (immunityStore[name] !== undefined) {
+                restoredValues.push(Math.round(immunityStore[name] * 100));
+            } else if (configStore && configStore.TARGET_IMMUNITIES && configStore.TARGET_IMMUNITIES[name] !== undefined) {
+                restoredValues.push(Math.round(configStore.TARGET_IMMUNITIES[name] * 100));
+            } else {
+                restoredValues.push(0);
+            }
+        }
+        const enabled = Array(n).fill(false);
+        // Return no_update for store since we're just reading from it
+        return [restoredValues, enabled, window.dash_clientside.no_update];
     }
 };
 

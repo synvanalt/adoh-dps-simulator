@@ -375,8 +375,8 @@ def register_ui_callbacks(app, cfg):
         return dash.no_update
 
 
-    # Clientside callback: instant UI update for immunity inputs when toggling OFF
-    # This provides immediate visual feedback (zeros + disabled) without server roundtrip
+    # Fully clientside callback for immunity inputs toggle with store persistence
+    # Handles both UI updates AND store logic without server roundtrip
     app.clientside_callback(
         ClientsideFunction(
             namespace='clientside',
@@ -384,66 +384,12 @@ def register_ui_callbacks(app, cfg):
         ),
         Output({'type': 'immunity-input', 'name': ALL}, 'value'),
         Output({'type': 'immunity-input', 'name': ALL}, 'disabled'),
-        Input('target-immunities-switch', 'value'),
-        State({'type': 'immunity-input', 'name': ALL}, 'value'),
-    )
-
-    # Server callback: handle immunities store logic and value restoration on switch ON
-    # When OFF: save current values to store (clientside already updated UI)
-    # When ON: restore values from store and enable inputs
-    @app.callback(
-        Output({'type': 'immunity-input', 'name': ALL}, 'value', allow_duplicate=True),
-        Output({'type': 'immunity-input', 'name': ALL}, 'disabled', allow_duplicate=True),
         Output('immunities-store', 'data'),
         Input('target-immunities-switch', 'value'),
-        State('config-store', 'data'),
-        State('immunities-store', 'data'),
         State({'type': 'immunity-input', 'name': ALL}, 'value'),
-        prevent_initial_call=True
+        State('immunities-store', 'data'),
+        State('config-store', 'data'),
     )
-    def toggle_immunities_server(apply_immunities, cfg_store, immunities_store, current_input_values):
-        names = list(cfg.TARGET_IMMUNITIES.keys())
-        n = len(names)
-
-        # Ensure store dict exists
-        immunities_store = immunities_store or {}
-
-        # Switch ON → load values from store or config-store
-        if apply_immunities:
-            # Prefer the most recent user values saved in immunities-store
-            if any(name in immunities_store for name in names):
-                return (
-                    [round(immunities_store.get(name, 0) * 100) for name in names],
-                    [False] * n,        # Enable all inputs
-                    immunities_store    # Return existing store unchanged
-                )
-
-            # Fallback to config-store values (fractions -> percentages)
-            if cfg_store and "TARGET_IMMUNITIES" in cfg_store:
-                return (
-                    [round(cfg_store["TARGET_IMMUNITIES"].get(name, 0) * 100) for name in names],
-                    [False] * n,        # Enable all inputs
-                    immunities_store    # Return existing store unchanged
-                )
-
-            # Final fallback: zeros
-            return (
-                [0] * n,            # Set all inputs to 0
-                [False] * n,        # Enable all inputs
-                immunities_store    # Return existing store unchanged
-            )
-
-        # Switch OFF → only update store (clientside already set UI to zeros/disabled)
-        else:
-            updated_store = {
-                name: (val or 0) / 100  # Convert percentages back to fractions
-                for name, val in zip(names, current_input_values)
-            }
-            return (
-                [dash.no_update] * n,   # Clientside already set to 0
-                [dash.no_update] * n,   # Clientside already disabled
-                updated_store           # Save current values to store
-            )
 
 
     # Clientside callback: toggle melee/ranged dependent params for instant UI update
