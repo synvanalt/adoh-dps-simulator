@@ -14,8 +14,8 @@ class AttackSimulator:
         self.ab_capped = self.cfg.AB_CAPPED
         self.ab = self.calculate_attack_bonus()
 
-        self.dual_wield = False                 # Flag for Dual-Wield attack progression
-        self.illegal_dual_wield_config = False  # Flag for illegal Dual-Wield configuration
+        self.dual_wield = False                # Flag for Dual-Wield attack progression
+        self.valid_dual_wield_config = True    # Flag for valid Dual-Wield configuration
 
         self.attack_prog = self.get_attack_progression()
         self.attacks_per_round = len(self.attack_prog)
@@ -45,7 +45,7 @@ class AttackSimulator:
         - Small: S, T
         - Large: M, S
 
-        :return: True if valid, False if illegal configuration
+        :return: True if valid, False if invalid configuration
         """
         character_size = self.cfg.CHARACTER_SIZE
         weapon_size = self.weapon.size
@@ -261,7 +261,7 @@ class AttackSimulator:
 
         # Validate configuration
         if not self._is_valid_dw_config():
-            self.illegal_dual_wield_config = True
+            self.valid_dual_wield_config = False
             self.ab = 0
             return [0] * len(attack_prog_offsets)
 

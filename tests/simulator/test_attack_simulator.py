@@ -617,7 +617,7 @@ class TestDualWieldPenalty:
 
         # AB of 'S' character with 'L' weapon = 0 (cannot dual-wield)
         assert simulator.ab == 0
-        assert simulator.illegal_dual_wield_config == True
+        assert simulator.valid_dual_wield_config == False
 
     def test_hasted_attack_no_penalty(self):
         """Test that hasted attack in DW progression doesn't get primary penalty.
@@ -1394,7 +1394,7 @@ class TestGetAttackProgressionIntegration:
         assert result == [66, 61, 56, 51, 68, 66, 61]
         assert attack_sim.dual_wield == True
 
-    def test_get_attack_progression_illegal_dw_config(self):
+    def test_get_attack_progression_invalid_dw_config(self):
         """Test illegal DW config returns zeroed progression"""
         cfg = Config()
         cfg.AB = 68
@@ -1407,7 +1407,7 @@ class TestGetAttackProgressionIntegration:
         result = attack_sim.get_attack_progression()
 
         assert all(ab == 0 for ab in result)
-        assert attack_sim.illegal_dual_wield_config == True
+        assert attack_sim.valid_dual_wield_config == False
         assert attack_sim.ab == 0
 
 

@@ -53,8 +53,8 @@ class Config:
     })
 
     # DUAL-WIELD SETTINGS
-    CHARACTER_SIZE: str = "M"        # "S" / "M" / "L"
     DUAL_WIELD: bool = False
+    CHARACTER_SIZE: str = "M"        # "S" / "M" / "L"
     TWO_WEAPON_FIGHTING: bool = True
     AMBIDEXTERITY: bool = True
     IMPROVED_TWF: bool = True

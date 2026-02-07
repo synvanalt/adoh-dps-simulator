@@ -1263,7 +1263,7 @@ class TestInternalMethods:
         cfg = Config()
         sim = DamageSimulator('Spear', cfg)
         sim.stats.hits = 0
-        sim.attack_sim.illegal_dual_wield_config = True
+        sim.attack_sim.valid_dual_wield_config = False
 
         result = sim._calculate_final_statistics(round_num=0)
 
