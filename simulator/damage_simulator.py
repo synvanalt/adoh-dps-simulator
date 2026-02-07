@@ -278,7 +278,7 @@ class DamageSimulator:
 
         # Set up dual-wield tracking indices
         dw_tracking = self._setup_dual_wield_tracking()
-        offhand_attack_indices = dw_tracking['offhand_attack_indices']
+        offhand_attack_indices = set(dw_tracking['offhand_attack_indices'])  # Convert to set for O(1) lookup
         str_idx = dw_tracking['str_idx']
         offhand_str_idx = dw_tracking['offhand_str_idx']
 
@@ -291,6 +291,48 @@ class DamageSimulator:
         offhand_overwhelm_crit = self.cfg.OFFHAND_OVERWHELM_CRIT if has_custom_offhand else mainhand_overwhelm_crit
         offhand_dev_crit = self.cfg.OFFHAND_DEV_CRIT if has_custom_offhand else mainhand_dev_crit
 
+        # Pre-compute Tenacious Blow check (constant throughout simulation)
+        tenacious_blow_enabled = (
+            self.cfg.ADDITIONAL_DAMAGE.get("Tenacious_Blow", [False])[0] is True
+            and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
+        )
+
+        # Pre-compute AB caps
+        mainhand_ab_cap = self.attack_sim.ab_capped
+        offhand_ab_cap = self.attack_sim.offhand_ab_capped
+
+        # Pre-compute crit threats
+        mainhand_crit_threat = None  # None means use default in attack_roll
+        offhand_crit_threat = self.offhand_weapon.crit_threat if has_custom_offhand else None
+
+        # Pre-compute crit multiplier (always from mainhand)
+        mainhand_crit_multiplier = self.weapon.crit_multiplier
+
+        # Pre-compute weapon sizes for devastating critical
+        mainhand_size = self.weapon.size
+        offhand_size = self.offhand_weapon.size if has_custom_offhand else mainhand_size
+
+        # Cache dual_wield flag
+        is_dual_wield = self.attack_sim.dual_wield
+
+        # Cache references to avoid repeated attribute lookups in hot loop
+        attack_prog = self.attack_sim.attack_prog
+        attack_roll = self.attack_sim.attack_roll
+        stats = self.stats
+        legend_effect = self.legend_effect
+        offhand_legend_effect = self.offhand_legend_effect
+        dmg_dict_base = self.dmg_dict_base
+        offhand_dmg_dict_base = self.offhand_dmg_dict_base
+        dmg_dict_legend = self.dmg_dict_legend
+        offhand_dmg_dict_legend = self.offhand_dmg_dict_legend
+        get_damage_results = self.get_damage_results
+        cumulative_damage_by_type = self.cumulative_damage_by_type
+
+        # Define helper function ONCE outside the loop
+        def get_max_dmg(dmg_roll: DamageRoll) -> int:
+            """Calculate maximum possible damage from a DamageRoll."""
+            return dmg_roll.dice * dmg_roll.sides + dmg_roll.flat
+
         for round_num in range(1, total_rounds + 1):
             total_round_dmg = 0
             total_round_dmg_crit_imm = 0
@@ -299,70 +341,61 @@ class DamageSimulator:
                 break
 
 
-            for attack_idx, attack_ab in enumerate(self.attack_sim.attack_prog):
-                self.stats.attempts_made += 1
-                self.stats.attempts_made_per_attack[attack_idx] += 1
+            for attack_idx, attack_ab in enumerate(attack_prog):
+                stats.attempts_made += 1
+                stats.attempts_made_per_attack[attack_idx] += 1
 
-                # Determine if this is an offhand attack
+                # Determine if this is an offhand attack (O(1) set lookup)
                 is_offhand_attack = attack_idx in offhand_attack_indices
+                is_offhand_custom = is_offhand_attack and has_custom_offhand
 
                 # Get appropriate legend effect bonuses based on attack type
-                if is_offhand_attack and has_custom_offhand:
-                    legend_ab_bonus = self.offhand_legend_effect.ab_bonus
-                    legend_ac_reduction = self.offhand_legend_effect.ac_reduction
+                if is_offhand_custom:
+                    legend_ab_bonus = offhand_legend_effect.ab_bonus
+                    legend_ac_reduction = offhand_legend_effect.ac_reduction
                 else:
-                    legend_ab_bonus = self.legend_effect.ab_bonus
-                    legend_ac_reduction = self.legend_effect.ac_reduction
+                    legend_ab_bonus = legend_effect.ab_bonus
+                    legend_ac_reduction = legend_effect.ac_reduction
 
-                # Apply AB cap based on mainhand or offhand
-                if is_offhand_attack:
-                    ab_cap = self.attack_sim.offhand_ab_capped
-                else:
-                    ab_cap = self.attack_sim.ab_capped
-
+                # Apply AB cap based on mainhand or offhand (pre-computed)
+                ab_cap = offhand_ab_cap if is_offhand_attack else mainhand_ab_cap
                 current_ab = min(attack_ab + legend_ab_bonus, ab_cap)
 
-                # Determine crit_threat for this attack
-                if is_offhand_attack and has_custom_offhand:
-                    crit_threat = self.offhand_weapon.crit_threat
-                else:
-                    crit_threat = None  # Use mainhand default
+                # Use pre-computed crit_threat
+                crit_threat = offhand_crit_threat if is_offhand_custom else mainhand_crit_threat
 
-                outcome, roll = self.attack_sim.attack_roll(current_ab, defender_ac_modifier=legend_ac_reduction, crit_threat=crit_threat)
+                outcome, roll = attack_roll(current_ab, defender_ac_modifier=legend_ac_reduction, crit_threat=crit_threat)
 
                 if outcome == 'miss':  # Attack missed the opponent, no damage is added
-                    # Check for Tenacious Blow (only for mainhand with double-sided weapons)
-                    active_weapon = self.offhand_weapon if (is_offhand_attack and has_custom_offhand) else self.weapon
-                    if ("Tenacious_Blow" in self.cfg.ADDITIONAL_DAMAGE
-                            and self.cfg.ADDITIONAL_DAMAGE["Tenacious_Blow"][0] is True
-                            and active_weapon.name_base in DOUBLE_SIDED_WEAPONS):
+                    # Check for Tenacious Blow (pre-computed)
+                    if tenacious_blow_enabled:
                         dmg_dict = {'pure': [DamageRoll(dice=0, sides=0, flat=4)]}
                         if legend_imm_factors is None:
                             legend_imm_factors = {}
-                        dmg_sums = self.get_damage_results(dmg_dict, legend_imm_factors)
+                        dmg_sums = get_damage_results(dmg_dict, legend_imm_factors)
                         dmg_sums_crit_imm = dmg_sums
                         legend_dmg_sums = {}  # No legend damage on miss, even with Tenacious Blow
                     else:
                         continue
 
                 else:  # Attack hits, critical hit logic is managed within this part:
-                    self.stats.hits += 1
-                    self.stats.hits_per_attack[attack_idx] += 1
+                    stats.hits += 1
+                    stats.hits_per_attack[attack_idx] += 1
 
                     # On Critical Hit damage is NOT multiplied(!), it is rolled multiple times!
                     # For offhand attacks: use mainhand's crit_multiplier (game mechanic)
-                    crit_multiplier = 1 if outcome == 'hit' else self.weapon.crit_multiplier
+                    crit_multiplier = 1 if outcome == 'hit' else mainhand_crit_multiplier
 
                     # Get appropriate damage source and legend dict
-                    if is_offhand_attack and has_custom_offhand:
+                    if is_offhand_custom:
                         # Use offhand weapon damage sources
                         legend_dmg_sums, legend_dmg_common, offhand_legend_imm_factors = (
-                            self.offhand_legend_effect.get_legend_damage(self.offhand_dmg_dict_legend, crit_multiplier)
+                            offhand_legend_effect.get_legend_damage(offhand_dmg_dict_legend, crit_multiplier)
                         )
                         active_imm_factors = offhand_legend_imm_factors if offhand_legend_imm_factors else {}
 
                         # Use offhand damage dict
-                        dmg_dict = {k: list(v) for k, v in self.offhand_dmg_dict_base.items()}
+                        dmg_dict = {k: list(v) for k, v in offhand_dmg_dict_base.items()}
 
                         # Halve STR damage for offhand
                         if offhand_str_idx is not None and 'physical' in dmg_dict:
@@ -375,25 +408,21 @@ class DamageSimulator:
                     else:
                         # Use mainhand weapon damage sources
                         legend_dmg_sums, legend_dmg_common, legend_imm_factors = (
-                            self.legend_effect.get_legend_damage(self.dmg_dict_legend, crit_multiplier)
+                            legend_effect.get_legend_damage(dmg_dict_legend, crit_multiplier)
                         )
                         active_imm_factors = legend_imm_factors if legend_imm_factors else {}
 
                         # Use mainhand damage dict
-                        dmg_dict = {k: list(v) for k, v in self.dmg_dict_base.items()}
+                        dmg_dict = {k: list(v) for k, v in dmg_dict_base.items()}
 
                         # Halve STR damage for offhand attacks (when using same weapon)
-                        if self.attack_sim.dual_wield and is_offhand_attack and str_idx is not None:
+                        if is_dual_wield and is_offhand_attack and str_idx is not None:
                             str_roll = dmg_dict['physical'][str_idx]
                             dmg_dict['physical'][str_idx] = DamageRoll(
                                 dice=str_roll.dice,
                                 sides=str_roll.sides,
                                 flat=math.floor(str_roll.flat / 2)
                             )
-
-                    def get_max_dmg(dmg_roll: DamageRoll) -> int:
-                        """Calculate maximum possible damage from a DamageRoll."""
-                        return dmg_roll.dice * dmg_roll.sides + dmg_roll.flat
 
                     dmg_sneak = dmg_dict.pop('sneak', [])                                      # Remove the 'Sneak Attack' dmg from crit multiplication
                     dmg_sneak_max = max(dmg_sneak, key=get_max_dmg, default=None)              # Find the highest 'sneak' dmg, can't stack Sneak Attacks
@@ -415,20 +444,20 @@ class DamageSimulator:
                     # Use shallow copy
                     dmg_dict_crit_imm = {k: list(v) for k, v in dmg_dict.items()}
 
-                    # Get active weapon for size-based calculations
-                    active_weapon = self.offhand_weapon if (is_offhand_attack and has_custom_offhand) else self.weapon
+                    # Get active weapon size for devastating critical (pre-computed)
+                    active_weapon_size = offhand_size if is_offhand_custom else mainhand_size
 
                     if crit_multiplier > 1:     # Store an additional dictionary for damage without crit multiplication
-                        self.stats.crit_hits += 1
-                        self.stats.crits_per_attack[attack_idx] += 1
+                        stats.crit_hits += 1
+                        stats.crits_per_attack[attack_idx] += 1
                         dmg_dict = {k: [i for i in v for _ in range(crit_multiplier)]
                                     for k, v in dmg_dict.items()}  # Copy dice information X times (X = crit multiplier)
                         if dmg_massive_max is not None:
                             dmg_dict['physical'].append(dmg_massive_max)  # Add 'Massive' again after dmg rolls have been multiplied
 
                         # Determine which crit settings to use based on attack type (pre-computed)
-                        use_overwhelm_crit = offhand_overwhelm_crit if (is_offhand_attack and has_custom_offhand) else mainhand_overwhelm_crit
-                        use_dev_crit = offhand_dev_crit if (is_offhand_attack and has_custom_offhand) else mainhand_dev_crit
+                        use_overwhelm_crit = offhand_overwhelm_crit if is_offhand_custom else mainhand_overwhelm_crit
+                        use_dev_crit = offhand_dev_crit if is_offhand_custom else mainhand_dev_crit
 
                         # Overwhelm Critical: Add bonus damage based on crit multiplier
                         if use_overwhelm_crit:
@@ -440,11 +469,11 @@ class DamageSimulator:
                                 overwhelm_dmg = DamageRoll(dice=3, sides=6)  # 3d6
                             dmg_dict.setdefault('physical', []).append(overwhelm_dmg)
 
-                        # Devastating Critical: Add bonus pure damage based on weapon size
+                        # Devastating Critical: Add bonus pure damage based on weapon size (pre-computed)
                         if use_dev_crit:
-                            if active_weapon.size in ['T', 'S']:  # Tiny or Small
+                            if active_weapon_size in ('T', 'S'):  # Tiny or Small - use tuple for faster lookup
                                 dev_dmg = DamageRoll(dice=0, sides=0, flat=10)  # +10 pure damage
-                            elif active_weapon.size == 'M':  # Medium
+                            elif active_weapon_size == 'M':  # Medium
                                 dev_dmg = DamageRoll(dice=0, sides=0, flat=20)  # +20 pure damage
                             else:  # Large or larger
                                 dev_dmg = DamageRoll(dice=0, sides=0, flat=30)  # +30 pure damage
@@ -462,17 +491,17 @@ class DamageSimulator:
                         dmg_dict.setdefault('fire', []).append(dmg_flameweap_max)
                         dmg_dict_crit_imm.setdefault('fire', []).append(dmg_flameweap_max)
 
-                    dmg_sums = self.get_damage_results(dmg_dict, active_imm_factors)
-                    dmg_sums_crit_imm = dmg_sums if crit_multiplier == 1 else self.get_damage_results(dmg_dict_crit_imm, active_imm_factors)
+                    dmg_sums = get_damage_results(dmg_dict, active_imm_factors)
+                    dmg_sums_crit_imm = dmg_sums if crit_multiplier == 1 else get_damage_results(dmg_dict_crit_imm, active_imm_factors)
 
                 attack_dmg = sum(dmg_sums.values()) + sum(legend_dmg_sums.values())
                 attack_dmg_crit_imm = sum(dmg_sums_crit_imm.values()) + sum(legend_dmg_sums.values())
 
                 # Update cumulative damage by type for plotting/analysis
                 for k, v in dmg_sums.items():
-                    self.cumulative_damage_by_type[k] = self.cumulative_damage_by_type.get(k, 0) + v
+                    cumulative_damage_by_type[k] = cumulative_damage_by_type.get(k, 0) + v
                 for k, v in legend_dmg_sums.items():
-                    self.cumulative_damage_by_type[k] = self.cumulative_damage_by_type.get(k, 0) + v
+                    cumulative_damage_by_type[k] = cumulative_damage_by_type.get(k, 0) + v
 
                 total_round_dmg += attack_dmg
                 total_round_dmg_crit_imm += attack_dmg_crit_imm
