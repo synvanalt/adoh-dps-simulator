@@ -61,8 +61,8 @@ class AttackSimulator:
         if not self.cfg.DUAL_WIELD:
             return self.ab
 
-        # Determine base AB for offhand
-        base_offhand_ab = self.cfg.OFFHAND_AB if self.cfg.CUSTOM_OFFHAND_AB else self.cfg.AB
+        # When custom offhand is enabled, use OFFHAND_AB; otherwise use mainhand AB
+        base_offhand_ab = self.cfg.OFFHAND_AB if self.cfg.CUSTOM_OFFHAND_WEAPON else self.cfg.AB
         offhand_ab_cap = self._calculate_offhand_ab_capped()
 
         # Apply enhancement bonus from offhand weapon if custom offhand is enabled
@@ -73,7 +73,7 @@ class AttackSimulator:
 
     def _calculate_offhand_ab_capped(self):
         """Calculate the offhand AB cap based on mainhand AB cap and custom offhand AB."""
-        if not self.cfg.CUSTOM_OFFHAND_AB:
+        if not self.cfg.CUSTOM_OFFHAND_WEAPON:
             return self.ab_capped
 
         # OFFHAND_AB_CAPPED = AB_CAPPED - (AB - OFFHAND_AB)

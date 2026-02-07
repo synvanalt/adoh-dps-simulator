@@ -193,7 +193,7 @@ def register_ui_callbacks(app, cfg):
 
     # RESET CALLBACKS - Split into domain-specific callbacks for maintainability
 
-    # Callback 1: Reset character settings (24 outputs)
+    # Callback 1: Reset character settings (29 outputs)
     @app.callback(
         [Output('ab-input', 'value', allow_duplicate=True),
          Output('ab-capped-input', 'value', allow_duplicate=True),
@@ -205,8 +205,12 @@ def register_ui_callbacks(app, cfg):
          Output('improved-twf-switch', 'value', allow_duplicate=True),
          Output('custom-offhand-weapon-switch', 'value', allow_duplicate=True),
          Output('offhand-weapon-dropdown', 'value', allow_duplicate=True),
-         Output('custom-offhand-ab-switch', 'value', allow_duplicate=True),
          Output('offhand-ab-input', 'value', allow_duplicate=True),
+         Output('offhand-keen-switch', 'value', allow_duplicate=True),
+         Output('offhand-improved-crit-switch', 'value', allow_duplicate=True),
+         Output('offhand-overwhelm-crit-switch', 'value', allow_duplicate=True),
+         Output('offhand-dev-crit-switch', 'value', allow_duplicate=True),
+         Output('offhand-weaponmaster-threat-switch', 'value', allow_duplicate=True),
          Output('combat-type-dropdown', 'value', allow_duplicate=True),
          Output('mighty-input', 'value', allow_duplicate=True),
          Output('enhancement-set-bonus-dropdown', 'value', allow_duplicate=True),
@@ -226,7 +230,7 @@ def register_ui_callbacks(app, cfg):
     )
     def reset_character_settings(n1, n2):
         if not (n1 or n2):
-            return [dash.no_update] * 25
+            return [dash.no_update] * 29
         default_cfg = Config()
         return [
             default_cfg.AB,
@@ -239,8 +243,12 @@ def register_ui_callbacks(app, cfg):
             default_cfg.IMPROVED_TWF,
             default_cfg.CUSTOM_OFFHAND_WEAPON,
             default_cfg.OFFHAND_WEAPON,
-            default_cfg.CUSTOM_OFFHAND_AB,
             default_cfg.OFFHAND_AB,
+            default_cfg.OFFHAND_KEEN,
+            default_cfg.OFFHAND_IMPROVED_CRIT,
+            default_cfg.OFFHAND_OVERWHELM_CRIT,
+            default_cfg.OFFHAND_DEV_CRIT,
+            default_cfg.OFFHAND_WEAPONMASTER_THREAT,
             default_cfg.COMBAT_TYPE,
             default_cfg.MIGHTY,
             default_cfg.ENHANCEMENT_SET_BONUS,
@@ -475,26 +483,16 @@ def register_ui_callbacks(app, cfg):
     )
 
 
-    # Clientside callback: toggle custom offhand weapon visibility
+    # Clientside callback: toggle custom offhand weapon section visibility
     app.clientside_callback(
         ClientsideFunction(
             namespace='clientside',
             function_name='toggle_custom_offhand_weapon'
         ),
-        Output('offhand-weapon-fade', 'is_in'),
+        Output('offhand-customize-collapse', 'is_open'),
         Input('custom-offhand-weapon-switch', 'value'),
     )
 
-
-    # Clientside callback: toggle custom offhand AB visibility
-    app.clientside_callback(
-        ClientsideFunction(
-            namespace='clientside',
-            function_name='toggle_custom_offhand_ab'
-        ),
-        Output('offhand-ab-fade', 'is_in'),
-        Input('custom-offhand-ab-switch', 'value'),
-    )
 
 
     # Clientside callback: toggle additional damage inputs visibility

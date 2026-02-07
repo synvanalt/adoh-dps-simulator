@@ -18,11 +18,7 @@ window.dash_clientside.clientside.toggle_shape_weapon = function(isEnabled) {
 };
 
 window.dash_clientside.clientside.toggle_custom_offhand_weapon = function(isEnabled) {
-    return isEnabled;
-};
-
-window.dash_clientside.clientside.toggle_custom_offhand_ab = function(isEnabled) {
-    return isEnabled;
+    return isEnabled;  // is_open for Collapse
 };
 
 window.dash_clientside.clientside.toggle_damage_limit = function(isEnabled) {

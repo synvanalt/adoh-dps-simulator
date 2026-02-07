@@ -72,7 +72,10 @@ class TestGetDefaultBuildConfig:
             'MIGHTY', 'ENHANCEMENT_SET_BONUS', 'STR_MOD', 'TWO_HANDED',
             'WEAPONMASTER', 'KEEN', 'IMPROVED_CRIT', 'OVERWHELM_CRIT',
             'DEV_CRIT', 'SHAPE_WEAPON_OVERRIDE', 'SHAPE_WEAPON',
-            'ADDITIONAL_DAMAGE', 'WEAPONS'
+            'ADDITIONAL_DAMAGE', 'WEAPONS', 'CUSTOM_OFFHAND_WEAPON',
+            'OFFHAND_WEAPON', 'OFFHAND_AB', 'OFFHAND_KEEN',
+            'OFFHAND_IMPROVED_CRIT', 'OFFHAND_OVERWHELM_CRIT',
+            'OFFHAND_DEV_CRIT', 'OFFHAND_WEAPONMASTER_THREAT'
         ]
         for key in required_keys:
             assert key in config
@@ -131,7 +134,8 @@ class TestSaveCurrentBuildState:
         result = save_current_build_state(
             builds, 0, ab, 20, 'Classic',           # builds, active_idx, ab, ab_capped, ab_prog
             False, 'M', False, False, False,        # dual_wield, character_size, two_weapon_fighting, ambidexterity, improved_twf
-            False, 'Scimitar', False, 68,           # custom_offhand_weapon, offhand_weapon, custom_offhand_ab, offhand_ab
+            False, 'Scimitar', 68,                  # custom_offhand_weapon, offhand_weapon, offhand_ab
+            True, True, False, False, False,        # offhand_keen, offhand_improved_crit, offhand_overwhelm_crit, offhand_dev_crit, offhand_weaponmaster_threat
             'Melee', 0, 3, str_mod, False,          # combat_type, mighty, enhancement, str_mod, two_handed
             False, keen, False, False, False,       # weaponmaster, keen, improved_crit, overwhelm_crit, dev_crit
             False, 'Longsword',                     # shape_override, shape_weapon
@@ -154,7 +158,8 @@ class TestSaveCurrentBuildState:
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False,
             False, False, False, False, False,
             False, 'Longsword',
@@ -176,7 +181,8 @@ class TestSaveCurrentBuildState:
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False,
             False, False, False, False, False,
             False, 'Longsword',
@@ -193,7 +199,8 @@ class TestSaveCurrentBuildState:
         result = save_current_build_state(
             builds, 99, 40, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False,
             False, False, False, False, False,
             False, 'Longsword',
@@ -210,7 +217,8 @@ class TestSaveCurrentBuildState:
         result = save_current_build_state(
             None, 0, 40, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False,
             False, False, False, False, False,
             False, 'Longsword',
@@ -228,7 +236,8 @@ class TestSaveCurrentBuildState:
         result = save_current_build_state(
             builds, 0, 99, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False,
             False, False, False, False, False,
             False, 'Longsword',
@@ -484,7 +493,8 @@ class TestBuildDataIntegrity:
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,  # New offhand params
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False, False, False, False, False, False, False,
             'Longsword',
             [True] * 20, [2] * 20, [6] * 20, [5] * 20, ['Spear'], 'Build 1', cfg
@@ -518,7 +528,8 @@ class TestBuildEdgeCases:
         result = save_current_build_state(
             [], 0, 40, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,  # New offhand params
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False, False, False, False, False, False, False,
             'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
@@ -531,7 +542,8 @@ class TestBuildEdgeCases:
         result = save_current_build_state(
             builds, -1, 40, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,  # New offhand params
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False, False, False, False, False, False, False,
             'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
@@ -569,7 +581,8 @@ class TestBuildEdgeCases:
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,  # New offhand params
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False, False, False, False, False, False, False,
             'Longsword',
             [], [], [], [], ['Spear'], new_name, cfg
@@ -586,7 +599,8 @@ class TestBuildEdgeCases:
         result = save_current_build_state(
             builds, 0, 40, 20, 'Classic',
             False, 'M', False, False, False,
-            False, 'Scimitar', False, 68,  # New offhand params
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
             'Melee', 0, 3, 8, False, False, False, False, False, False, False,
             'Longsword',
             [], [], [], [], ['Spear'], None, cfg

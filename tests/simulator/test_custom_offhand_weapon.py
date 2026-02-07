@@ -20,15 +20,19 @@ class TestCustomOffhandWeaponConfig:
         cfg = Config()
         assert cfg.OFFHAND_WEAPON == "Scimitar"
 
-    def test_default_custom_offhand_ab_disabled(self):
-        """Test that CUSTOM_OFFHAND_AB is disabled by default."""
-        cfg = Config()
-        assert cfg.CUSTOM_OFFHAND_AB is False
-
     def test_default_offhand_ab_equals_ab(self):
         """Test that default OFFHAND_AB equals AB."""
         cfg = Config()
         assert cfg.OFFHAND_AB == cfg.AB
+
+    def test_default_offhand_crit_settings(self):
+        """Test that default offhand crit settings are correct."""
+        cfg = Config()
+        assert cfg.OFFHAND_KEEN is True
+        assert cfg.OFFHAND_IMPROVED_CRIT is True
+        assert cfg.OFFHAND_OVERWHELM_CRIT is False
+        assert cfg.OFFHAND_DEV_CRIT is False
+        assert cfg.OFFHAND_WEAPONMASTER_THREAT is False
 
 
 class TestCustomOffhandWeaponSimulator:
@@ -84,21 +88,21 @@ class TestCustomOffhandWeaponSimulator:
 class TestCustomOffhandAB:
     """Test custom offhand AB functionality."""
 
-    def test_offhand_ab_uses_mainhand_when_disabled(self):
-        """Test that offhand AB uses mainhand AB when CUSTOM_OFFHAND_AB is disabled."""
+    def test_offhand_ab_uses_mainhand_when_custom_offhand_disabled(self):
+        """Test that offhand AB uses mainhand AB when CUSTOM_OFFHAND_WEAPON is disabled."""
         cfg = Config()
         cfg.AB = 68
         cfg.DUAL_WIELD = True
-        cfg.CUSTOM_OFFHAND_AB = False
+        cfg.CUSTOM_OFFHAND_WEAPON = False
         sim = DamageSimulator('Scimitar', cfg)
         assert sim.attack_sim.offhand_ab == cfg.AB
 
-    def test_offhand_ab_uses_custom_when_enabled(self):
-        """Test that offhand AB uses custom value when CUSTOM_OFFHAND_AB is enabled."""
+    def test_offhand_ab_uses_custom_when_custom_offhand_enabled(self):
+        """Test that offhand AB uses custom value when CUSTOM_OFFHAND_WEAPON is enabled."""
         cfg = Config()
         cfg.AB = 68
         cfg.DUAL_WIELD = True
-        cfg.CUSTOM_OFFHAND_AB = True
+        cfg.CUSTOM_OFFHAND_WEAPON = True
         cfg.OFFHAND_AB = 60
         sim = DamageSimulator('Scimitar', cfg)
         assert sim.attack_sim.offhand_ab == 60
@@ -109,7 +113,7 @@ class TestCustomOffhandAB:
         cfg.AB = 68
         cfg.AB_CAPPED = 75
         cfg.DUAL_WIELD = True
-        cfg.CUSTOM_OFFHAND_AB = True
+        cfg.CUSTOM_OFFHAND_WEAPON = True
         cfg.OFFHAND_AB = 60
         sim = DamageSimulator('Scimitar', cfg)
         # OFFHAND_AB_CAPPED = AB_CAPPED - (AB - OFFHAND_AB) = 75 - (68 - 60) = 67
@@ -146,7 +150,7 @@ class TestCustomOffhandAttackProgression:
         cfg.TWO_WEAPON_FIGHTING = True
         cfg.AMBIDEXTERITY = True
         cfg.IMPROVED_TWF = True
-        cfg.CUSTOM_OFFHAND_AB = True
+        cfg.CUSTOM_OFFHAND_WEAPON = True
         cfg.OFFHAND_AB = 60
         sim = DamageSimulator('Scimitar', cfg)
 
@@ -197,6 +201,105 @@ class TestCustomOffhandCriticalHit:
         assert mainhand_mult == 4
         assert offhand_mult == 2
         # The simulator uses mainhand_mult for all damage calculations (verified in simulate_dps)
+
+
+class TestOffhandCritSettings:
+    """Test offhand-specific crit feat settings."""
+
+    def test_offhand_keen_affects_only_offhand(self):
+        """Test that OFFHAND_KEEN only affects offhand weapon crit threat."""
+        cfg = Config()
+        cfg.DUAL_WIELD = True
+        cfg.CUSTOM_OFFHAND_WEAPON = True
+        cfg.OFFHAND_WEAPON = 'Scimitar'  # Base threat 18
+        cfg.KEEN = True  # Mainhand Keen ON
+        cfg.OFFHAND_KEEN = False  # Offhand Keen OFF
+        cfg.IMPROVED_CRIT = False
+        cfg.OFFHAND_IMPROVED_CRIT = False
+
+        mainhand = Weapon('Scimitar', cfg, is_offhand=False)
+        offhand = Weapon('Scimitar', cfg, is_offhand=True)
+
+        # Mainhand: 18 - 3 = 15 (Keen doubles threat range)
+        # Offhand: 18 (no Keen)
+        assert mainhand.crit_threat == 15
+        assert offhand.crit_threat == 18
+
+    def test_offhand_improved_crit_affects_only_offhand(self):
+        """Test that OFFHAND_IMPROVED_CRIT only affects offhand weapon crit threat."""
+        cfg = Config()
+        cfg.DUAL_WIELD = True
+        cfg.CUSTOM_OFFHAND_WEAPON = True
+        cfg.OFFHAND_WEAPON = 'Scimitar'
+        cfg.KEEN = False
+        cfg.OFFHAND_KEEN = False
+        cfg.IMPROVED_CRIT = True  # Mainhand Improved Crit ON
+        cfg.OFFHAND_IMPROVED_CRIT = False  # Offhand Improved Crit OFF
+
+        mainhand = Weapon('Scimitar', cfg, is_offhand=False)
+        offhand = Weapon('Scimitar', cfg, is_offhand=True)
+
+        # Mainhand: 18 - 3 = 15 (Improved Crit doubles threat range)
+        # Offhand: 18 (no Improved Crit)
+        assert mainhand.crit_threat == 15
+        assert offhand.crit_threat == 18
+
+    def test_offhand_weaponmaster_threat_affects_only_offhand(self):
+        """Test that OFFHAND_WEAPONMASTER_THREAT only affects offhand weapon crit threat."""
+        cfg = Config()
+        cfg.DUAL_WIELD = True
+        cfg.CUSTOM_OFFHAND_WEAPON = True
+        cfg.OFFHAND_WEAPON = 'Scimitar'
+        cfg.KEEN = False
+        cfg.OFFHAND_KEEN = False
+        cfg.IMPROVED_CRIT = False
+        cfg.OFFHAND_IMPROVED_CRIT = False
+        cfg.WEAPONMASTER = True  # Mainhand WM ON (affects threat and multiplier)
+        cfg.OFFHAND_WEAPONMASTER_THREAT = False  # Offhand WM Threat OFF
+
+        mainhand = Weapon('Scimitar', cfg, is_offhand=False)
+        offhand = Weapon('Scimitar', cfg, is_offhand=True)
+
+        # Mainhand: 18 - 2 = 16 (WM reduces threat by 2)
+        # Offhand: 18 (no WM Threat)
+        assert mainhand.crit_threat == 16
+        assert offhand.crit_threat == 18
+
+    def test_offhand_weaponmaster_threat_does_not_affect_multiplier(self):
+        """Test that OFFHAND_WEAPONMASTER_THREAT doesn't affect crit multiplier."""
+        cfg = Config()
+        cfg.DUAL_WIELD = True
+        cfg.CUSTOM_OFFHAND_WEAPON = True
+        cfg.OFFHAND_WEAPON = 'Scimitar'
+        cfg.WEAPONMASTER = False  # Mainhand WM OFF
+        cfg.OFFHAND_WEAPONMASTER_THREAT = True  # Offhand WM Threat ON
+
+        mainhand = Weapon('Scimitar', cfg, is_offhand=False)
+        offhand = Weapon('Scimitar', cfg, is_offhand=True)
+
+        # Multiplier should come from mainhand WEAPONMASTER setting
+        # Since mainhand WM is OFF, both should have base multiplier (x2)
+        assert mainhand.crit_multiplier == 2
+        assert offhand.crit_multiplier == 2  # Not affected by OFFHAND_WEAPONMASTER_THREAT
+
+    def test_offhand_crit_threat_with_all_settings(self):
+        """Test offhand crit threat with multiple settings enabled."""
+        cfg = Config()
+        cfg.DUAL_WIELD = True
+        cfg.CUSTOM_OFFHAND_WEAPON = True
+        cfg.OFFHAND_WEAPON = 'Scimitar'  # Base threat 18
+        cfg.OFFHAND_KEEN = True
+        cfg.OFFHAND_IMPROVED_CRIT = True
+        cfg.OFFHAND_WEAPONMASTER_THREAT = True
+
+        offhand = Weapon('Scimitar', cfg, is_offhand=True)
+
+        # Base: 18, threat range = 3
+        # Keen: -3
+        # Improved Crit: -3
+        # WM Threat: -2
+        # Total: 18 - 3 - 3 - 2 = 10
+        assert offhand.crit_threat == 10
 
 
 class TestCustomOffhandDualWieldValidation:

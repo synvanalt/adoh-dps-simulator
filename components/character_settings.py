@@ -47,9 +47,9 @@ def build_character_settings(cfg):
             ), xs=6, md=6),
             dbc.Tooltip(
                 "Input should reflect your AB with a +7 purple weapon (add set bonus if applicable). "
-                "Extra AB for special weapons with higher bonus (e.g., Scythe) are managed by simulator automatically. "
-                "AB penalties for extra attacks (e.g., Flurry, Blinding Speed, Rapid Shot) should be included in the input. "
-                "Dual-wield penalty should NOT be included, as simulator applies it automatically based on weapon and character size.",
+                "Extra AB for special weapons with higher bonus (e.g., Scythe) is auto-managed by simulator. "
+                "AB penalties for extra attacks (e.g., Flurry, Blinding Speed) should be included. "
+                "Dual-wield penalty should NOT be included, as simulator auto-applies it based on weapon/character size.",
                 target='ab-input',  # must match the component's id
                 placement='right',  # top, bottom, left, right
                 delay={'show': tooltip_delay},
@@ -202,67 +202,158 @@ def build_character_settings(cfg):
                         ),
                     ], class_name='switcher tight-row', id={'type': 'dw-row', 'name': 'improved-twf'}),
 
-                    # Custom Offhand Weapon: switch and dropdown
+                    # Customize Offhand Weapon: master switch
                     dbc.Row([
                         dbc.Col(dbc.Switch(
                             id='custom-offhand-weapon-switch',
-                            label='Custom Offhand Weapon',
+                            label='Customize Offhand Weapon',
                             value=cfg.CUSTOM_OFFHAND_WEAPON,
                             persistence=True,
                             persistence_type=persist_type,
-                        ), xs=6, md=6),
-                        dbc.Col(dbc.Fade(
-                            dbc.Select(
-                                id='offhand-weapon-dropdown',
-                                options=_get_offhand_weapon_options(),
-                                value=cfg.OFFHAND_WEAPON,
-                                persistence=True,
-                                persistence_type=persist_type,
-                            ),
-                            id='offhand-weapon-fade',
-                            is_in=cfg.CUSTOM_OFFHAND_WEAPON,
-                            appear=False,
-                        ), xs=6, md=6),
+                        ), xs=12, md=12),
                         dbc.Tooltip(
-                            "Enable to select a different weapon for your off-hand. "
-                            "When disabled, off-hand uses the same weapon as main-hand.",
+                            "Enable to customize your off-hand weapon settings. "
+                            "When disabled, off-hand uses the same weapon and settings as main-hand.",
                             target='custom-offhand-weapon-switch',
                             placement='left',
                             delay={'show': tooltip_delay},
                         ),
                     ], class_name='switcher tight-row', id={'type': 'dw-row', 'name': 'custom-offhand-weapon'}),
 
-                    # Custom Offhand AB: switch and input
-                    dbc.Row([
-                        dbc.Col(dbc.Switch(
-                            id='custom-offhand-ab-switch',
-                            label='Custom Offhand AB',
-                            value=cfg.CUSTOM_OFFHAND_AB,
-                            persistence=True,
-                            persistence_type=persist_type,
-                        ), xs=6, md=6),
-                        dbc.Col(dbc.Fade(
-                            dbc.Input(
-                                id='offhand-ab-input',
-                                type='number',
-                                value=cfg.OFFHAND_AB,
-                                step=1,
-                                persistence=True,
-                                persistence_type=persist_type,
-                                debounce=True,
-                            ),
-                            id='offhand-ab-fade',
-                            is_in=cfg.CUSTOM_OFFHAND_AB,
-                            appear=False,
-                        ), xs=6, md=6),
-                        dbc.Tooltip(
-                            "Enable to set a different Attack Bonus for your off-hand weapon. "
-                            "Useful when off-hand weapon has different enhancement or modifiers.",
-                            target='custom-offhand-ab-switch',
-                            placement='left',
-                            delay={'show': tooltip_delay},
-                        ),
-                    ], class_name='switcher tight-row', id={'type': 'dw-row', 'name': 'custom-offhand-ab'}),
+                    # Offhand customization collapse section
+                    dbc.Collapse(
+                        dbc.Row([
+                            dbc.Col([
+                                # Offhand Weapon Selection
+                                dbc.Row([
+                                    dbc.Col(dbc.Label(
+                                        'Offhand Weapon:',
+                                        html_for='offhand-weapon-dropdown',
+                                    ), xs=6, md=6),
+                                    dbc.Col(dbc.Select(
+                                        id='offhand-weapon-dropdown',
+                                        options=_get_offhand_weapon_options(),
+                                        value=cfg.OFFHAND_WEAPON,
+                                        persistence=True,
+                                        persistence_type=persist_type,
+                                    ), xs=6, md=6),
+                                ], class_name=''),
+
+                                # Offhand AB
+                                dbc.Row([
+                                    dbc.Col(dbc.Label(
+                                        'Offhand AB:',
+                                        html_for='offhand-ab-input',
+                                    ), xs=6, md=6),
+                                    dbc.Col(dbc.Input(
+                                        id='offhand-ab-input',
+                                        type='number',
+                                        value=cfg.OFFHAND_AB,
+                                        step=1,
+                                        persistence=True,
+                                        persistence_type=persist_type,
+                                        debounce=True,
+                                    ), xs=6, md=6),
+                                    dbc.Tooltip(
+                                        "Attack Bonus for off-hand weapon. Used for calculating off-hand attack rolls."
+                                        "Same as for main-hand, AB penalties for extra attacks (e.g., Flurry, Blinding Speed) should be included."
+                                        "Dual-wield penalty should NOT be included, as simulator auto-applies it based on weapon/character size.",
+                                        target='offhand-ab-input',
+                                        placement='right',
+                                        delay={'show': tooltip_delay},
+                                    ),
+                                ], class_name='tight-row'),
+
+                                # Offhand Keen
+                                dbc.Row([
+                                    dbc.Col(dbc.Switch(
+                                        id='offhand-keen-switch',
+                                        label='Keen',
+                                        value=cfg.OFFHAND_KEEN,
+                                        persistence=True,
+                                        persistence_type=persist_type,
+                                    ), xs=12, md=12),
+                                    dbc.Tooltip(
+                                        "Increases off-hand weapon critical hit threat range.",
+                                        target='offhand-keen-switch',
+                                        placement='left',
+                                        delay={'show': tooltip_delay},
+                                    ),
+                                ], class_name='switcher tight-row'),
+
+                                # Offhand Improved Critical
+                                dbc.Row([
+                                    dbc.Col(dbc.Switch(
+                                        id='offhand-improved-crit-switch',
+                                        label='Improved Critical',
+                                        value=cfg.OFFHAND_IMPROVED_CRIT,
+                                        persistence=True,
+                                        persistence_type=persist_type,
+                                    ), xs=12, md=12),
+                                    dbc.Tooltip(
+                                        "Increases off-hand weapon critical hit threat range.",
+                                        target='offhand-improved-crit-switch',
+                                        placement='left',
+                                        delay={'show': tooltip_delay},
+                                    ),
+                                ], class_name='switcher tight-row'),
+
+                                # Offhand Overwhelming Critical
+                                dbc.Row([
+                                    dbc.Col(dbc.Switch(
+                                        id='offhand-overwhelm-crit-switch',
+                                        label='Overwhelming Critical',
+                                        value=cfg.OFFHAND_OVERWHELM_CRIT,
+                                        persistence=True,
+                                        persistence_type=persist_type,
+                                    ), xs=12, md=12),
+                                    dbc.Tooltip(
+                                        "On off-hand critical hit, adds Physical damage based on weapon critical multiplier: x2 adds 1d6, x3 adds 2d6, x4+ adds 3d6.",
+                                        target='offhand-overwhelm-crit-switch',
+                                        placement='left',
+                                        delay={'show': tooltip_delay},
+                                    ),
+                                ], class_name='switcher tight-row'),
+
+                                # Offhand Devastating Critical
+                                dbc.Row([
+                                    dbc.Col(dbc.Switch(
+                                        id='offhand-dev-crit-switch',
+                                        label='Devastating Critical',
+                                        value=cfg.OFFHAND_DEV_CRIT,
+                                        persistence=True,
+                                        persistence_type=persist_type,
+                                    ), xs=12, md=12),
+                                    dbc.Tooltip(
+                                        "On off-hand critical hit, adds Pure damage based on weapon size: Tiny/Small +10, Medium +20, Large +30.",
+                                        target='offhand-dev-crit-switch',
+                                        placement='left',
+                                        delay={'show': tooltip_delay},
+                                    ),
+                                ], class_name='switcher tight-row'),
+
+                                # Offhand Weaponmaster Threat
+                                dbc.Row([
+                                    dbc.Col(dbc.Switch(
+                                        id='offhand-weaponmaster-threat-switch',
+                                        label='Weaponmaster Threat',
+                                        value=cfg.OFFHAND_WEAPONMASTER_THREAT,
+                                        persistence=True,
+                                        persistence_type=persist_type,
+                                    ), xs=12, md=12),
+                                    dbc.Tooltip(
+                                        "Extends off-hand weapon critical threat range by 2. "
+                                        "Note: Critical multiplier bonus comes from main-hand weapon properties.",
+                                        target='offhand-weaponmaster-threat-switch',
+                                        placement='left',
+                                        delay={'show': tooltip_delay},
+                                    ),
+                                ], class_name='switcher tight-row'),
+                            ]),
+                        ], class_name='border border-dotted rounded p-2 mt-2 mb-2'),
+                        id='offhand-customize-collapse',
+                        is_open=cfg.CUSTOM_OFFHAND_WEAPON,
+                    ),
                 ]),
             ], class_name='border border-dotted rounded p-3 mb-3'),
             id='dual-wield-collapse',

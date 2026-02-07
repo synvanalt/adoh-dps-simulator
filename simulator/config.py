@@ -60,8 +60,12 @@ class Config:
     IMPROVED_TWF: bool = True
     CUSTOM_OFFHAND_WEAPON: bool = False
     OFFHAND_WEAPON: str = "Scimitar"
-    CUSTOM_OFFHAND_AB: bool = False
     OFFHAND_AB: int = 68  # Default same as AB
+    OFFHAND_KEEN: bool = True
+    OFFHAND_IMPROVED_CRIT: bool = True
+    OFFHAND_OVERWHELM_CRIT: bool = False
+    OFFHAND_DEV_CRIT: bool = False
+    OFFHAND_WEAPONMASTER_THREAT: bool = False
 
     COMBAT_TYPE: str = "melee"  # "melee" or "ranged"
     MIGHTY: int = 0

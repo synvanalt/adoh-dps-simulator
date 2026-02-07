@@ -27,10 +27,10 @@ class DamageSimulator:
         self.stats = StatsCollector()   # Create object for collecting statistics
         self.weapon = Weapon(weapon_chosen, config=self.cfg)  # Pass Config instance to Weapon
 
-        # Create offhand weapon if custom offhand is enabled
+        # Create offhand weapon if custom offhand is enabled (with is_offhand=True for crit calculations)
         self.offhand_weapon = None
         if self.cfg.DUAL_WIELD and self.cfg.CUSTOM_OFFHAND_WEAPON:
-            self.offhand_weapon = Weapon(self.cfg.OFFHAND_WEAPON, config=self.cfg)
+            self.offhand_weapon = Weapon(self.cfg.OFFHAND_WEAPON, config=self.cfg, is_offhand=True)
 
         self.attack_sim = AttackSimulator(
             weapon_obj=self.weapon,
@@ -285,6 +285,12 @@ class DamageSimulator:
         # Check if we have a custom offhand weapon
         has_custom_offhand = self.offhand_weapon is not None
 
+        # Pre-compute crit settings to avoid condition checks in hot loop
+        mainhand_overwhelm_crit = self.cfg.OVERWHELM_CRIT
+        mainhand_dev_crit = self.cfg.DEV_CRIT
+        offhand_overwhelm_crit = self.cfg.OFFHAND_OVERWHELM_CRIT if has_custom_offhand else mainhand_overwhelm_crit
+        offhand_dev_crit = self.cfg.OFFHAND_DEV_CRIT if has_custom_offhand else mainhand_dev_crit
+
         for round_num in range(1, total_rounds + 1):
             total_round_dmg = 0
             total_round_dmg_crit_imm = 0
@@ -420,8 +426,12 @@ class DamageSimulator:
                         if dmg_massive_max is not None:
                             dmg_dict['physical'].append(dmg_massive_max)  # Add 'Massive' again after dmg rolls have been multiplied
 
+                        # Determine which crit settings to use based on attack type (pre-computed)
+                        use_overwhelm_crit = offhand_overwhelm_crit if (is_offhand_attack and has_custom_offhand) else mainhand_overwhelm_crit
+                        use_dev_crit = offhand_dev_crit if (is_offhand_attack and has_custom_offhand) else mainhand_dev_crit
+
                         # Overwhelm Critical: Add bonus damage based on crit multiplier
-                        if self.cfg.OVERWHELM_CRIT:
+                        if use_overwhelm_crit:
                             if crit_multiplier == 2:
                                 overwhelm_dmg = DamageRoll(dice=1, sides=6)  # 1d6
                             elif crit_multiplier == 3:
@@ -431,7 +441,7 @@ class DamageSimulator:
                             dmg_dict.setdefault('physical', []).append(overwhelm_dmg)
 
                         # Devastating Critical: Add bonus pure damage based on weapon size
-                        if self.cfg.DEV_CRIT:
+                        if use_dev_crit:
                             if active_weapon.size in ['T', 'S']:  # Tiny or Small
                                 dev_dmg = DamageRoll(dice=0, sides=0, flat=10)  # +10 pure damage
                             elif active_weapon.size == 'M':  # Medium
