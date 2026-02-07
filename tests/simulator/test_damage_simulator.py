@@ -1239,9 +1239,9 @@ class TestInternalMethods:
 
         result = sim._setup_dual_wield_tracking()
         assert result['is_dual_wield'] is False
-        assert result['offhand_attack_1_idx'] is None
-        assert result['offhand_attack_2_idx'] is None
+        assert result['offhand_attack_indices'] == []
         assert result['str_idx'] is None
+        assert result['offhand_str_idx'] is None
 
     def test_setup_dual_wield_tracking_with_dw(self):
         """Test dual-wield tracking setup for dual-wield builds."""
@@ -1254,16 +1254,17 @@ class TestInternalMethods:
 
         result = sim._setup_dual_wield_tracking()
         assert result['is_dual_wield'] is True
-        assert result['offhand_attack_1_idx'] is not None
-        assert result['offhand_attack_2_idx'] is not None
+        assert len(result['offhand_attack_indices']) == 2  # Two offhand attacks with IMPROVED_TWF
         assert result['str_idx'] is not None
+        # offhand_str_idx is None when no custom offhand weapon
+        assert result['offhand_str_idx'] is None
 
     def test_calculate_final_statistics_zero_rounds(self):
         """Test final statistics calculation with zero rounds."""
         cfg = Config()
         sim = DamageSimulator('Spear', cfg)
         sim.stats.hits = 0
-        sim.attack_sim.illegal_dual_wield_config = True
+        sim.attack_sim.valid_dual_wield_config = False
 
         result = sim._calculate_final_statistics(round_num=0)
 

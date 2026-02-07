@@ -101,15 +101,16 @@ class TestCharacterCheckboxes:
     def test_weaponmaster_checkbox_exists(self, dash_page: Page):
         """Test that Weaponmaster checkbox exists."""
         # Uses pattern-matching ID: {'type': 'melee-switch', 'name': 'weaponmaster'}
-        wm_checkbox = dash_page.locator("input[id*='weaponmaster']")
+        # Avoid matching offhand-weaponmaster-threat-switch by using exact ID pattern
+        wm_checkbox = dash_page.locator("input[id*='melee-switch'][id*='weaponmaster']")
 
         if wm_checkbox.count() > 0:
             expect(wm_checkbox).to_be_visible()
 
     def test_checkbox_labels_clickable(self, dash_page: Page):
         """Test that checkbox labels are clickable."""
-        # Find label for Keen checkbox
-        keen_label = dash_page.locator("label:has-text('Keen')")
+        # Find label for main Keen checkbox (not offhand-keen)
+        keen_label = dash_page.locator("label[for='keen-switch']")
 
         if keen_label.count() > 0:
             keen_checkbox = dash_page.locator("#keen-switch")

@@ -147,8 +147,8 @@ class TestDualWieldWorkflow:
 
                 # Verify no errors
 
-    def test_illegal_dual_wield_prevented(self, dash_page: Page):
-        """Test that illegal dual-wield combinations are prevented."""
+    def test_invalid_dual_wield_prevented(self, dash_page: Page):
+        """Test that invalid dual-wield combinations are prevented."""
         # This depends on implementation - some weapon combinations
         # might not allow dual-wield
 

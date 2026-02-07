@@ -72,7 +72,10 @@ class TestGetDefaultBuildConfig:
             'MIGHTY', 'ENHANCEMENT_SET_BONUS', 'STR_MOD', 'TWO_HANDED',
             'WEAPONMASTER', 'KEEN', 'IMPROVED_CRIT', 'OVERWHELM_CRIT',
             'DEV_CRIT', 'SHAPE_WEAPON_OVERRIDE', 'SHAPE_WEAPON',
-            'ADDITIONAL_DAMAGE', 'WEAPONS'
+            'ADDITIONAL_DAMAGE', 'WEAPONS', 'CUSTOM_OFFHAND_WEAPON',
+            'OFFHAND_WEAPON', 'OFFHAND_AB', 'OFFHAND_KEEN',
+            'OFFHAND_IMPROVED_CRIT', 'OFFHAND_OVERWHELM_CRIT',
+            'OFFHAND_DEV_CRIT', 'OFFHAND_WEAPONMASTER_THREAT'
         ]
         for key in required_keys:
             assert key in config
@@ -129,11 +132,15 @@ class TestSaveCurrentBuildState:
         keen = True
 
         result = save_current_build_state(
-            builds, 0, ab, 20, 'Classic',
-            False, 'M', False, False, False,
-            'Melee', 0, 3, str_mod, False, False, keen,
-            False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], 'Build 1', cfg
+            builds, 0, ab, 20, 'Classic',           # builds, active_idx, ab, ab_capped, ab_prog
+            False, 'M', False, False, False,        # dual_wield, character_size, two_weapon_fighting, ambidexterity, improved_twf
+            False, 'Scimitar', 68,                  # custom_offhand_weapon, offhand_weapon, offhand_ab
+            True, True, False, False, False,        # offhand_keen, offhand_improved_crit, offhand_overwhelm_crit, offhand_dev_crit, offhand_weaponmaster_threat
+            'Melee', 0, 3, str_mod, False,          # combat_type, mighty, enhancement, str_mod, two_handed
+            False, keen, False, False, False,       # weaponmaster, keen, improved_crit, overwhelm_crit, dev_crit
+            False, 'Longsword',                     # shape_override, shape_weapon
+            [], [], [], [],                         # add_dmg_states, add_dmg1, add_dmg2, add_dmg3
+            ['Spear'], 'Build 1', cfg               # weapons, build_name, cfg
         )
 
         assert result[0]['config']['AB'] == ab
@@ -149,10 +156,15 @@ class TestSaveCurrentBuildState:
         add_dmg3 = [5] * 20
 
         result = save_current_build_state(
-            builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
-            add_dmg_states, add_dmg1, add_dmg2, add_dmg3, ['Spear'], 'Build 1', cfg
+            builds, 0, 40, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False,
+            False, False, False, False, False,
+            False, 'Longsword',
+            add_dmg_states, add_dmg1, add_dmg2, add_dmg3,
+            ['Spear'], 'Build 1', cfg
         )
 
         add_dmg = result[0]['config']['ADDITIONAL_DAMAGE']
@@ -167,10 +179,15 @@ class TestSaveCurrentBuildState:
         weapons = ['Spear', 'Longsword', 'Greataxe']
 
         result = save_current_build_state(
-            builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
-            [], [], [], [], weapons, 'Build 1', cfg
+            builds, 0, 40, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False,
+            False, False, False, False, False,
+            False, 'Longsword',
+            [], [], [], [],
+            weapons, 'Build 1', cfg
         )
 
         assert result[0]['config']['WEAPONS'] == weapons
@@ -180,10 +197,15 @@ class TestSaveCurrentBuildState:
         builds = create_default_builds()
 
         result = save_current_build_state(
-            builds, 99, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], 'Build 1', cfg
+            builds, 99, 40, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False,
+            False, False, False, False, False,
+            False, 'Longsword',
+            [], [], [], [],
+            ['Spear'], 'Build 1', cfg
         )
 
         # Should return builds unchanged
@@ -193,10 +215,15 @@ class TestSaveCurrentBuildState:
     def test_handles_none_builds(self, cfg):
         """Test that None builds is handled."""
         result = save_current_build_state(
-            None, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], 'Build 1', cfg
+            None, 0, 40, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False,
+            False, False, False, False, False,
+            False, 'Longsword',
+            [], [], [], [],
+            ['Spear'], 'Build 1', cfg
         )
 
         assert result is None
@@ -207,10 +234,15 @@ class TestSaveCurrentBuildState:
         original_build2_ab = builds[1]['config']['AB']
 
         result = save_current_build_state(
-            builds, 0, 99, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
-            [], [], [], [], ['Spear'], 'Build 1', cfg
+            builds, 0, 99, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False,
+            False, False, False, False, False,
+            False, 'Longsword',
+            [], [], [], [],
+            ['Spear'], 'Build 1', cfg
         )
 
         # Build 0 should be updated
@@ -459,9 +491,12 @@ class TestBuildDataIntegrity:
 
         # Save state with additional damage
         result = save_current_build_state(
-            builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
+            builds, 0, 40, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False, False, False, False, False, False, False,
+            'Longsword',
             [True] * 20, [2] * 20, [6] * 20, [5] * 20, ['Spear'], 'Build 1', cfg
         )
 
@@ -491,9 +526,12 @@ class TestBuildEdgeCases:
     def test_empty_builds_list(self, cfg):
         """Test handling of empty builds list."""
         result = save_current_build_state(
-            [], 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
+            [], 0, 40, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False, False, False, False, False, False, False,
+            'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
         )
         assert result == []
@@ -502,9 +540,12 @@ class TestBuildEdgeCases:
         """Test handling of negative active index."""
         builds = copy.deepcopy(sample_builds)
         result = save_current_build_state(
-            builds, -1, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
+            builds, -1, 40, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False, False, False, False, False, False, False,
+            'Longsword',
             [], [], [], [], ['Spear'], 'Build 1', cfg
         )
         # Should return unchanged builds
@@ -538,9 +579,12 @@ class TestBuildEdgeCases:
         new_name = "My Custom Build"
 
         result = save_current_build_state(
-            builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
+            builds, 0, 40, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False, False, False, False, False, False, False,
+            'Longsword',
             [], [], [], [], ['Spear'], new_name, cfg
         )
 
@@ -553,9 +597,12 @@ class TestBuildEdgeCases:
         original_name = builds[0]['name']
 
         result = save_current_build_state(
-            builds, 0, 40, 20, 'Classic', 'M', 'Melee',
-            0, 3, 8, False, False, False, False, False, False, False,
-            False, False, False, False, 'Longsword',
+            builds, 0, 40, 20, 'Classic',
+            False, 'M', False, False, False,
+            False, 'Scimitar', 68,
+            True, True, False, False, False,
+            'Melee', 0, 3, 8, False, False, False, False, False, False, False,
+            'Longsword',
             [], [], [], [], ['Spear'], None, cfg
         )
 

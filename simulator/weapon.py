@@ -15,8 +15,9 @@ from copy import deepcopy
 
 
 class Weapon:
-    def __init__(self, weapon_name: str, config: Config):
+    def __init__(self, weapon_name: str, config: Config, is_offhand: bool = False):
         self.cfg = config
+        self.is_offhand = is_offhand  # Flag for offhand-specific crit calculations
         self.name_base = weapon_name.split('_')[0]      # Example: Convert 'Dagger_PK' to 'Dagger'
         self.name_purple = weapon_name                  # Keep the full name 'Dagger_PK' for purple weapons management
         self.physical_dmg_types = PHYSICAL_DAMAGE_TYPES
@@ -42,28 +43,42 @@ class Weapon:
         self.size = base_props['size']
 
         self.crit_threat = self.get_crit_threat()
-        self.crit_multiplier = self.crit_multiplier()
+        self.crit_multiplier = self.get_crit_multiplier()
 
     def get_crit_threat(self):
         """
         :return: The minimum value of the weapon's threat range, e.g., for Scimitar (with range 18-20) it should be 18
+
+        For offhand weapons (when CUSTOM_OFFHAND_WEAPON is enabled), uses OFFHAND_* config values.
         """
         threat_range_max = 20  # Always 20 in NWN
         threat_range_min = self.threat_base
         base_threat_range = (threat_range_max - threat_range_min + 1)
 
-        if self.cfg.KEEN:
-            threat_range_min -= base_threat_range
-        if self.cfg.IMPROVED_CRIT:
-            threat_range_min -= base_threat_range
-        if self.cfg.WEAPONMASTER:
-            threat_range_min -= 2
+        # Use offhand-specific settings if this is an offhand weapon
+        if self.is_offhand and self.cfg.CUSTOM_OFFHAND_WEAPON:
+            if self.cfg.OFFHAND_KEEN:
+                threat_range_min -= base_threat_range
+            if self.cfg.OFFHAND_IMPROVED_CRIT:
+                threat_range_min -= base_threat_range
+            if self.cfg.OFFHAND_WEAPONMASTER_THREAT:
+                threat_range_min -= 2
+        else:
+            if self.cfg.KEEN:
+                threat_range_min -= base_threat_range
+            if self.cfg.IMPROVED_CRIT:
+                threat_range_min -= base_threat_range
+            if self.cfg.WEAPONMASTER:
+                threat_range_min -= 2
 
         return threat_range_min
 
-    def crit_multiplier(self):
+    def get_crit_multiplier(self):
         """
         :return: Critical hit multiplier, e.g., for a non-WM character wielding Scimitar it should be 2
+
+        Note: For offhand attacks, the multiplier comes from the MAINHAND weapon config (WEAPONMASTER),
+        not from offhand-specific settings. This is a game mechanic.
         """
         if self.cfg.WEAPONMASTER:  # Add +1 to the multiplier if character is a Weaponmaster
             multiplier = self.multiplier_base + 1

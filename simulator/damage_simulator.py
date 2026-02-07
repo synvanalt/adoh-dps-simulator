@@ -4,7 +4,7 @@ from simulator.stats_collector import StatsCollector
 from simulator.legend_effect import LegendEffect
 from simulator.config import Config
 from simulator.damage_roll import DamageRoll
-from simulator.constants import PHYSICAL_DAMAGE_TYPES
+from simulator.constants import PHYSICAL_DAMAGE_TYPES, DOUBLE_SIDED_WEAPONS
 from copy import deepcopy
 from collections import deque, defaultdict
 import statistics
@@ -26,17 +26,44 @@ class DamageSimulator:
         self.cfg = config
         self.stats = StatsCollector()   # Create object for collecting statistics
         self.weapon = Weapon(weapon_chosen, config=self.cfg)  # Pass Config instance to Weapon
-        self.attack_sim = AttackSimulator(weapon_obj=self.weapon, config=self.cfg)
+
+        # Create offhand weapon if custom offhand is enabled (with is_offhand=True for crit calculations)
+        self.offhand_weapon = None
+        if self.cfg.DUAL_WIELD and self.cfg.CUSTOM_OFFHAND_WEAPON:
+            self.offhand_weapon = Weapon(self.cfg.OFFHAND_WEAPON, config=self.cfg, is_offhand=True)
+
+        self.attack_sim = AttackSimulator(
+            weapon_obj=self.weapon,
+            config=self.cfg,
+            offhand_weapon_obj=self.offhand_weapon
+        )
         self.legend_effect = LegendEffect(stats_obj=self.stats, weapon_obj=self.weapon, attack_sim=self.attack_sim)
+
+        # Create separate legend effect for offhand if custom offhand is enabled
+        self.offhand_legend_effect = None
+        if self.offhand_weapon:
+            self.offhand_legend_effect = LegendEffect(
+                stats_obj=self.stats,
+                weapon_obj=self.offhand_weapon,
+                attack_sim=self.attack_sim
+            )
+
         self.progress_callback = progress_callback
 
         self.dmg_type_names = []    # List of dmg type names, e.g., ['physical', 'acid']
         self.dmg_dict = {}    # Keys are dmg type names, Values are lists of DamageRoll objects
         self.dmg_dict_legend = {}  # Keys are dmg type names or 'proc'/'effect', Values are lists of DamageRoll or metadata
-        self.collect_damage_from_all_sources()
+        self.collect_damage_sources_for_weapon(self.weapon, self.dmg_dict, self.dmg_dict_legend)
+
+        # Collect offhand damage sources if custom offhand is enabled
+        self.offhand_dmg_dict = {}
+        self.offhand_dmg_dict_legend = {}
+        if self.offhand_weapon:
+            self.collect_damage_sources_for_weapon(self.offhand_weapon, self.offhand_dmg_dict, self.offhand_dmg_dict_legend)
 
         # Pre-compute damage structures to avoid deep copies in hot loop
         self.dmg_dict_base = deepcopy(self.dmg_dict)  # One-time deep copy
+        self.offhand_dmg_dict_base = deepcopy(self.offhand_dmg_dict) if self.offhand_dmg_dict else {}
 
         # Convergence params, z-score lookup (normal distribution)
         z_values = {0.90: 1.645, 0.95: 1.96, 0.99: 2.576}
@@ -58,6 +85,63 @@ class DamageSimulator:
         self.dps_crit_imm_per_round = []
         self.cumulative_damage_by_type = {}
 
+    def collect_damage_sources_for_weapon(self, weapon: Weapon, dmg_dict: dict, dmg_dict_legend: dict):
+        """Collect damage information from a weapon's sources and organize into dictionaries.
+
+        Args:
+            weapon: The weapon to collect damage sources from
+            dmg_dict: Dictionary to populate with damage types and DamageRoll objects
+            dmg_dict_legend: Dictionary to populate with legendary damage data
+        """
+        damage_sources = weapon.aggregate_damage_sources()
+
+        for src_name, dmg_source in damage_sources.items():
+            if isinstance(dmg_source, dict):
+                for key, val in dmg_source.items():
+                    # Handling purple legendary damage specially
+                    if key == 'legendary' and isinstance(val, dict):
+                        for leg_key, leg_val in val.items():
+                            if leg_key in ('proc', 'effect'):
+                                dmg_dict_legend[leg_key] = leg_val
+                                continue
+                            if isinstance(leg_val, DamageRoll):
+                                dmg_entry = leg_val
+                            elif isinstance(leg_val, list):
+                                dmg_entry = DamageRoll.from_list(leg_val)
+                            else:
+                                continue
+                            dmg_dict_legend.setdefault(leg_key, []).append(dmg_entry)
+                    else:
+                        if isinstance(val, DamageRoll):
+                            dmg_entry = val
+                        elif isinstance(val, list):
+                            dmg_entry = DamageRoll.from_list(val)
+                        else:
+                            continue
+
+                        if key in PHYSICAL_DAMAGE_TYPES:
+                            dmg_dict.setdefault('physical', []).append(dmg_entry)
+                        else:
+                            dmg_dict.setdefault(key, []).append(dmg_entry)
+
+            elif isinstance(dmg_source, list):
+                for item in dmg_source:
+                    if isinstance(item, dict):
+                        dmg_type_key, dmg_nums = next(iter(item.items()))
+                        if isinstance(dmg_nums, DamageRoll):
+                            dmg_entry = dmg_nums
+                        elif isinstance(dmg_nums, list):
+                            dmg_entry = DamageRoll.from_list(dmg_nums)
+                        else:
+                            continue
+                        dmg_dict.setdefault(dmg_type_key, []).append(dmg_entry)
+
+            else:
+                print(f"Warning: Unrecognized damage source format for '{src_name}' on weapon '{weapon.name_purple}'.\n"
+                      f"Damage source details: {dmg_source}.\n"
+                      f"Skipping this source.")
+                continue
+
 
     def _setup_dual_wield_tracking(self) -> dict:
         """Set up tracking indices for dual-wield strength bonus halving.
@@ -65,18 +149,17 @@ class DamageSimulator:
         Returns:
             Dictionary with:
             - is_dual_wield: bool
-            - offhand_attack_1_idx: int or None
-            - offhand_attack_2_idx: int or None
-            - str_idx: int or None (index of STR damage in physical damage list)
+            - offhand_attack_indices: list of int (from attack_sim)
+            - str_idx: int or None (index of STR damage in mainhand physical damage list)
+            - offhand_str_idx: int or None (index of STR damage in offhand physical damage list)
         """
         if self.attack_sim.dual_wield:
-            attack_prog_length = len(self.attack_sim.attack_prog)
-            offhand_attack_1_idx = attack_prog_length - 2
-            offhand_attack_2_idx = attack_prog_length - 1
+            # Use offhand_attack_indices from attack_sim
+            offhand_attack_indices = self.attack_sim.offhand_attack_indices
+
             str_dmg_roll = self.weapon.strength_bonus()['physical']  # Already a DamageRoll
 
-            # Find the index by comparing DamageRoll objects
-            # The strength bonus should be identifiable by having dice=0, sides=0, and flat > 0
+            # Find the index for mainhand STR damage
             str_idx = None
             for idx, dmg_roll in enumerate(self.dmg_dict['physical']):
                 if dmg_roll.dice == 0 and dmg_roll.sides == 0 and dmg_roll.flat == str_dmg_roll.flat:
@@ -86,82 +169,29 @@ class DamageSimulator:
             if str_idx is None:
                 print(f"Warning: Could not find strength damage index in dual-wield setup")
 
+            # Find the index for offhand STR damage if custom offhand is enabled
+            offhand_str_idx = None
+            if self.offhand_weapon and self.offhand_dmg_dict.get('physical'):
+                offhand_str_dmg_roll = self.offhand_weapon.strength_bonus()['physical']
+                for idx, dmg_roll in enumerate(self.offhand_dmg_dict['physical']):
+                    if dmg_roll.dice == 0 and dmg_roll.sides == 0 and dmg_roll.flat == offhand_str_dmg_roll.flat:
+                        offhand_str_idx = idx
+                        break
+
             return {
                 'is_dual_wield': True,
-                'offhand_attack_1_idx': offhand_attack_1_idx,
-                'offhand_attack_2_idx': offhand_attack_2_idx,
+                'offhand_attack_indices': offhand_attack_indices,
                 'str_idx': str_idx,
+                'offhand_str_idx': offhand_str_idx,
             }
         else:
             return {
                 'is_dual_wield': False,
-                'offhand_attack_1_idx': None,
-                'offhand_attack_2_idx': None,
+                'offhand_attack_indices': [],
                 'str_idx': None,
+                'offhand_str_idx': None,
             }
 
-    def collect_damage_from_all_sources(self):
-        """Collect damage information from all sources and organize it into dictionaries"""
-        damage_sources = self.weapon.aggregate_damage_sources()
-
-        for src_name, dmg_source in damage_sources.items():
-            if isinstance(dmg_source, dict):
-                for key, val in dmg_source.items():
-                    # Handling purple legendary damage specially
-                    if key == 'legendary' and isinstance(val, dict):
-                        # val is { 'proc': 0.05, 'fire': [1, 30], ... , 'effect': 'sunder' }
-                        for leg_key, leg_val in val.items():
-                            if leg_key in ('proc', 'effect'):
-                                self.dmg_dict_legend[leg_key] = leg_val  # Store proc and effect directly
-                                continue
-                            # leg_val expected to be DamageRoll or [dice, sides] or [dice, sides, flat]
-                            if isinstance(leg_val, DamageRoll):
-                                dmg_entry = leg_val
-                            elif isinstance(leg_val, list):
-                                dmg_entry = DamageRoll.from_list(leg_val)
-                            else:
-                                print(f"Warning: Unexpected legendary damage format: {leg_val}")
-                                continue
-                            self.dmg_dict_legend.setdefault(leg_key, []).append(dmg_entry)
-
-                    # Regular damage entries, e.g., 'fire': DamageRoll or [dice, sides] or 'slashing': [dice, sides, flat]
-                    else:
-                        if isinstance(val, DamageRoll):
-                            dmg_entry = val
-                        elif isinstance(val, list):
-                            dmg_entry = DamageRoll.from_list(val)
-                        else:
-                            print(f"Warning: Unexpected damage format: {val}")
-                            continue
-
-                        if key in PHYSICAL_DAMAGE_TYPES:
-                            self.dmg_dict.setdefault('physical', []).append(dmg_entry)  # Aggregate all physical damage types under 'physical'
-                        else:
-                            self.dmg_dict.setdefault(key, []).append(dmg_entry)
-
-            # Handling additional damage entries that are lists of dicts, e.g., [{'fire_fw': [1, 4, 10]}, {'acid': [1, 6]}]
-            elif isinstance(dmg_source, list):
-                for item in dmg_source:
-                    if isinstance(item, dict):
-                        # Handling additional damage entries that are dicts, e.g., {'fire_fw': [1, 4, 10]}
-                        dmg_type_key, dmg_nums = next(iter(item.items()))
-                        if isinstance(dmg_nums, DamageRoll):
-                            dmg_entry = dmg_nums
-                        elif isinstance(dmg_nums, list):
-                            dmg_entry = DamageRoll.from_list(dmg_nums)
-                        else:
-                            print(f"Warning: Unexpected additional damage format: {dmg_nums}")
-                            continue
-                        self.dmg_dict.setdefault(dmg_type_key, []).append(dmg_entry)
-
-                    else:
-                        # Handling unexpected formats gracefully
-                        print(f"Warning: Unexpected damage source format in list: {item}")
-                        continue
-
-            else:
-                print(f"Warning: Unexpected damage source format: {dmg_source}")
-                continue
 
     def _calculate_final_statistics(self, round_num: int) -> dict:
         """Calculate final DPS statistics after simulation completes.
@@ -172,8 +202,8 @@ class DamageSimulator:
         Returns:
             Dictionary with all calculated statistics
         """
-        # Illegal DW config, no results to show - set all to zeroes
-        if self.attack_sim.illegal_dual_wield_config:
+        # Invalid DW config, no results to show - set all to zeroes
+        if not self.attack_sim.valid_dual_wield_config:
             return {
                 'dps_mean': 0,
                 'dps_stdev': 0,
@@ -244,69 +274,155 @@ class DamageSimulator:
         total_rounds = self.cfg.ROUNDS
         round_num = 0
         legend_imm_factors = None
+        offhand_legend_imm_factors = None
 
         # Set up dual-wield tracking indices
         dw_tracking = self._setup_dual_wield_tracking()
-        offhand_attack_1_idx = dw_tracking['offhand_attack_1_idx']
-        offhand_attack_2_idx = dw_tracking['offhand_attack_2_idx']
+        offhand_attack_indices = set(dw_tracking['offhand_attack_indices'])  # Convert to set for O(1) lookup
         str_idx = dw_tracking['str_idx']
+        offhand_str_idx = dw_tracking['offhand_str_idx']
+
+        # Check if we have a custom offhand weapon
+        has_custom_offhand = self.offhand_weapon is not None
+
+        # Pre-compute crit settings to avoid condition checks in hot loop
+        mainhand_overwhelm_crit = self.cfg.OVERWHELM_CRIT
+        mainhand_dev_crit = self.cfg.DEV_CRIT
+        offhand_overwhelm_crit = self.cfg.OFFHAND_OVERWHELM_CRIT if has_custom_offhand else mainhand_overwhelm_crit
+        offhand_dev_crit = self.cfg.OFFHAND_DEV_CRIT if has_custom_offhand else mainhand_dev_crit
+
+        # Pre-compute Tenacious Blow check (constant throughout simulation)
+        tenacious_blow_enabled = (
+            self.cfg.ADDITIONAL_DAMAGE.get("Tenacious_Blow", [False])[0] is True
+            and self.weapon.name_base in DOUBLE_SIDED_WEAPONS
+        )
+
+        # Pre-compute AB caps
+        mainhand_ab_cap = self.attack_sim.ab_capped
+        offhand_ab_cap = self.attack_sim.offhand_ab_capped
+
+        # Pre-compute crit threats
+        mainhand_crit_threat = None  # None means use default in attack_roll
+        offhand_crit_threat = self.offhand_weapon.crit_threat if has_custom_offhand else None
+
+        # Pre-compute crit multiplier (always from mainhand)
+        mainhand_crit_multiplier = self.weapon.crit_multiplier
+
+        # Pre-compute weapon sizes for devastating critical
+        mainhand_size = self.weapon.size
+        offhand_size = self.offhand_weapon.size if has_custom_offhand else mainhand_size
+
+        # Cache dual_wield flag
+        is_dual_wield = self.attack_sim.dual_wield
+
+        # Cache references to avoid repeated attribute lookups in hot loop
+        attack_prog = self.attack_sim.attack_prog
+        attack_roll = self.attack_sim.attack_roll
+        stats = self.stats
+        legend_effect = self.legend_effect
+        offhand_legend_effect = self.offhand_legend_effect
+        dmg_dict_base = self.dmg_dict_base
+        offhand_dmg_dict_base = self.offhand_dmg_dict_base
+        dmg_dict_legend = self.dmg_dict_legend
+        offhand_dmg_dict_legend = self.offhand_dmg_dict_legend
+        get_damage_results = self.get_damage_results
+        cumulative_damage_by_type = self.cumulative_damage_by_type
+
+        # Define helper function ONCE outside the loop
+        def get_max_dmg(dmg_roll: DamageRoll) -> int:
+            """Calculate maximum possible damage from a DamageRoll."""
+            return dmg_roll.dice * dmg_roll.sides + dmg_roll.flat
 
         for round_num in range(1, total_rounds + 1):
             total_round_dmg = 0
             total_round_dmg_crit_imm = 0
 
-            if self.attack_sim.illegal_dual_wield_config:  # Cannot Dual-Wield with this character size and weapon size combination
+            if not self.attack_sim.valid_dual_wield_config:  # Cannot Dual-Wield with this character size and weapon size combination
                 break
 
 
-            for attack_idx, attack_ab in enumerate(self.attack_sim.attack_prog):
-                self.stats.attempts_made += 1
-                self.stats.attempts_made_per_attack[attack_idx] += 1
+            for attack_idx, attack_ab in enumerate(attack_prog):
+                stats.attempts_made += 1
+                stats.attempts_made_per_attack[attack_idx] += 1
 
-                legend_ab_bonus = self.legend_effect.ab_bonus  # Get the AB bonus from the legendary effect
-                legend_ac_reduction = self.legend_effect.ac_reduction  # Get the AC reduction from the legendary effect
-                current_ab = min(attack_ab + legend_ab_bonus, self.attack_sim.ab_capped)
-                outcome, roll = self.attack_sim.attack_roll(current_ab, defender_ac_modifier=legend_ac_reduction)
+                # Determine if this is an offhand attack (O(1) set lookup)
+                is_offhand_attack = attack_idx in offhand_attack_indices
+                is_offhand_custom = is_offhand_attack and has_custom_offhand
+
+                # Get appropriate legend effect bonuses based on attack type
+                if is_offhand_custom:
+                    legend_ab_bonus = offhand_legend_effect.ab_bonus
+                    legend_ac_reduction = offhand_legend_effect.ac_reduction
+                else:
+                    legend_ab_bonus = legend_effect.ab_bonus
+                    legend_ac_reduction = legend_effect.ac_reduction
+
+                # Apply AB cap based on mainhand or offhand (pre-computed)
+                ab_cap = offhand_ab_cap if is_offhand_attack else mainhand_ab_cap
+                current_ab = min(attack_ab + legend_ab_bonus, ab_cap)
+
+                # Use pre-computed crit_threat
+                crit_threat = offhand_crit_threat if is_offhand_custom else mainhand_crit_threat
+
+                outcome, roll = attack_roll(current_ab, defender_ac_modifier=legend_ac_reduction, crit_threat=crit_threat)
 
                 if outcome == 'miss':  # Attack missed the opponent, no damage is added
-                    if ("Tenacious_Blow" in self.cfg.ADDITIONAL_DAMAGE
-                            and self.cfg.ADDITIONAL_DAMAGE["Tenacious_Blow"][0] is True
-                            and self.weapon.name_base in ["Dire Mace", "Double Axe", "Two-Bladed Sword"]):
+                    # Check for Tenacious Blow (pre-computed)
+                    if tenacious_blow_enabled:
                         dmg_dict = {'pure': [DamageRoll(dice=0, sides=0, flat=4)]}
                         if legend_imm_factors is None:
                             legend_imm_factors = {}
-                        dmg_sums = self.get_damage_results(dmg_dict, legend_imm_factors)
+                        dmg_sums = get_damage_results(dmg_dict, legend_imm_factors)
                         dmg_sums_crit_imm = dmg_sums
                         legend_dmg_sums = {}  # No legend damage on miss, even with Tenacious Blow
                     else:
                         continue
 
                 else:  # Attack hits, critical hit logic is managed within this part:
-                    self.stats.hits += 1
-                    self.stats.hits_per_attack[attack_idx] += 1
+                    stats.hits += 1
+                    stats.hits_per_attack[attack_idx] += 1
 
                     # On Critical Hit damage is NOT multiplied(!), it is rolled multiple times!
-                    crit_multiplier = 1 if outcome == 'hit' else self.weapon.crit_multiplier
+                    # For offhand attacks: use mainhand's crit_multiplier (game mechanic)
+                    crit_multiplier = 1 if outcome == 'hit' else mainhand_crit_multiplier
 
-                    legend_dmg_sums, legend_dmg_common, legend_imm_factors = (
-                        self.legend_effect.get_legend_damage(self.dmg_dict_legend, crit_multiplier)
-                    )
+                    # Get appropriate damage source and legend dict
+                    if is_offhand_custom:
+                        # Use offhand weapon damage sources
+                        legend_dmg_sums, legend_dmg_common, offhand_legend_imm_factors = (
+                            offhand_legend_effect.get_legend_damage(offhand_dmg_dict_legend, crit_multiplier)
+                        )
+                        active_imm_factors = offhand_legend_imm_factors if offhand_legend_imm_factors else {}
 
-                    # Use shallow copy from pre-computed base
-                    dmg_dict = {k: list(v) for k, v in self.dmg_dict_base.items()}
+                        # Use offhand damage dict
+                        dmg_dict = {k: list(v) for k, v in offhand_dmg_dict_base.items()}
 
-                    if self.attack_sim.dual_wield:  # Halve (and round down) Strength damage for offhand attacks
-                        if attack_idx in (offhand_attack_1_idx, offhand_attack_2_idx) and str_idx is not None:
+                        # Halve STR damage for offhand
+                        if offhand_str_idx is not None and 'physical' in dmg_dict:
+                            str_roll = dmg_dict['physical'][offhand_str_idx]
+                            dmg_dict['physical'][offhand_str_idx] = DamageRoll(
+                                dice=str_roll.dice,
+                                sides=str_roll.sides,
+                                flat=math.floor(str_roll.flat / 2)
+                            )
+                    else:
+                        # Use mainhand weapon damage sources
+                        legend_dmg_sums, legend_dmg_common, legend_imm_factors = (
+                            legend_effect.get_legend_damage(dmg_dict_legend, crit_multiplier)
+                        )
+                        active_imm_factors = legend_imm_factors if legend_imm_factors else {}
+
+                        # Use mainhand damage dict
+                        dmg_dict = {k: list(v) for k, v in dmg_dict_base.items()}
+
+                        # Halve STR damage for offhand attacks (when using same weapon)
+                        if is_dual_wield and is_offhand_attack and str_idx is not None:
                             str_roll = dmg_dict['physical'][str_idx]
                             dmg_dict['physical'][str_idx] = DamageRoll(
                                 dice=str_roll.dice,
                                 sides=str_roll.sides,
                                 flat=math.floor(str_roll.flat / 2)
                             )
-
-                    def get_max_dmg(dmg_roll: DamageRoll) -> int:
-                        """Calculate maximum possible damage from a DamageRoll."""
-                        return dmg_roll.dice * dmg_roll.sides + dmg_roll.flat
 
                     dmg_sneak = dmg_dict.pop('sneak', [])                                      # Remove the 'Sneak Attack' dmg from crit multiplication
                     dmg_sneak_max = max(dmg_sneak, key=get_max_dmg, default=None)              # Find the highest 'sneak' dmg, can't stack Sneak Attacks
@@ -328,16 +444,23 @@ class DamageSimulator:
                     # Use shallow copy
                     dmg_dict_crit_imm = {k: list(v) for k, v in dmg_dict.items()}
 
+                    # Get active weapon size for devastating critical (pre-computed)
+                    active_weapon_size = offhand_size if is_offhand_custom else mainhand_size
+
                     if crit_multiplier > 1:     # Store an additional dictionary for damage without crit multiplication
-                        self.stats.crit_hits += 1
-                        self.stats.crits_per_attack[attack_idx] += 1
+                        stats.crit_hits += 1
+                        stats.crits_per_attack[attack_idx] += 1
                         dmg_dict = {k: [i for i in v for _ in range(crit_multiplier)]
                                     for k, v in dmg_dict.items()}  # Copy dice information X times (X = crit multiplier)
                         if dmg_massive_max is not None:
                             dmg_dict['physical'].append(dmg_massive_max)  # Add 'Massive' again after dmg rolls have been multiplied
 
+                        # Determine which crit settings to use based on attack type (pre-computed)
+                        use_overwhelm_crit = offhand_overwhelm_crit if is_offhand_custom else mainhand_overwhelm_crit
+                        use_dev_crit = offhand_dev_crit if is_offhand_custom else mainhand_dev_crit
+
                         # Overwhelm Critical: Add bonus damage based on crit multiplier
-                        if self.cfg.OVERWHELM_CRIT:
+                        if use_overwhelm_crit:
                             if crit_multiplier == 2:
                                 overwhelm_dmg = DamageRoll(dice=1, sides=6)  # 1d6
                             elif crit_multiplier == 3:
@@ -346,11 +469,11 @@ class DamageSimulator:
                                 overwhelm_dmg = DamageRoll(dice=3, sides=6)  # 3d6
                             dmg_dict.setdefault('physical', []).append(overwhelm_dmg)
 
-                        # Devastating Critical: Add bonus pure damage based on weapon size
-                        if self.cfg.DEV_CRIT:
-                            if self.weapon.size in ['T', 'S']:  # Tiny or Small
+                        # Devastating Critical: Add bonus pure damage based on weapon size (pre-computed)
+                        if use_dev_crit:
+                            if active_weapon_size in ('T', 'S'):  # Tiny or Small - use tuple for faster lookup
                                 dev_dmg = DamageRoll(dice=0, sides=0, flat=10)  # +10 pure damage
-                            elif self.weapon.size == 'M':  # Medium
+                            elif active_weapon_size == 'M':  # Medium
                                 dev_dmg = DamageRoll(dice=0, sides=0, flat=20)  # +20 pure damage
                             else:  # Large or larger
                                 dev_dmg = DamageRoll(dice=0, sides=0, flat=30)  # +30 pure damage
@@ -368,17 +491,17 @@ class DamageSimulator:
                         dmg_dict.setdefault('fire', []).append(dmg_flameweap_max)
                         dmg_dict_crit_imm.setdefault('fire', []).append(dmg_flameweap_max)
 
-                    dmg_sums = self.get_damage_results(dmg_dict, legend_imm_factors)
-                    dmg_sums_crit_imm = dmg_sums if crit_multiplier == 1 else self.get_damage_results(dmg_dict_crit_imm, legend_imm_factors)
+                    dmg_sums = get_damage_results(dmg_dict, active_imm_factors)
+                    dmg_sums_crit_imm = dmg_sums if crit_multiplier == 1 else get_damage_results(dmg_dict_crit_imm, active_imm_factors)
 
                 attack_dmg = sum(dmg_sums.values()) + sum(legend_dmg_sums.values())
                 attack_dmg_crit_imm = sum(dmg_sums_crit_imm.values()) + sum(legend_dmg_sums.values())
 
                 # Update cumulative damage by type for plotting/analysis
                 for k, v in dmg_sums.items():
-                    self.cumulative_damage_by_type[k] = self.cumulative_damage_by_type.get(k, 0) + v
+                    cumulative_damage_by_type[k] = cumulative_damage_by_type.get(k, 0) + v
                 for k, v in legend_dmg_sums.items():
-                    self.cumulative_damage_by_type[k] = self.cumulative_damage_by_type.get(k, 0) + v
+                    cumulative_damage_by_type[k] = cumulative_damage_by_type.get(k, 0) + v
 
                 total_round_dmg += attack_dmg
                 total_round_dmg_crit_imm += attack_dmg_crit_imm
@@ -430,10 +553,17 @@ class DamageSimulator:
         dph_crit_imm = stats['dph_crit_imm']
 
         warning_dupe = f">>> WARNING: Duplicate weapon damage bonus detected! Using higher damage values where applicable. <<<\n\n" if self.weapon.weapon_damage_stack_warning else ""
-        error_illegal_dw = f">>> ERROR: Character size '{self.cfg.CHARACTER_SIZE}' cannot dual-wield '{self.weapon.name_base}'. Simulation skipped. <<<\n\n" if self.attack_sim.illegal_dual_wield_config else ""
+        error_invalid_dw = f">>> ERROR: Character size '{self.cfg.CHARACTER_SIZE}' cannot dual-wield '{self.weapon.name_base}'. Simulation skipped. <<<\n\n" if not self.attack_sim.valid_dual_wield_config else ""
+
+        # Build offhand info for summary if custom offhand is enabled
+        offhand_info = ""
+        if self.offhand_weapon:
+            # Offhand uses its own crit_threat but mainhand's crit_multiplier
+            offhand_info = f" | Offhand: {self.offhand_weapon.name_purple} | Offhand Crit: {self.offhand_weapon.crit_threat}-20/x{self.weapon.crit_multiplier}"
+
         summary = (
-            f"{warning_dupe}{error_illegal_dw}"
-            f"AB: {self.attack_sim.attack_prog} | Weapon: {self.weapon.name_purple} | Crit: {self.weapon.crit_threat}-20/x{self.weapon.crit_multiplier} | "
+            f"{warning_dupe}{error_invalid_dw}"
+            f"AB: {self.attack_sim.attack_prog} | Weapon: {self.weapon.name_purple} | Crit: {self.weapon.crit_threat}-20/x{self.weapon.crit_multiplier}{offhand_info} | "
             f"Target AC: {self.cfg.TARGET_AC} | Rounds averaged: {round_num}\n"
             f"DPS (Crit allowed | immune): {dps_mean:.2f} ± {dps_error:.2f} | {dps_crit_imm_mean:.2f} ± {dps_crit_imm_error:.2f}\n"
             f"TOTAL damage inflicted (Crit allowed | immune): {self.total_dmg} | {self.total_dmg_crit_imm}\n"

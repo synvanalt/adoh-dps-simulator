@@ -107,8 +107,8 @@ def test_simulation_convergence():
     assert len(sim.dps_per_round) > 0
 
 
-def test_illegal_dual_wield_returns_zero():
-    """Test that illegal dual-wield config returns zero results."""
+def test_invalid_dual_wield_returns_zero():
+    """Test that invalid dual-wield config returns zero results."""
     cfg = Config()
     cfg.AB_PROG = "5APR Classic"
     cfg.DUAL_WIELD = True
@@ -117,7 +117,7 @@ def test_illegal_dual_wield_returns_zero():
     sim = DamageSimulator('Greataxe', cfg)  # Large weapon
     results = sim.simulate_dps()
 
-    assert sim.attack_sim.illegal_dual_wield_config is True
+    assert sim.attack_sim.valid_dual_wield_config is False
     assert results['dps_crits'] == 0
     assert results['dps_no_crits'] == 0
 
