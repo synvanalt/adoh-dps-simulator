@@ -62,11 +62,36 @@ class SimulatorFactory:
         simulator.legend_effect = legend_effect
         simulator.progress_callback = progress_callback
 
+        # Create offhand weapon and legend effect if custom offhand is enabled
+        simulator.offhand_weapon = None
+        simulator.offhand_legend_effect = None
+        if self.config.DUAL_WIELD and self.config.CUSTOM_OFFHAND_WEAPON:
+            simulator.offhand_weapon = Weapon(self.config.OFFHAND_WEAPON, config=self.config)
+            simulator.offhand_legend_effect = LegendEffect(
+                stats_obj=stats,
+                weapon_obj=simulator.offhand_weapon,
+                attack_sim=attack_sim
+            )
+
         # Initialize remaining state (damage dicts, convergence params, etc.)
         simulator.dmg_type_names = []
         simulator.dmg_dict = {}
         simulator.dmg_dict_legend = {}
-        simulator.collect_damage_from_all_sources()
+        simulator.collect_damage_sources_for_weapon(weapon, simulator.dmg_dict, simulator.dmg_dict_legend)
+
+        # Collect offhand damage sources if custom offhand is enabled
+        simulator.offhand_dmg_dict = {}
+        simulator.offhand_dmg_dict_legend = {}
+        if simulator.offhand_weapon:
+            simulator.collect_damage_sources_for_weapon(
+                simulator.offhand_weapon,
+                simulator.offhand_dmg_dict,
+                simulator.offhand_dmg_dict_legend
+            )
+
+        # Pre-compute damage structures
+        simulator.dmg_dict_base = deepcopy(simulator.dmg_dict)
+        simulator.offhand_dmg_dict_base = deepcopy(simulator.offhand_dmg_dict) if simulator.offhand_dmg_dict else {}
 
         # Convergence params
         z_values = {0.90: 1.645, 0.95: 1.96, 0.99: 2.576}

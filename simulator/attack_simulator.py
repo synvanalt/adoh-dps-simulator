@@ -30,43 +30,44 @@ class AttackSimulator:
 
         (self.hit_chance_list, self.crit_chance_list, self.noncrit_chance_list) = self.calculate_hit_chances()
 
+    def _calculate_ab_for_weapon(self, weapon: Weapon, base_ab: int, ab_cap: int) -> int:
+        """Calculate attack bonus for a given weapon, applying enhancement bonuses and cap.
+
+        Args:
+            weapon: The weapon to calculate AB for
+            base_ab: The base attack bonus before weapon enhancements
+            ab_cap: The maximum AB cap to apply
+
+        Returns:
+            The calculated attack bonus, capped appropriately
+        """
+        if weapon.purple_props['enhancement'] > 7:
+            ab = base_ab + (weapon.purple_props['enhancement'] - 7)
+            return min(ab, ab_cap)
+        elif (self.cfg.DAMAGE_VS_RACE
+              and weapon.vs_race_key in weapon.purple_props
+              and 'enhancement' in weapon.purple_props[weapon.vs_race_key]):
+            ab = base_ab + (weapon.purple_props[weapon.vs_race_key]['enhancement'] - 7)
+            return min(ab, ab_cap)
+        else:
+            return base_ab
+
     def calculate_attack_bonus(self):
         """Calculate the attack bonus (AB) based on weapon enhancement and cap it if necessary"""
-        if self.weapon.purple_props['enhancement'] > 7:     # Handle special weapons, e.g., Scythe +10 Enhancement
-            ab = self.cfg.AB + (self.weapon.purple_props['enhancement'] - 7)
-            ab = min(ab, self.ab_capped)
-        elif (self.cfg.DAMAGE_VS_RACE
-              and self.weapon.vs_race_key in self.weapon.purple_props
-              and 'enhancement' in self.weapon.purple_props[self.weapon.vs_race_key]):
-            ab = self.cfg.AB + (self.weapon.purple_props[self.weapon.vs_race_key]['enhancement'] - 7)
-            ab = min(ab, self.ab_capped)
-        else:
-            ab = self.cfg.AB
-        return ab
+        return self._calculate_ab_for_weapon(self.weapon, self.cfg.AB, self.ab_capped)
 
     def _calculate_offhand_ab(self):
-        """Calculate the offhand AB, similar to mainhand logic."""
+        """Calculate the offhand AB, using the same logic as mainhand."""
         if not self.cfg.DUAL_WIELD:
             return self.ab
 
-        # Use custom offhand AB if enabled
-        if self.cfg.CUSTOM_OFFHAND_AB:
-            base_offhand_ab = self.cfg.OFFHAND_AB
-        else:
-            base_offhand_ab = self.cfg.AB
+        # Determine base AB for offhand
+        base_offhand_ab = self.cfg.OFFHAND_AB if self.cfg.CUSTOM_OFFHAND_AB else self.cfg.AB
+        offhand_ab_cap = self._calculate_offhand_ab_capped()
 
-        # Apply enhancement bonus from offhand weapon if custom offhand weapon is enabled
+        # Apply enhancement bonus from offhand weapon if custom offhand is enabled
         if self.cfg.CUSTOM_OFFHAND_WEAPON and self.offhand_weapon:
-            if self.offhand_weapon.purple_props['enhancement'] > 7:
-                offhand_ab = base_offhand_ab + (self.offhand_weapon.purple_props['enhancement'] - 7)
-                offhand_ab = min(offhand_ab, self._calculate_offhand_ab_capped())
-                return offhand_ab
-            elif (self.cfg.DAMAGE_VS_RACE
-                  and self.offhand_weapon.vs_race_key in self.offhand_weapon.purple_props
-                  and 'enhancement' in self.offhand_weapon.purple_props[self.offhand_weapon.vs_race_key]):
-                offhand_ab = base_offhand_ab + (self.offhand_weapon.purple_props[self.offhand_weapon.vs_race_key]['enhancement'] - 7)
-                offhand_ab = min(offhand_ab, self._calculate_offhand_ab_capped())
-                return offhand_ab
+            return self._calculate_ab_for_weapon(self.offhand_weapon, base_offhand_ab, offhand_ab_cap)
 
         return base_offhand_ab
 
@@ -389,48 +390,26 @@ class AttackSimulator:
         primary_penalty, offhand_penalty = self.calculate_dw_penalties()
         return self._build_dw_progression(attack_prog_offsets, primary_penalty, offhand_penalty)
 
-    def attack_roll(self, attacker_ab: int, defender_ac_modifier: int = 0):
+    def attack_roll(self, attacker_ab: int, defender_ac_modifier: int = 0, crit_threat: int = None):
         """
-        :param attacker_ab: AB of attacker
-        :param defender_ac_modifier: AC modifier of the defender, e.g., -2 for legendary Sunder effect
-        :return: String that specifies: 'miss', 'hit', 'critical_hit', and the d20 roll result
-        """
-        roll = random.randint(1, 20)        # Roll a 1d20
-        defender_ac = self.defender_ac + defender_ac_modifier
-        if roll == 1:                             # Auto-miss on a natural 1
-            return 'miss', roll
-        elif (roll + attacker_ab) >= defender_ac or roll == 20:       # Check if a hit or miss, auto-hit on a natural 20
-            if roll >= self.weapon.crit_threat:
-                # Threat roll does not auto-hit if a natural 20 is rolled, nor does it auto-miss if a natural 1 is rolled:
-                threat_roll = random.randint(1, 20)
-                threat_hit = (threat_roll + attacker_ab) >= defender_ac  # Boolean, True if Threat roll succeeds, False otherwise
-                return 'critical_hit' if threat_hit is True else 'hit', roll
-            else:
-                return 'hit', roll
-        else:
-            return 'miss', roll
-
-    def attack_roll_offhand(self, attacker_ab: int, defender_ac_modifier: int = 0):
-        """
-        Attack roll for offhand attacks - uses offhand weapon's crit_threat for threat determination.
+        Perform an attack roll against the defender.
 
         :param attacker_ab: AB of attacker
         :param defender_ac_modifier: AC modifier of the defender, e.g., -2 for legendary Sunder effect
-        :return: String that specifies: 'miss', 'hit', 'critical_hit', and the d20 roll result
+        :param crit_threat: Critical threat range minimum. If None, uses mainhand weapon's crit_threat.
+                           Pass offhand weapon's crit_threat for offhand attacks.
+        :return: Tuple of (outcome, roll) where outcome is 'miss', 'hit', or 'critical_hit'
         """
         roll = random.randint(1, 20)        # Roll a 1d20
         defender_ac = self.defender_ac + defender_ac_modifier
 
-        # Get offhand crit_threat
-        if self.cfg.CUSTOM_OFFHAND_WEAPON and self.offhand_weapon:
-            offhand_crit_threat = self.offhand_weapon.crit_threat
-        else:
-            offhand_crit_threat = self.weapon.crit_threat
+        # Use provided crit_threat or default to mainhand weapon
+        effective_crit_threat = crit_threat if crit_threat is not None else self.weapon.crit_threat
 
         if roll == 1:                             # Auto-miss on a natural 1
             return 'miss', roll
         elif (roll + attacker_ab) >= defender_ac or roll == 20:       # Check if a hit or miss, auto-hit on a natural 20
-            if roll >= offhand_crit_threat:
+            if roll >= effective_crit_threat:
                 # Threat roll does not auto-hit if a natural 20 is rolled, nor does it auto-miss if a natural 1 is rolled:
                 threat_roll = random.randint(1, 20)
                 threat_hit = (threat_roll + attacker_ab) >= defender_ac  # Boolean, True if Threat roll succeeds, False otherwise

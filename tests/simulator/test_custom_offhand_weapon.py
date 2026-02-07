@@ -190,7 +190,7 @@ class TestCustomOffhandCriticalHit:
         sim = DamageSimulator('Scythe', cfg)  # x4 multiplier
 
         # The mainhand's crit multiplier (x4) should be used for offhand crits
-        # This is verified by the attack_roll_offhand using mainhand's crit_multiplier
+        # Offhand attacks pass offhand's crit_threat to attack_roll, but damage uses mainhand's multiplier
         mainhand_mult = sim.weapon.crit_multiplier
         offhand_mult = sim.offhand_weapon.crit_multiplier
 

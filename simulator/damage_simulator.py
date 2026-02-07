@@ -4,10 +4,9 @@ from simulator.stats_collector import StatsCollector
 from simulator.legend_effect import LegendEffect
 from simulator.config import Config
 from simulator.damage_roll import DamageRoll
-from simulator.constants import PHYSICAL_DAMAGE_TYPES
+from simulator.constants import PHYSICAL_DAMAGE_TYPES, DOUBLE_SIDED_WEAPONS
 from copy import deepcopy
 from collections import deque, defaultdict
-from constants import DOUBLE_SIDED_WEAPONS
 import statistics
 import math
 
@@ -54,13 +53,13 @@ class DamageSimulator:
         self.dmg_type_names = []    # List of dmg type names, e.g., ['physical', 'acid']
         self.dmg_dict = {}    # Keys are dmg type names, Values are lists of DamageRoll objects
         self.dmg_dict_legend = {}  # Keys are dmg type names or 'proc'/'effect', Values are lists of DamageRoll or metadata
-        self.collect_damage_from_all_sources()
+        self.collect_damage_sources_for_weapon(self.weapon, self.dmg_dict, self.dmg_dict_legend)
 
         # Collect offhand damage sources if custom offhand is enabled
         self.offhand_dmg_dict = {}
         self.offhand_dmg_dict_legend = {}
         if self.offhand_weapon:
-            self._collect_offhand_damage_sources()
+            self.collect_damage_sources_for_weapon(self.offhand_weapon, self.offhand_dmg_dict, self.offhand_dmg_dict_legend)
 
         # Pre-compute damage structures to avoid deep copies in hot loop
         self.dmg_dict_base = deepcopy(self.dmg_dict)  # One-time deep copy
@@ -86,12 +85,15 @@ class DamageSimulator:
         self.dps_crit_imm_per_round = []
         self.cumulative_damage_by_type = {}
 
-    def _collect_offhand_damage_sources(self):
-        """Collect damage information from offhand weapon sources."""
-        if not self.offhand_weapon:
-            return
+    def collect_damage_sources_for_weapon(self, weapon: Weapon, dmg_dict: dict, dmg_dict_legend: dict):
+        """Collect damage information from a weapon's sources and organize into dictionaries.
 
-        damage_sources = self.offhand_weapon.aggregate_damage_sources()
+        Args:
+            weapon: The weapon to collect damage sources from
+            dmg_dict: Dictionary to populate with damage types and DamageRoll objects
+            dmg_dict_legend: Dictionary to populate with legendary damage data
+        """
+        damage_sources = weapon.aggregate_damage_sources()
 
         for src_name, dmg_source in damage_sources.items():
             if isinstance(dmg_source, dict):
@@ -100,7 +102,7 @@ class DamageSimulator:
                     if key == 'legendary' and isinstance(val, dict):
                         for leg_key, leg_val in val.items():
                             if leg_key in ('proc', 'effect'):
-                                self.offhand_dmg_dict_legend[leg_key] = leg_val
+                                dmg_dict_legend[leg_key] = leg_val
                                 continue
                             if isinstance(leg_val, DamageRoll):
                                 dmg_entry = leg_val
@@ -108,7 +110,7 @@ class DamageSimulator:
                                 dmg_entry = DamageRoll.from_list(leg_val)
                             else:
                                 continue
-                            self.offhand_dmg_dict_legend.setdefault(leg_key, []).append(dmg_entry)
+                            dmg_dict_legend.setdefault(leg_key, []).append(dmg_entry)
                     else:
                         if isinstance(val, DamageRoll):
                             dmg_entry = val
@@ -118,9 +120,9 @@ class DamageSimulator:
                             continue
 
                         if key in PHYSICAL_DAMAGE_TYPES:
-                            self.offhand_dmg_dict.setdefault('physical', []).append(dmg_entry)
+                            dmg_dict.setdefault('physical', []).append(dmg_entry)
                         else:
-                            self.offhand_dmg_dict.setdefault(key, []).append(dmg_entry)
+                            dmg_dict.setdefault(key, []).append(dmg_entry)
 
             elif isinstance(dmg_source, list):
                 for item in dmg_source:
@@ -132,7 +134,13 @@ class DamageSimulator:
                             dmg_entry = DamageRoll.from_list(dmg_nums)
                         else:
                             continue
-                        self.offhand_dmg_dict.setdefault(dmg_type_key, []).append(dmg_entry)
+                        dmg_dict.setdefault(dmg_type_key, []).append(dmg_entry)
+
+            else:
+                print(f"Warning: Unrecognized damage source format for '{src_name}' on weapon '{weapon.name_purple}'.\n"
+                      f"Damage source details: {dmg_source}.\n"
+                      f"Skipping this source.")
+                continue
 
 
     def _setup_dual_wield_tracking(self) -> dict:
@@ -184,68 +192,6 @@ class DamageSimulator:
                 'offhand_str_idx': None,
             }
 
-    def collect_damage_from_all_sources(self):
-        """Collect damage information from all sources and organize it into dictionaries"""
-        damage_sources = self.weapon.aggregate_damage_sources()
-
-        for src_name, dmg_source in damage_sources.items():
-            if isinstance(dmg_source, dict):
-                for key, val in dmg_source.items():
-                    # Handling purple legendary damage specially
-                    if key == 'legendary' and isinstance(val, dict):
-                        # val is { 'proc': 0.05, 'fire': [1, 30], ... , 'effect': 'sunder' }
-                        for leg_key, leg_val in val.items():
-                            if leg_key in ('proc', 'effect'):
-                                self.dmg_dict_legend[leg_key] = leg_val  # Store proc and effect directly
-                                continue
-                            # leg_val expected to be DamageRoll or [dice, sides] or [dice, sides, flat]
-                            if isinstance(leg_val, DamageRoll):
-                                dmg_entry = leg_val
-                            elif isinstance(leg_val, list):
-                                dmg_entry = DamageRoll.from_list(leg_val)
-                            else:
-                                print(f"Warning: Unexpected legendary damage format: {leg_val}")
-                                continue
-                            self.dmg_dict_legend.setdefault(leg_key, []).append(dmg_entry)
-
-                    # Regular damage entries, e.g., 'fire': DamageRoll or [dice, sides] or 'slashing': [dice, sides, flat]
-                    else:
-                        if isinstance(val, DamageRoll):
-                            dmg_entry = val
-                        elif isinstance(val, list):
-                            dmg_entry = DamageRoll.from_list(val)
-                        else:
-                            print(f"Warning: Unexpected damage format: {val}")
-                            continue
-
-                        if key in PHYSICAL_DAMAGE_TYPES:
-                            self.dmg_dict.setdefault('physical', []).append(dmg_entry)  # Aggregate all physical damage types under 'physical'
-                        else:
-                            self.dmg_dict.setdefault(key, []).append(dmg_entry)
-
-            # Handling additional damage entries that are lists of dicts, e.g., [{'fire_fw': [1, 4, 10]}, {'acid': [1, 6]}]
-            elif isinstance(dmg_source, list):
-                for item in dmg_source:
-                    if isinstance(item, dict):
-                        # Handling additional damage entries that are dicts, e.g., {'fire_fw': [1, 4, 10]}
-                        dmg_type_key, dmg_nums = next(iter(item.items()))
-                        if isinstance(dmg_nums, DamageRoll):
-                            dmg_entry = dmg_nums
-                        elif isinstance(dmg_nums, list):
-                            dmg_entry = DamageRoll.from_list(dmg_nums)
-                        else:
-                            print(f"Warning: Unexpected additional damage format: {dmg_nums}")
-                            continue
-                        self.dmg_dict.setdefault(dmg_type_key, []).append(dmg_entry)
-
-                    else:
-                        # Handling unexpected formats gracefully
-                        print(f"Warning: Unexpected damage source format in list: {item}")
-                        continue
-
-            else:
-                print(f"Warning: Unexpected damage source format: {dmg_source}")
-                continue
 
     def _calculate_final_statistics(self, round_num: int) -> dict:
         """Calculate final DPS statistics after simulation completes.
@@ -354,13 +300,11 @@ class DamageSimulator:
                 # Determine if this is an offhand attack
                 is_offhand_attack = attack_idx in offhand_attack_indices
 
-                # Get appropriate legend effect based on attack type
+                # Get appropriate legend effect bonuses based on attack type
                 if is_offhand_attack and has_custom_offhand:
-                    active_legend_effect = self.offhand_legend_effect
-                    legend_ab_bonus = active_legend_effect.ab_bonus
-                    legend_ac_reduction = active_legend_effect.ac_reduction
+                    legend_ab_bonus = self.offhand_legend_effect.ab_bonus
+                    legend_ac_reduction = self.offhand_legend_effect.ac_reduction
                 else:
-                    active_legend_effect = self.legend_effect
                     legend_ab_bonus = self.legend_effect.ab_bonus
                     legend_ac_reduction = self.legend_effect.ac_reduction
 
@@ -372,11 +316,13 @@ class DamageSimulator:
 
                 current_ab = min(attack_ab + legend_ab_bonus, ab_cap)
 
-                # Use appropriate attack roll method
-                if is_offhand_attack:
-                    outcome, roll = self.attack_sim.attack_roll_offhand(current_ab, defender_ac_modifier=legend_ac_reduction)
+                # Determine crit_threat for this attack
+                if is_offhand_attack and has_custom_offhand:
+                    crit_threat = self.offhand_weapon.crit_threat
                 else:
-                    outcome, roll = self.attack_sim.attack_roll(current_ab, defender_ac_modifier=legend_ac_reduction)
+                    crit_threat = None  # Use mainhand default
+
+                outcome, roll = self.attack_sim.attack_roll(current_ab, defender_ac_modifier=legend_ac_reduction, crit_threat=crit_threat)
 
                 if outcome == 'miss':  # Attack missed the opponent, no damage is added
                     # Check for Tenacious Blow (only for mainhand with double-sided weapons)
