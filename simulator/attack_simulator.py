@@ -148,8 +148,9 @@ class AttackSimulator:
         Determine if the weapon is considered "light" for this character size.
 
         Light weapon definition:
-        - Weapon is smaller than character size
-        - Example: Small weapon is light for Medium/Large, but not for Small
+        - Weapon size is smaller than character size
+        - Example: Small weapon is light for Medium/Large characters, but not for Small characters
+        - Special case: Medium characters treat double-sided weapons as light for offhand, even though they are "L" size
 
         :param weapon_size: Optional weapon size to check. If None, uses mainhand weapon size.
         :return: True if light weapon, False otherwise
@@ -160,6 +161,12 @@ class AttackSimulator:
         if weapon_size is None:
             weapon_size = self.weapon.size
         weapon_size_value = size_order[weapon_size]
+
+        # Special case: Medium characters treat double-sided weapons as light for offhand, even though they are "L" size
+        if (self.weapon.name_base in DOUBLE_SIDED_WEAPONS
+                and self.cfg.CHARACTER_SIZE == 'M'
+                and not self.cfg.SHAPE_WEAPON_OVERRIDE):
+            return True
 
         return weapon_size_value < character_size_value
 
