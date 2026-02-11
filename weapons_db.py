@@ -81,8 +81,8 @@ PURPLE_WEAPONS = {
     'Light Crossbow': {'enhancement': 7, 'bludgeoning': [2, 12], 'acid': [2, 10], 'magical': [2, 8], 'cold': [2, 6], 'massive': [1, 10], 'legendary': {'proc': 'on_crit', 'cold': [6, 6]}}, # On-crit Coldbrand lvl 6
     'Longbow_FireDragon': {'enhancement': 7, 'bludgeoning': [2, 12], 'negative': [2, 10], 'magical': [2, 8], 'fire': [2, 6], 'massive': [2, 6], 'legendary': {'proc': 'on_crit', 'fire': [4, 6], 'pure': [4, 6]}},
     'Longbow_FireCeles': {'enhancement': 7, 'bludgeoning': [7, 6], 'divine': [2, 10], 'fire': [2, 6], 'massive': [2, 6], 'legendary': {'proc': 'on_crit', 'fire': [4, 6], 'pure': [4, 6]}},
-    'Longbow_ElecDragon': {'enhancement': 7, 'bludgeoning': [2, 12], 'negative': [2, 10], 'magical': [2, 8], 'electrical': [2, 6], 'legendary': {'proc': 0.1, 'electrical': [20, 6]}},  # On-hit Chain Lightining lvl 20
-    'Longbow_ElecCeles': {'enhancement': 7, 'bludgeoning': [7, 6], 'divine': [2, 10], 'electrical': [2, 6], 'legendary': {'proc': 0.1, 'electrical': [20, 6]}},  # On-hit Chain Lightining lvl 20
+    'Longbow_ElecDragon': {'enhancement': 7, 'bludgeoning': [2, 12], 'negative': [2, 10], 'magical': [2, 8], 'electrical': [2, 6], 'legendary': {'proc': 0.1, 'electrical': [10, 6]}},  # On-hit Chain Lightining lvl 10
+    'Longbow_ElecCeles': {'enhancement': 7, 'bludgeoning': [7, 6], 'divine': [2, 10], 'electrical': [2, 6], 'legendary': {'proc': 0.1, 'electrical': [10, 6]}},  # On-hit Chain Lightining lvl 10
     'Shortbow_Dragon': {'enhancement': 7, 'bludgeoning': [2, 12], 'negative': [2, 10], 'magical': [2, 8], 'electrical': [2, 6], 'massive': [2, 8]}, # SoV extend by 5 rounds, SoV immune, Elec 10% immune
     'Shortbow_Celes': {'enhancement': 7, 'bludgeoning': [7, 6], 'divine': [2, 10], 'magical': [2, 8], 'electrical': [2, 6], 'massive': [2, 8]},  # SoV extend by 5 rounds, SoV immune, Elec 10% immune
     'Sling': {'enhancement': 7, 'piercing': [2, 8], 'fire': [2, 8], 'pure': [2, 6], 'divine': [2, 6]},  # On-hit 5%: gain 20% movement speed for 30sec (can't stack)
