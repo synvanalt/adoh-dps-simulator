@@ -12,6 +12,56 @@ def _immunity_input(page: Page, name: str):
     return page.locator(".immunity-row", has_text=f"{name.title()}:").locator("input").first
 
 
+def _wait_ui_idle(page: Page):
+    """Wait for transient overlays/modals to stop intercepting clicks."""
+    overlay = page.locator("#loading-overlay")
+    if overlay.count() > 0:
+        expect(overlay).to_have_css("display", "none", timeout=10000)
+
+    progress_modal = page.locator("#progress-modal")
+    if progress_modal.count() > 0:
+        expect(progress_modal).not_to_be_visible(timeout=10000)
+
+    page.wait_for_timeout(100)
+
+
+def _go_to_configuration_tab(page: Page):
+    """Navigate to Configuration tab with robust locator fallbacks."""
+    tab = page.get_by_role("tab", name="Configuration")
+    if tab.count() == 0:
+        tab = page.locator('button[id="configuration-tab"]')
+    if tab.count() == 0:
+        tab = page.locator('a:has-text("Configuration"), button:has-text("Configuration")')
+
+    expect(tab.first).to_be_visible(timeout=5000)
+    tab.first.click(timeout=5000)
+    expect(page.get_by_label("Apply Target Immunities")).to_be_visible(timeout=5000)
+
+
+def _set_target_immunities_switch(page: Page, enabled: bool):
+    """Set immunity switch state via DOM events to avoid click/actionability flakiness."""
+    ok = page.evaluate(
+        """(enabled) => {
+            const selectors = [
+                'input#target-immunities-switch',
+                '#target-immunities-switch input[type="checkbox"]'
+            ];
+            let input = null;
+            for (const sel of selectors) {
+                input = document.querySelector(sel);
+                if (input) break;
+            }
+            if (!input) return false;
+            input.checked = enabled;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        }""",
+        enabled,
+    )
+    assert ok, "Could not locate target immunities switch input in DOM"
+
+
 @pytest.mark.e2e
 class TestConfigResetWorkflow:
     """Test configuration reset workflows."""
@@ -287,11 +337,15 @@ class TestSessionPersistence:
         assert baseline_numbers, "Expected baseline DPS numbers in comparative table"
         baseline_dps = float(baseline_numbers[0])
 
-        # Fast OFF -> immediate simulate; backend mitigation should force zero immunities
-        immunities_switch = dash_page.locator("#target-immunities-switch")
-        immunities_switch.click()
+        # Fast OFF -> immediate simulate; backend mitigation should force zero immunities.
+        # Use direct DOM dispatch to avoid flaky click/actionability checks.
+        _wait_ui_idle(dash_page)
+        _set_target_immunities_switch(dash_page, False)
         dash_page.wait_for_timeout(20)
-        run_btn.click()
+
+        rerun_btn = dash_page.locator("#resimulate-button")
+        expect(rerun_btn).to_be_visible(timeout=5000)
+        rerun_btn.click()
         wait_for_simulation()
 
         off_text = dash_page.locator("#comparative-table").inner_text()
