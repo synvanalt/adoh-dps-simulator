@@ -3,7 +3,13 @@
 Priority 3: Tests data integrity and reset logic.
 """
 import pytest
+import re
 from playwright.sync_api import Page, expect
+
+
+def _immunity_input(page: Page, name: str):
+    """Return immunity numeric input locator by row label text."""
+    return page.locator(".immunity-row", has_text=f"{name.title()}:").locator("input").first
 
 
 @pytest.mark.e2e
@@ -206,10 +212,9 @@ class TestSessionPersistence:
     """Test session storage and persistence."""
 
     def test_config_persists_across_page_reload(self, dash_page: Page):
-        """Test that configuration persists after page reload."""
-        # Modify config
-        ab_input = dash_page.locator("#ab-input")
-        ab_input.fill("73")
+        """Test that immunity edits persist after page reload."""
+        fire_input = _immunity_input(dash_page, "fire")
+        fire_input.fill("37")
         dash_page.keyboard.press("Tab")
 
         dash_page.wait_for_timeout(1000)  # Wait for auto-save
@@ -221,13 +226,26 @@ class TestSessionPersistence:
         dash_page.wait_for_selector("#tabs", timeout=10000)
         dash_page.wait_for_timeout(1000)
 
-        # Verify value persisted
-        # Note: This depends on whether app implements session storage
-        # If implemented, value should persist; if not, it resets
-        current_value = ab_input.input_value()
+        # Verify immunity value persisted
+        assert float(_immunity_input(dash_page, "fire").input_value()) == 37.0
 
-        # Document the behavior (test may need adjustment based on requirements)
-        # For now, just verify app loads without error
+    def test_immunity_quick_toggle_restores_previous_values(self, dash_page: Page):
+        """Test OFF->ON rapid toggle restores prior immunity values."""
+        fire_input = _immunity_input(dash_page, "fire")
+        fire_input.fill("44")
+        dash_page.keyboard.press("Tab")
+        dash_page.wait_for_timeout(400)
+
+        immunities_switch = dash_page.locator("#target-immunities-switch")
+
+        # Toggle OFF then ON quickly multiple times (stress race ordering)
+        for _ in range(3):
+            immunities_switch.click()
+            dash_page.wait_for_timeout(10)
+            immunities_switch.click()
+            dash_page.wait_for_timeout(120)
+
+        assert float(_immunity_input(dash_page, "fire").input_value()) == 44.0
 
     def test_reset_clears_session_storage(self, dash_page: Page, wait_for_spinner):
         """Test that reset clears session storage."""
@@ -250,3 +268,37 @@ class TestSessionPersistence:
 
         # Verify default value (session cleared)
         assert ab_input.input_value() == "68", "Should have default after reset and reload"
+
+    def test_fast_off_then_simulate_uses_zero_immunities(self, dash_page: Page, wait_for_simulation):
+        """OFF->Simulate quickly should still run with zero immunities."""
+        run_btn = dash_page.locator("#sticky-simulate-button")
+        expect(run_btn).to_be_visible(timeout=5000)
+
+        fire_input = _immunity_input(dash_page, "fire")
+        fire_input.fill("90")
+        dash_page.keyboard.press("Tab")
+        dash_page.wait_for_timeout(500)
+
+        # Baseline with immunities ON and high fire immunity
+        run_btn.click()
+        wait_for_simulation()
+        baseline_text = dash_page.locator("#comparative-table").inner_text()
+        baseline_numbers = re.findall(r"\d+\.\d+", baseline_text)
+        assert baseline_numbers, "Expected baseline DPS numbers in comparative table"
+        baseline_dps = float(baseline_numbers[0])
+
+        # Fast OFF -> immediate simulate; backend mitigation should force zero immunities
+        immunities_switch = dash_page.locator("#target-immunities-switch")
+        immunities_switch.click()
+        dash_page.wait_for_timeout(20)
+        run_btn.click()
+        wait_for_simulation()
+
+        off_text = dash_page.locator("#comparative-table").inner_text()
+        off_numbers = re.findall(r"\d+\.\d+", off_text)
+        assert off_numbers, "Expected OFF-state DPS numbers in comparative table"
+        off_dps = float(off_numbers[0])
+
+        assert off_dps > baseline_dps, (
+            f"Expected higher DPS with immunities OFF (zeroed), got OFF={off_dps} vs ON={baseline_dps}"
+        )
