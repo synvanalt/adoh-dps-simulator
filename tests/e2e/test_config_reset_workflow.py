@@ -3,7 +3,63 @@
 Priority 3: Tests data integrity and reset logic.
 """
 import pytest
+import re
 from playwright.sync_api import Page, expect
+
+
+def _immunity_input(page: Page, name: str):
+    """Return immunity numeric input locator by row label text."""
+    return page.locator(".immunity-row", has_text=f"{name.title()}:").locator("input").first
+
+
+def _wait_ui_idle(page: Page):
+    """Wait for transient overlays/modals to stop intercepting clicks."""
+    overlay = page.locator("#loading-overlay")
+    if overlay.count() > 0:
+        expect(overlay).to_have_css("display", "none", timeout=10000)
+
+    progress_modal = page.locator("#progress-modal")
+    if progress_modal.count() > 0:
+        expect(progress_modal).not_to_be_visible(timeout=10000)
+
+    page.wait_for_timeout(100)
+
+
+def _go_to_configuration_tab(page: Page):
+    """Navigate to Configuration tab with robust locator fallbacks."""
+    tab = page.get_by_role("tab", name="Configuration")
+    if tab.count() == 0:
+        tab = page.locator('button[id="configuration-tab"]')
+    if tab.count() == 0:
+        tab = page.locator('a:has-text("Configuration"), button:has-text("Configuration")')
+
+    expect(tab.first).to_be_visible(timeout=5000)
+    tab.first.click(timeout=5000)
+    expect(page.get_by_label("Apply Target Immunities")).to_be_visible(timeout=5000)
+
+
+def _set_target_immunities_switch(page: Page, enabled: bool):
+    """Set immunity switch state via DOM events to avoid click/actionability flakiness."""
+    ok = page.evaluate(
+        """(enabled) => {
+            const selectors = [
+                'input#target-immunities-switch',
+                '#target-immunities-switch input[type="checkbox"]'
+            ];
+            let input = null;
+            for (const sel of selectors) {
+                input = document.querySelector(sel);
+                if (input) break;
+            }
+            if (!input) return false;
+            input.checked = enabled;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        }""",
+        enabled,
+    )
+    assert ok, "Could not locate target immunities switch input in DOM"
 
 
 @pytest.mark.e2e
@@ -206,10 +262,9 @@ class TestSessionPersistence:
     """Test session storage and persistence."""
 
     def test_config_persists_across_page_reload(self, dash_page: Page):
-        """Test that configuration persists after page reload."""
-        # Modify config
-        ab_input = dash_page.locator("#ab-input")
-        ab_input.fill("73")
+        """Test that immunity edits persist after page reload."""
+        fire_input = _immunity_input(dash_page, "fire")
+        fire_input.fill("37")
         dash_page.keyboard.press("Tab")
 
         dash_page.wait_for_timeout(1000)  # Wait for auto-save
@@ -221,13 +276,26 @@ class TestSessionPersistence:
         dash_page.wait_for_selector("#tabs", timeout=10000)
         dash_page.wait_for_timeout(1000)
 
-        # Verify value persisted
-        # Note: This depends on whether app implements session storage
-        # If implemented, value should persist; if not, it resets
-        current_value = ab_input.input_value()
+        # Verify immunity value persisted
+        assert float(_immunity_input(dash_page, "fire").input_value()) == 37.0
 
-        # Document the behavior (test may need adjustment based on requirements)
-        # For now, just verify app loads without error
+    def test_immunity_quick_toggle_restores_previous_values(self, dash_page: Page):
+        """Test OFF->ON rapid toggle restores prior immunity values."""
+        fire_input = _immunity_input(dash_page, "fire")
+        fire_input.fill("44")
+        dash_page.keyboard.press("Tab")
+        dash_page.wait_for_timeout(400)
+
+        immunities_switch = dash_page.locator("#target-immunities-switch")
+
+        # Toggle OFF then ON quickly multiple times (stress race ordering)
+        for _ in range(3):
+            immunities_switch.click()
+            dash_page.wait_for_timeout(10)
+            immunities_switch.click()
+            dash_page.wait_for_timeout(120)
+
+        assert float(_immunity_input(dash_page, "fire").input_value()) == 44.0
 
     def test_reset_clears_session_storage(self, dash_page: Page, wait_for_spinner):
         """Test that reset clears session storage."""

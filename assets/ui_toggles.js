@@ -5,6 +5,22 @@
 window.dash_clientside = window.dash_clientside || {};
 window.dash_clientside.clientside = window.dash_clientside.clientside || {};
 
+function _get_live_immunity_switch_state() {
+    const root = document.getElementById('target-immunities-switch');
+    if (!root) return null;
+
+    if (typeof root.checked === 'boolean') {
+        return root.checked;
+    }
+
+    const checkbox = root.querySelector('input[type="checkbox"]');
+    if (checkbox && typeof checkbox.checked === 'boolean') {
+        return checkbox.checked;
+    }
+
+    return null;
+}
+
 // Return boolean values for dbc.Fade is_in property
 // If Switch is ON (true) -> is_in = true (Fade in)
 // If Switch is OFF (false) -> is_in = false (Fade out)
@@ -30,32 +46,34 @@ window.dash_clientside.clientside.toggle_additional_damage = function(isEnabled)
 };
 
 /**
- * Fully clientside callback for immunity inputs toggle with store persistence.
- * When switch is OFF: save current values to store, set inputs to 0, disable them.
- * When switch is ON: restore values from store, enable inputs.
+ * UI-only callback for immunity inputs toggle.
+ * Store synchronization is handled by a separate callback to avoid race conditions.
  *
  * @param {boolean} isEnabled - The switch value
  * @param {Array} currentValues - Current immunity input values
  * @param {Object} immunityStore - The immunities-store data (fractions)
  * @param {Object} configStore - The config-store data (contains TARGET_IMMUNITIES as fallback)
- * @returns {Array} [values, disabled, updatedStore] - Arrays for input values, disabled states, and updated store
+ * @returns {Array} [values, disabled] - Arrays for input values and disabled states
  */
 window.dash_clientside.clientside.toggle_immunities_inputs = function(isEnabled, currentValues, immunityStore, configStore) {
     const n = currentValues.length;
+    const no_upd = window.dash_clientside.no_update;
+
+    // Ignore stale callback executions: if the live switch state has already changed,
+    // this invocation is outdated and must not overwrite UI with old values.
+    const liveSwitchState = _get_live_immunity_switch_state();
+    if (liveSwitchState !== null && liveSwitchState !== isEnabled) {
+        return [Array(n).fill(no_upd), Array(n).fill(no_upd)];
+    }
 
     // Immunity names in order (matching Python config)
     const names = ['pure', 'magical', 'positive', 'divine', 'negative', 'sonic', 'acid', 'electrical', 'cold', 'fire', 'physical'];
 
     if (!isEnabled) {
-        // Switch OFF: save current values to store, then show zeros and disable
-        const updatedStore = {};
-        for (let i = 0; i < n; i++) {
-            // Convert percentage to fraction for storage
-            updatedStore[names[i]] = (currentValues[i] || 0) / 100;
-        }
+        // Switch OFF: presentation only (show zeros and disable)
         const zeros = Array(n).fill(0);
         const disabled = Array(n).fill(true);
-        return [zeros, disabled, updatedStore];
+        return [zeros, disabled];
     } else {
         // Switch ON: restore values from store or config, enable inputs
         immunityStore = immunityStore || {};
@@ -73,9 +91,56 @@ window.dash_clientside.clientside.toggle_immunities_inputs = function(isEnabled,
             }
         }
         const enabled = Array(n).fill(false);
-        // Return no_update for store since we're just reading from it
-        return [restoredValues, enabled, window.dash_clientside.no_update];
+        return [restoredValues, enabled];
     }
+};
+
+/**
+ * Keep immunities-store synced from live UI edits while switch is ON.
+ *
+ * @param {Array} currentValues - Current immunity input values in percent
+ * @param {boolean} isEnabled - The switch value
+ * @param {Array} disabledStates - Current disabled state for immunity inputs
+ * @param {Object} currentStore - Existing store data
+ * @returns {Object|symbol} - Updated store data or no_update
+ */
+window.dash_clientside.clientside.sync_immunities_store = function(
+    currentValues,
+    isEnabled,
+    disabledStates,
+    currentStore
+) {
+    if (!isEnabled || !currentValues) {
+        return window.dash_clientside.no_update;
+    }
+
+    // Ignore persistence while any immunity input is disabled (OFF flow / programmatic updates).
+    if (disabledStates && disabledStates.some(Boolean)) {
+        return window.dash_clientside.no_update;
+    }
+
+    const names = ['pure', 'magical', 'positive', 'divine', 'negative', 'sonic', 'acid', 'electrical', 'cold', 'fire', 'physical'];
+    const updatedStore = {};
+
+    for (let i = 0; i < names.length && i < currentValues.length; i++) {
+        updatedStore[names[i]] = (currentValues[i] || 0) / 100;
+    }
+
+    // Skip update when nothing changed or when a bulk programmatic update happened.
+    // User edits change one field at a time; OFF/ON/reset/load typically change many.
+    if (currentStore) {
+        let changedCount = 0;
+        for (let i = 0; i < names.length; i++) {
+            if (updatedStore[names[i]] !== currentStore[names[i]]) {
+                changedCount += 1;
+            }
+        }
+        if (changedCount === 0 || changedCount > 1) {
+            return window.dash_clientside.no_update;
+        }
+    }
+
+    return updatedStore;
 };
 
 /**

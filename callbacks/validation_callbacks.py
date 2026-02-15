@@ -115,11 +115,13 @@ def register_validation_callbacks(app, cfg):
         Output({'type': 'immunity-input', 'name': MATCH}, 'value', allow_duplicate=True),
         Input({'type': 'immunity-input', 'name': MATCH}, 'value'),
         State('build-loading', 'data'),
+        State('target-immunities-switch', 'value'),
+        State({'type': 'immunity-input', 'name': MATCH}, 'disabled'),
         prevent_initial_call=True,
     )
-    def validate_immunity_input(val, is_loading):
-        # Skip validation during build loading to prevent callback cascade
-        if is_loading:
+    def validate_immunity_input(val, is_loading, switch_on, is_disabled):
+        # Skip validation during build loading and non-editable OFF/programmatic states
+        if is_loading or not switch_on or is_disabled:
             return dash.no_update
 
         widget_id = ctx.triggered_id['name']            # ID 'name' of the widget changed (e.g., 'magical')

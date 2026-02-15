@@ -213,6 +213,12 @@ def register_core_callbacks(app, cfg):
             'WEAPONS': weapons if weapons else [],
         }
 
+        # Backend mitigation: if switch is OFF, force zero immunities even if UI callback
+        # has not yet propagated zeroed widget values.
+        immunity_values_for_sim = immunity_values
+        if not immunity_flag:
+            immunity_values_for_sim = [0] * len(cfg.TARGET_IMMUNITIES)
+
         # Build shared simulation settings (same for all builds)
         shared_settings = {
             'TARGET_AC': target_ac,
@@ -225,7 +231,7 @@ def register_core_callbacks(app, cfg):
             'TARGET_IMMUNITIES_FLAG': immunity_flag,
             'TARGET_IMMUNITIES': {
                 name: val / 100
-                for name, val in zip(cfg.TARGET_IMMUNITIES.keys(), immunity_values)
+                for name, val in zip(cfg.TARGET_IMMUNITIES.keys(), immunity_values_for_sim)
             },
         }
 
@@ -432,27 +438,3 @@ def register_core_callbacks(app, cfg):
             ])
         ], class_name='mb-4')
 
-
-    # Callback: update config-store when inputs change
-    @app.callback(
-        Output('config-store', 'data', allow_duplicate=True),
-        Input({'type': 'immunity-input', 'name': ALL}, 'value'),
-        State('config-store', 'data'),
-        State('target-immunities-switch', 'value'),
-        prevent_initial_call=True
-    )
-    def update_store_from_inputs(values, cfg_data, switch_on):
-        names = list(cfg.TARGET_IMMUNITIES.keys())
-        cfg_data = cfg_data or {}
-
-        # Build a list of current store values for comparison
-        stored_values = [round(cfg_data.get("TARGET_IMMUNITIES", {}).get(name, 0) * 100) for name in names]
-
-        # Only update store if user manually changed an input while switch is ON
-        if not switch_on or values == stored_values:
-            return dash.no_update
-
-        cfg_data["TARGET_IMMUNITIES"] = {
-            name: (val or 0) / 100 for name, val in zip(names, values)
-        }
-        return cfg_data

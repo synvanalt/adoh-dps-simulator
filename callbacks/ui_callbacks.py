@@ -375,8 +375,7 @@ def register_ui_callbacks(app, cfg):
     )
 
 
-    # Fully clientside callback for immunity inputs toggle with store persistence
-    # Handles both UI updates AND store logic without server roundtrip
+    # Fully clientside callback for immunity inputs toggle (UI-only)
     app.clientside_callback(
         ClientsideFunction(
             namespace='clientside',
@@ -384,11 +383,23 @@ def register_ui_callbacks(app, cfg):
         ),
         Output({'type': 'immunity-input', 'name': ALL}, 'value'),
         Output({'type': 'immunity-input', 'name': ALL}, 'disabled'),
-        Output('immunities-store', 'data'),
         Input('target-immunities-switch', 'value'),
         State({'type': 'immunity-input', 'name': ALL}, 'value'),
         State('immunities-store', 'data'),
         State('config-store', 'data'),
+    )
+
+    # Fully clientside callback: persist immunity edits while switch is ON
+    app.clientside_callback(
+        ClientsideFunction(
+            namespace='clientside',
+            function_name='sync_immunities_store'
+        ),
+        Output('immunities-store', 'data'),
+        Input({'type': 'immunity-input', 'name': ALL}, 'value'),
+        State('target-immunities-switch', 'value'),
+        State({'type': 'immunity-input', 'name': ALL}, 'disabled'),
+        State('immunities-store', 'data'),
     )
 
 
